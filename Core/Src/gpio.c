@@ -1,0 +1,93 @@
+/* USER CODE BEGIN Header */
+/**
+  ******************************************************************************
+  * @file    gpio.c
+  * @brief   This file provides code for the configuration
+  *          of all used GPIO pins.
+  ******************************************************************************
+  * @attention
+  *
+  * Copyright (c) 2026 STMicroelectronics.
+  * All rights reserved.
+  *
+  * This software is licensed under terms that can be found in the LICENSE file
+  * in the root directory of this software component.
+  * If no LICENSE file comes with this software, it is provided AS-IS.
+  *
+  ******************************************************************************
+  */
+/* USER CODE END Header */
+
+/* Includes ------------------------------------------------------------------*/
+#include "gpio.h"
+
+/* USER CODE BEGIN 0 */
+
+/* USER CODE END 0 */
+
+/*----------------------------------------------------------------------------*/
+/* Configure GPIO                                                             */
+/*----------------------------------------------------------------------------*/
+/* USER CODE BEGIN 1 */
+
+/* USER CODE END 1 */
+
+/**
+ * @brief  GPIO 初始化 (CubeMX 生成)
+ * @note   引脚功能:
+ *           PF1~PF4:  TB6612 电机方向控制 (推挽输出)
+ *           PG6:      蜂鸣器控制
+ *           PC6~PC8:  按键输入 (上拉输入, 低有效)
+ */
+/** Configure pins as
+        * Analog
+        * Input
+        * Output
+        * EVENT_OUT
+        * EXTI
+*/
+void MX_GPIO_Init(void)
+{
+
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+
+  /* GPIO Ports Clock Enable */
+  __HAL_RCC_GPIOF_CLK_ENABLE();
+  __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOE_CLK_ENABLE();
+  __HAL_RCC_GPIOB_CLK_ENABLE();
+  __HAL_RCC_GPIOD_CLK_ENABLE();
+  __HAL_RCC_GPIOG_CLK_ENABLE();
+  __HAL_RCC_GPIOC_CLK_ENABLE();
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOF, pwm1_1_Pin|pwm1_0_Pin|pwm2_1_Pin|pwm2_0_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(buzzer_GPIO_Port, buzzer_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pins : pwm1_1_Pin pwm1_0_Pin pwm2_1_Pin pwm2_0_Pin */
+  GPIO_InitStruct.Pin = pwm1_1_Pin|pwm1_0_Pin|pwm2_1_Pin|pwm2_0_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOF, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : buzzer_Pin */
+  GPIO_InitStruct.Pin = buzzer_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(buzzer_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : key3_Pin key2_Pin key1_Pin */
+  GPIO_InitStruct.Pin = key3_Pin|key2_Pin|key1_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+}
+
+/* USER CODE BEGIN 2 */
+
+/* USER CODE END 2 */

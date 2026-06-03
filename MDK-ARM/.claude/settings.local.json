@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//e/32/32/STM32HAL/f103zet6/bluecar/**)",
+      "Bash(unify_builder -p \"e:\\\\32\\\\32\\\\STM32HAL\\\\f103zet6\\\\bluecar\\\\MDK-ARM\\\\build\\\\bluecar\\\\builder.params\" --rebuild)",
+      "Bash(ls -la \"c:/Users/Lenovo/.eide/\" 2>/dev/null || echo \"No .eide folder in user home\")",
+      "Read(//c/Users/Lenovo/.eide/**)"
+    ]
+  }
+}
