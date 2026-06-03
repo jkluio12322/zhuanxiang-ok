@@ -30,30 +30,28 @@ void Motor_SetSpeedA(int16_t Speed)
         /* 正转: PF2=0(低), PF1=1(高) */
         HAL_GPIO_WritePin(GPIOF, GPIO_PIN_2, GPIO_PIN_RESET);
         HAL_GPIO_WritePin(GPIOF, GPIO_PIN_1, GPIO_PIN_SET);
-        __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, Speed);
+        __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, (uint32_t)Speed * 40);
     } else {
         /* 反转: PF2=1(高), PF1=0(低) */
         HAL_GPIO_WritePin(GPIOF, GPIO_PIN_2, GPIO_PIN_SET);
         HAL_GPIO_WritePin(GPIOF, GPIO_PIN_1, GPIO_PIN_RESET);
-        __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, -Speed);
+        __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, (uint32_t)(-Speed) * 40);
     }
 }
 
 /**
- * @brief  设置电机 B (右轮) 速度和方向
- * @param  Speed 有符号速度值, 正值前进/负值后退, 范围 ±(ARR-1)
+ * @brief  设置电机 B (右轮) 速度和方向 (右电机物理安装方向与左电机相反, 方向引脚对调)
+ * @param  Speed 有符号速度值, 正值前进/负值后退, 范围 0~100
  */
 void Motor_SetSpeedB(int16_t Speed)
 {
     if (Speed >= 0) {
-        /* 正转: PF4=0(低), PF3=1(高) */
         HAL_GPIO_WritePin(GPIOF, GPIO_PIN_4, GPIO_PIN_RESET);
         HAL_GPIO_WritePin(GPIOF, GPIO_PIN_3, GPIO_PIN_SET);
-        __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, Speed);
+        __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, (uint32_t)Speed * 40);
     } else {
-        /* 反转: PF4=1(高), PF3=0(低) */
         HAL_GPIO_WritePin(GPIOF, GPIO_PIN_4, GPIO_PIN_SET);
         HAL_GPIO_WritePin(GPIOF, GPIO_PIN_3, GPIO_PIN_RESET);
-        __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, -Speed);
+        __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, (uint32_t)(-Speed) * 40);
     }
 }

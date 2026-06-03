@@ -1,32 +1,33 @@
 /**
  * @file    key.h
- * @brief   非阻塞按键输入模块 (3 键)
- * @note    需要每 10ms 在主循环中调用 Key_Scan()
- *          使用边沿触发: KeyX_Pressed() 按下瞬间返回 1(自动清零)
- *          KeyX_Held() 持续按住返回 1
+ * @brief   非阻塞按键状态机 (移植自平衡车项目)
+ * @note    支持: 短按/长按/双击/持续按住/按下/抬起
+ *          Key_Tick() 每 1ms 调用一次, Key_Check() 查询按键事件
  */
 
 #ifndef __BSP_KEY_H
 #define __BSP_KEY_H
 #include "main.h"
 
-/** 按键 ID */
-#define KEY_SET   1
-#define KEY_ADD   2
-#define KEY_DEC   3
+#define KEY_COUNT       3
+
+#define KEY_1           0   /**< 按键1: ADD/前进 */
+#define KEY_2           1   /**< 按键2: DEC/后退 */
+#define KEY_3           2   /**< 按键3: SET/确认 */
+
+#define KEY_HOLD        0x01  /**< 持续按住 */
+#define KEY_DOWN        0x02  /**< 刚按下 (边沿) */
+#define KEY_UP          0x04  /**< 刚抬起 (边沿) */
+#define KEY_SINGLE      0x08  /**< 短按 (按下+抬起) */
+#define KEY_DOUBLE      0x10  /**< 双击 */
+#define KEY_LONG        0x20  /**< 长按 (>1s) */
+#define KEY_REPEAT      0x40  /**< 连发 (长按持续触发) */
+
+extern uint8_t Key_Flag[];
 
 void Key_Init(void);
-void Key_Scan(void);             /**< 状态机扫描, 每 10ms 调用一次 */
-
-uint8_t Key1_Pressed(void);      /**< SET 键刚按下 (边沿触发, 自动清零) */
-uint8_t Key2_Pressed(void);      /**< ADD 键刚按下 */
-uint8_t Key3_Pressed(void);      /**< DEC 键刚按下 */
-
-uint8_t Key1_Held(void);         /**< SET 键持续按住 (>20ms 消抖后) */
-uint8_t Key2_Held(void);         /**< ADD 键持续按住 */
-uint8_t Key3_Held(void);         /**< DEC 键持续按住 */
-
-/* 兼容旧接口 (阻塞式, 仅开机画面使用) */
-uint8_t Key_GetNum(void);
+void Key_Tick(void);                    /**< 状态机驱动, 每 1ms 调用 */
+uint8_t Key_Check(uint8_t n, uint8_t Flag);  /**< 查询按键事件 */
+void Key_Clear(void);                  /**< 清除所有按键标志 */
 
 #endif

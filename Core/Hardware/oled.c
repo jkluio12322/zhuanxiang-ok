@@ -228,9 +228,8 @@ void OLED_Init(void)
 {
     HAL_Delay(100);  /* 等待 OLED 上电稳定 */
 
-    /* 检查 I2C 设备是否就绪 */
     if (HAL_I2C_IsDeviceReady(&hi2c1, OLED_ADDR, 3, 100) != HAL_OK)
-        return;
+        return;  /* I2C 无设备应答 — 检查接线 PB6/PB7, OLED 供电 */
 
     /* --- SSD1306 初始化序列 --- */
     OLED_WriteCommand(0xAE);  /* 关闭显示 */

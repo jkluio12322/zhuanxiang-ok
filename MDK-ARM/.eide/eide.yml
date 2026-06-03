@@ -28,32 +28,20 @@ virtualFolder:
                 - path: ../Core/Src/usart.c
                 - path: ../Core/Src/stm32f1xx_it.c
                 - path: ../Core/Src/stm32f1xx_hal_msp.c
-              folders: []
-            - name: Hardware
-              files:
-                - path: ../Core/Hardware/blueserial.c
-                - path: ../Core/Hardware/blueserial.h
-                - path: ../Core/Hardware/buzzer.c
-                - path: ../Core/Hardware/buzzer.h
-                - path: ../Core/Hardware/encoder.c
-                - path: ../Core/Hardware/encoder.h
-                - path: ../Core/Hardware/key.c
-                - path: ../Core/Hardware/key.h
-                - path: ../Core/Hardware/motor.c
-                - path: ../Core/Hardware/motor.h
-                - path: ../Core/Hardware/mpu6050.c
-                - path: ../Core/Hardware/mpu6050.h
-                - path: ../Core/Hardware/mpu6050_reg.h
-                - path: ../Core/Hardware/oled.c
-                - path: ../Core/Hardware/oled.h
-                - path: ../Core/Hardware/oled_font.h
-                - path: ../Core/Hardware/pid.c
-                - path: ../Core/Hardware/pid.h
-                - path: ../Core/Hardware/serial.c
-                - path: ../Core/Hardware/serial.h
-                - path: ../Core/Hardware/timer.c
-                - path: ../Core/Hardware/timer.h
-              folders: []
+              folders:
+                - name: Hardware
+                  files:
+                    - path: ../Core/Hardware/motor.c
+                    - path: ../Core/Hardware/encoder.c
+                    - path: ../Core/Hardware/pid.c
+                    - path: ../Core/Hardware/mpu6050.c
+                    - path: ../Core/Hardware/oled.c
+                    - path: ../Core/Hardware/key.c
+                    - path: ../Core/Hardware/buzzer.c
+                    - path: ../Core/Hardware/serial.c
+                    - path: ../Core/Hardware/timer.c
+                    - path: ../Core/Hardware/blueserial.c
+                  folders: []
     - name: Drivers
       files: []
       folders:
@@ -79,6 +67,9 @@ virtualFolder:
           files:
             - path: ../Core/Src/system_stm32f1xx.c
           folders: []
+    - name: ::CMSIS
+      files: []
+      folders: []
 dependenceList: []
 outDir: build
 miscInfo:
@@ -158,7 +149,7 @@ targets:
             - id: 1
               isChecked: true
               mem:
-                size: "0x00010000"
+                size: "0x10000"
                 startAddr: "0x20000000"
               noInit: false
               tag: IRAM
@@ -195,11 +186,11 @@ targets:
               isChecked: true
               isStartup: true
               mem:
-                size: "0x00080000"
-                startAddr: "0x08000000"
+                size: "0x80000"
+                startAddr: "0x8000000"
               tag: IROM
             - id: 2
-              isChecked: false
+              isChecked: true
               isStartup: false
               mem:
                 size: "0x0"
@@ -217,7 +208,7 @@ targets:
         proType: 1
         speed: 8000
       STLink:
-        address: "0x08000000"
+        address: "0x8000000"
         bin: ""
         elFile: None
         optionBytes: .eide/bluecar.st.option.bytes.ini

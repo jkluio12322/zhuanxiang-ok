@@ -1,7 +1,7 @@
 Dependencies for Project 'bluecar', Target 'bluecar': (DO NOT MODIFY !)
 CompilerVersion: 5060528::V5.06 update 5 (build 528)::ARMCC
 F (startup_stm32f103xe.s)(0x6A1EF422)(--cpu Cortex-M3 -g --apcs=interwork -I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include--pd "__UVISION_VERSION SETA 543" --pd "STM32F10X_HD SETA 1" --pd "_RTE_ SETA 1"--list startup_stm32f103xe.lst --xref -o bluecar\startup_stm32f103xe.o --depend bluecar\startup_stm32f103xe.d)
-F (../Core/Hardware/motor.c)(0x6A1FE21A)(--c99 -c --cpu Cortex-M3 -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Hardware -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\motor.o --omf_browse bluecar\motor.crf --depend bluecar\motor.d)
+F (../Core/Hardware/motor.c)(0x6A2020E1)(--c99 -c --cpu Cortex-M3 -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Hardware -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\motor.o --omf_browse bluecar\motor.crf --depend bluecar\motor.d)
 I (../Core/Hardware/motor.h)(0x6A1FE287)
 I (../Core/Inc/main.h)(0x6A1FE35C)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x69E0DCD7)
@@ -97,7 +97,7 @@ I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x69E0DCD7)
 I (../Core/Hardware/mpu6050_reg.h)(0x6A1FE29E)
-F (../Core/Hardware/oled.c)(0x6A1FE272)(--c99 -c --cpu Cortex-M3 -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Hardware -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\oled.o --omf_browse bluecar\oled.crf --depend bluecar\oled.d)
+F (../Core/Hardware/oled.c)(0x6A201B21)(--c99 -c --cpu Cortex-M3 -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Hardware -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\oled.o --omf_browse bluecar\oled.crf --depend bluecar\oled.d)
 I (../Core/Hardware/oled.h)(0x6A1FE2B2)
 I (../Core/Inc/main.h)(0x6A1FE35C)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x69E0DCD7)
@@ -130,8 +130,8 @@ I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x69E0DCD7)
 I (../Core/Hardware/oled_font.h)(0x6A1FE3DC)
 I (../Core/Inc/i2c.h)(0x6A1FE363)
-F (../Core/Hardware/key.c)(0x6A1FE21F)(--c99 -c --cpu Cortex-M3 -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Hardware -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\key.o --omf_browse bluecar\key.crf --depend bluecar\key.d)
-I (../Core/Hardware/key.h)(0x6A1FE2A0)
+F (../Core/Hardware/key.c)(0x6A201B16)(--c99 -c --cpu Cortex-M3 -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Hardware -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\key.o --omf_browse bluecar\key.crf --depend bluecar\key.d)
+I (../Core/Hardware/key.h)(0x6A201950)
 I (../Core/Inc/main.h)(0x6A1FE35C)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x69E0DCD7)
 I (../Core/Inc/stm32f1xx_hal_conf.h)(0x6A1EF420)
@@ -225,7 +225,7 @@ I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x69E0DCD7)
 I (F:\kilv5\ARM\ARMCC\include\stdio.h)(0x588B8344)
 I (F:\kilv5\ARM\ARMCC\include\stdarg.h)(0x588B8344)
-F (../Core/Hardware/timer.c)(0x6A1FE27B)(--c99 -c --cpu Cortex-M3 -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Hardware -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\timer.o --omf_browse bluecar\timer.crf --depend bluecar\timer.d)
+F (../Core/Hardware/timer.c)(0x6A20197E)(--c99 -c --cpu Cortex-M3 -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Hardware -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\timer.o --omf_browse bluecar\timer.crf --depend bluecar\timer.d)
 I (../Core/Hardware/timer.h)(0x6A1FE2BC)
 I (../Core/Inc/main.h)(0x6A1FE35C)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x69E0DCD7)
@@ -256,6 +256,7 @@ I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x69E0DCD7)
+I (../Core/Hardware/key.h)(0x6A201950)
 F (../Core/Hardware/blueserial.c)(0x6A1FE246)(--c99 -c --cpu Cortex-M3 -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Hardware -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\blueserial.o --omf_browse bluecar\blueserial.crf --depend bluecar\blueserial.d)
 I (../Core/Hardware/blueserial.h)(0x6A1FE2AE)
 I (../Core/Inc/main.h)(0x6A1FE35C)
@@ -291,7 +292,7 @@ I (F:\kilv5\ARM\ARMCC\include\string.h)(0x588B8344)
 I (F:\kilv5\ARM\ARMCC\include\stdlib.h)(0x588B8344)
 I (F:\kilv5\ARM\ARMCC\include\stdio.h)(0x588B8344)
 I (F:\kilv5\ARM\ARMCC\include\stdarg.h)(0x588B8344)
-F (../Core/Src/main.c)(0x6A200C48)(--c99 -c --cpu Cortex-M3 -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Hardware -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\main.o --omf_browse bluecar\main.crf --depend bluecar\main.d)
+F (../Core/Src/main.c)(0x6A201CEB)(--c99 -c --cpu Cortex-M3 -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Hardware -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\main.o --omf_browse bluecar\main.crf --depend bluecar\main.d)
 I (../Core/Inc/main.h)(0x6A1FE35C)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x69E0DCD7)
 I (../Core/Inc/stm32f1xx_hal_conf.h)(0x6A1EF420)
@@ -331,16 +332,11 @@ I (../Core/Hardware/motor.h)(0x6A1FE287)
 I (../Core/Hardware/encoder.h)(0x6A1FE28F)
 I (../Core/Hardware/pid.h)(0x6A1FE293)
 I (../Core/Hardware/mpu6050.h)(0x6A1FE296)
-I (../Core/Hardware/key.h)(0x6A1FE2A0)
+I (../Core/Hardware/key.h)(0x6A201950)
 I (../Core/Hardware/buzzer.h)(0x6A1FE2A6)
 I (../Core/Hardware/serial.h)(0x6A1FE2A9)
 I (F:\kilv5\ARM\ARMCC\include\stdio.h)(0x588B8344)
 I (../Core/Hardware/timer.h)(0x6A1FE2BC)
-I (../Core/Hardware/blueserial.h)(0x6A1FE2AE)
-I (F:\kilv5\ARM\ARMCC\include\string.h)(0x588B8344)
-I (F:\kilv5\ARM\ARMCC\include\stdlib.h)(0x588B8344)
-I (F:\kilv5\ARM\ARMCC\include\stdarg.h)(0x588B8344)
-I (F:\kilv5\ARM\ARMCC\include\math.h)(0x588B8344)
 F (../Core/Src/gpio.c)(0x6A1FE330)(--c99 -c --cpu Cortex-M3 -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Hardware -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\gpio.o --omf_browse bluecar\gpio.crf --depend bluecar\gpio.d)
 I (../Core/Inc/gpio.h)(0x6A1EF41F)
 I (../Core/Inc/main.h)(0x6A1FE35C)

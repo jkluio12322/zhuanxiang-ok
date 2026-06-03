@@ -7,6 +7,7 @@
  */
 
 #include "timer.h"
+#include "key.h"
 
 extern TIM_HandleTypeDef htim6;
 extern TIM_HandleTypeDef htim5;
@@ -48,6 +49,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         millis++;  /* 每 1ms 递增 */
     }
     if (htim->Instance == TIM6) {
+        Key_Tick();  /* 按键状态机, 每 1ms 推进 */
+
         /* 分频器: 每 1ms 触发一次, 累积产生 10ms/50ms 标志 */
         static uint8_t tick_10ms = 0;
         static uint8_t tick_50ms = 0;

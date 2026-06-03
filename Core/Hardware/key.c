@@ -1,178 +1,198 @@
 /**
  * @file    key.c
- * @brief   非阻塞按键输入模块
- * @note    状态机: IDLE → DEBOUNCE(20ms) → PRESS → HOLD → DEBOUNCE_RELEASE(20ms) → IDLE
- *          每 10ms 调用 Key_Scan() 推进状态机
- *          引脚: PC8=SET, PC7=ADD, PC6=DEC (上拉输入, 低电平有效)
+ * @brief   非阻塞按键状态机 (移植自平衡车项目, 适配 HAL 库)
+ * @note    Key_Tick() 每 1ms 调用 (由 TIM6 中断驱动)
+ *
+ *          引脚映射:
+ *            KEY1: PC7 (ADD/前进)
+ *            KEY2: PC6 (DEC/后退)
+ *            KEY3: PG8 (SET/确认)
+ *
+ *          状态机周期 20ms → 消抖 20ms
+ *          长按阈值: 1000ms
+ *          连发间隔: 100ms
  */
 
 #include "key.h"
 
-/** 按键引脚定义 */
-#define KEY1_PORT  GPIOC
-#define KEY2_PORT  GPIOC
-#define KEY3_PORT  GPIOC
-#define KEY1_PIN   GPIO_PIN_8  /**< SET */
-#define KEY2_PIN   GPIO_PIN_7  /**< ADD */
-#define KEY3_PIN   GPIO_PIN_6  /**< DEC */
+#define KEY_PRESSED     1
+#define KEY_UNPRESSED   0
 
-/** 按键状态枚举 */
-typedef enum {
-    KS_IDLE = 0,          /**< 空闲, 等待按下 */
-    KS_DEBOUNCE_PRESS,    /**< 按下消抖 (等 20ms) */
-    KS_PRESS,             /**< 确认按下 (单次触发) */
-    KS_HOLD,              /**< 持续按住 */
-    KS_DEBOUNCE_RELEASE,  /**< 释放消抖 (等 20ms) */
-} KeyState;
+#define KEY_TIME_DOUBLE  0
+#define KEY_TIME_LONG    1000
+#define KEY_TIME_REPEAT  100
 
-/** 单个按键状态机 */
-typedef struct {
-    KeyState state;       /**< 当前状态 */
-    uint8_t  pressed : 1; /**< 边沿触发标志 (按下瞬间置1, 读取后清零) */
-    uint8_t  held    : 1; /**< 持续按住标志 */
-    uint8_t  debounce_cnt; /**< 消抖计数器 (×10ms) */
-    GPIO_TypeDef *port;
-    uint16_t pin;
-} Key;
-
-static Key key1, key2, key3;
+uint8_t Key_Flag[KEY_COUNT];
 
 /**
- * @brief  初始化单个按键对象
- */
-static void Key_InitOne(Key *k, GPIO_TypeDef *port, uint16_t pin)
-{
-    k->state = KS_IDLE;
-    k->pressed = 0;
-    k->held = 0;
-    k->debounce_cnt = 0;
-    k->port = port;
-    k->pin = pin;
-}
-
-/**
- * @brief  按键初始化
+ * @brief  按键 GPIO 初始化 (上拉输入)
+ * @note   GPIO 时钟已在 MX_GPIO_Init 中使能, 此处再次初始化以防万一
  */
 void Key_Init(void)
 {
-    Key_InitOne(&key1, KEY1_PORT, KEY1_PIN);
-    Key_InitOne(&key2, KEY2_PORT, KEY2_PIN);
-    Key_InitOne(&key3, KEY3_PORT, KEY3_PIN);
+    /* PC7(KEY1), PC6(KEY2), PG8(KEY3) 已在 CubeMX MX_GPIO_Init 中配置为输入上拉 */
 }
 
 /**
- * @brief  单个按键状态机扫描
- * @note   消抖时间 = 2 * 10ms = 20ms (press + release 各 20ms)
+ * @brief  读取单个按键的物理电平
+ * @param  n 按键编号 (0=KEY1, 1=KEY2, 2=KEY3)
+ * @return KEY_PRESSED(1) 或 KEY_UNPRESSED(0)
  */
-static void Key_ScanOne(Key *k)
+static uint8_t Key_GetState(uint8_t n)
 {
-    uint8_t pin_now = (HAL_GPIO_ReadPin(k->port, k->pin) == GPIO_PIN_RESET) ? 0 : 1;
-    /* 低电平 = 按下(0), 高电平 = 释放(1) */
+    if (n == KEY_1) {
+        if (HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_7) == GPIO_PIN_RESET)  /* PC7 低电平=按下 */
+            return KEY_PRESSED;
+    }
+    else if (n == KEY_2) {
+        if (HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_6) == GPIO_PIN_RESET)  /* PC6 */
+            return KEY_PRESSED;
+    }
+    else if (n == KEY_3) {
+        if (HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_8) == GPIO_PIN_RESET)  /* PC8, CubeMX 已配上拉 */
+            return KEY_PRESSED;
+    }
+    return KEY_UNPRESSED;
+}
 
-    switch (k->state) {
-    case KS_IDLE:
-        if (pin_now == 0) {  /* 检测到低电平 → 开始消抖 */
-            k->state = KS_DEBOUNCE_PRESS;
-            k->debounce_cnt = 2;  /* 2 × 10ms = 20ms */
+/**
+ * @brief  查询按键事件
+ * @param  n    按键编号
+ * @param  Flag 事件类型 (KEY_SINGLE/KEY_LONG/KEY_HOLD...)
+ * @return 1=事件发生, 0=未发生
+ * @note   除 KEY_HOLD 外, 其他事件读取后自动清除
+ */
+uint8_t Key_Check(uint8_t n, uint8_t Flag)
+{
+    if (Key_Flag[n] & Flag) {
+        if (Flag != KEY_HOLD) {
+            Key_Flag[n] &= ~Flag;
         }
-        break;
+        return 1;
+    }
+    return 0;
+}
 
-    case KS_DEBOUNCE_PRESS:
-        if (pin_now == 0) {
-            if (--k->debounce_cnt == 0) {
-                k->state = KS_PRESS;
-                k->pressed = 1;  /* 边沿触发标志 */
-                k->held = 1;     /* 持续按住标志 */
-            }
-        } else {
-            k->state = KS_IDLE;  /* 抖动, 退回空闲 */
-        }
-        break;
-
-    case KS_PRESS:
-        k->pressed = 0;  /* 单次触发, 下一周期清零 */
-        if (pin_now == 0) {
-            k->state = KS_HOLD;
-        } else {
-            k->state = KS_DEBOUNCE_RELEASE;
-            k->debounce_cnt = 2;
-        }
-        break;
-
-    case KS_HOLD:
-        if (pin_now == 0) {
-            k->held = 1;
-        } else {
-            k->state = KS_DEBOUNCE_RELEASE;
-            k->debounce_cnt = 2;
-        }
-        break;
-
-    case KS_DEBOUNCE_RELEASE:
-        if (pin_now == 0) {
-            k->state = KS_HOLD;  /* 又按下去了, 抖动 */
-        } else {
-            if (--k->debounce_cnt == 0) {
-                k->state = KS_IDLE;
-                k->held = 0;
-            }
-        }
-        break;
+/**
+ * @brief  清除所有按键事件标志
+ */
+void Key_Clear(void)
+{
+    uint8_t i;
+    for (i = 0; i < KEY_COUNT; i++) {
+        Key_Flag[i] = 0;
     }
 }
 
 /**
- * @brief  扫描全部按键 (每 10ms 调用一次)
+ * @brief  按键状态机 (每 1ms 调用一次)
+ * @note   状态机说明:
+ *         S=0: 空闲, 等待按下
+ *         S=1: 按下消抖中, 超时 → KEY_LONG
+ *         S=2: 释放等待, 超时 → KEY_SINGLE, 再次按下 → KEY_DOUBLE
+ *         S=3: 双击后等待释放
+ *         S=4: 长按连发, 超时 → KEY_REPEAT
  */
-void Key_Scan(void)
+void Key_Tick(void)
 {
-    Key_ScanOne(&key1);
-    Key_ScanOne(&key2);
-    Key_ScanOne(&key3);
+    static uint8_t Count, i;
+    static uint8_t CurrState[KEY_COUNT], PrevState[KEY_COUNT];
+    static uint8_t S[KEY_COUNT];
+    static uint16_t Time[KEY_COUNT];
+
+    /* 计时器递减 */
+    for (i = 0; i < KEY_COUNT; i++) {
+        if (Time[i] > 0) Time[i]--;
+    }
+
+    /* 每 20ms 采样一次 (消抖) */
+    Count++;
+    if (Count >= 20) {
+        Count = 0;
+
+        for (i = 0; i < KEY_COUNT; i++) {
+            PrevState[i] = CurrState[i];
+            CurrState[i] = Key_GetState(i);
+
+            /* 持续按住标志 */
+            if (CurrState[i] == KEY_PRESSED)
+                Key_Flag[i] |= KEY_HOLD;
+            else
+                Key_Flag[i] &= ~KEY_HOLD;
+
+            /* 按下边沿 */
+            if (CurrState[i] == KEY_PRESSED && PrevState[i] == KEY_UNPRESSED)
+                Key_Flag[i] |= KEY_DOWN;
+
+            /* 抬起边沿 */
+            if (CurrState[i] == KEY_UNPRESSED && PrevState[i] == KEY_PRESSED)
+                Key_Flag[i] |= KEY_UP;
+
+            /* --- 状态机 --- */
+            if (S[i] == 0) {
+                /* 空闲 → 检测按下 */
+                if (CurrState[i] == KEY_PRESSED) {
+                    Time[i] = KEY_TIME_LONG;
+                    S[i] = 1;
+                }
+            }
+            else if (S[i] == 1) {
+                /* 按住中 → 等待释放或超时 */
+                if (CurrState[i] == KEY_UNPRESSED) {
+                    Time[i] = KEY_TIME_DOUBLE;
+                    S[i] = 2;
+                } else if (Time[i] == 0) {
+                    Time[i] = KEY_TIME_REPEAT;
+                    Key_Flag[i] |= KEY_LONG;
+                    S[i] = 4;
+                }
+            }
+            else if (S[i] == 2) {
+                /* 已释放 → 等待双击确认或超时判定单击 */
+                if (CurrState[i] == KEY_PRESSED) {
+                    Key_Flag[i] |= KEY_DOUBLE;
+                    S[i] = 3;
+                } else if (Time[i] == 0) {
+                    Key_Flag[i] |= KEY_SINGLE;
+                    S[i] = 0;
+                }
+            }
+            else if (S[i] == 3) {
+                /* 双击后 → 等待释放回空闲 */
+                if (CurrState[i] == KEY_UNPRESSED)
+                    S[i] = 0;
+            }
+            else if (S[i] == 4) {
+                /* 长按中 → 连发或释放 */
+                if (CurrState[i] == KEY_UNPRESSED)
+                    S[i] = 0;
+                else if (Time[i] == 0) {
+                    Time[i] = KEY_TIME_REPEAT;
+                    Key_Flag[i] |= KEY_REPEAT;
+                    S[i] = 4;
+                }
+            }
+        }
+    }
 }
-
-/** @brief SET 键刚按下 (边沿触发, 读取后自动清零) */
-uint8_t Key1_Pressed(void) { return key1.pressed; }
-
-/** @brief ADD 键刚按下 */
-uint8_t Key2_Pressed(void) { return key2.pressed; }
-
-/** @brief DEC 键刚按下 */
-uint8_t Key3_Pressed(void) { return key3.pressed; }
-
-/** @brief SET 键持续按住中 */
-uint8_t Key1_Held(void) { return key1.held; }
-
-/** @brief ADD 键持续按住中 */
-uint8_t Key2_Held(void) { return key2.held; }
-
-/** @brief DEC 键持续按住中 */
-uint8_t Key3_Held(void) { return key3.held; }
 
 /*============================================================
  * 兼容旧接口: 阻塞式 Key_GetNum() (仅开机画面使用)
+ * 返回 0=无按键, 1=KEY1(PC7), 2=KEY2(PC6), 3=KEY3(PG8)
  *============================================================*/
 uint8_t Key_GetNum(void)
 {
-    uint8_t KeyNum = 0;
-
-    if (HAL_GPIO_ReadPin(KEY1_PORT, KEY1_PIN) == 0) {
-        HAL_Delay(20);
-        while (HAL_GPIO_ReadPin(KEY1_PORT, KEY1_PIN) == 0);
-        HAL_Delay(20);
-        KeyNum = 1;
+    if (HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_7) == 0) {
+        HAL_Delay(20); while (HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_7) == 0); HAL_Delay(20);
+        return 1;
     }
-    if (HAL_GPIO_ReadPin(KEY2_PORT, KEY2_PIN) == 0) {
-        HAL_Delay(20);
-        while (HAL_GPIO_ReadPin(KEY2_PORT, KEY2_PIN) == 0);
-        HAL_Delay(20);
-        KeyNum = 2;
+    if (HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_6) == 0) {
+        HAL_Delay(20); while (HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_6) == 0); HAL_Delay(20);
+        return 2;
     }
-    if (HAL_GPIO_ReadPin(KEY3_PORT, KEY3_PIN) == 0) {
-        HAL_Delay(20);
-        while (HAL_GPIO_ReadPin(KEY3_PORT, KEY3_PIN) == 0);
-        HAL_Delay(20);
-        KeyNum = 3;
+    if (HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_8) == 0) {
+        HAL_Delay(20); while (HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_8) == 0); HAL_Delay(20);
+        return 3;
     }
-    return KeyNum;
+    return 0;
 }
