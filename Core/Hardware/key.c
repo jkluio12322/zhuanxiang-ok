@@ -115,10 +115,10 @@ void Key_Tick(void)
             CurrState[i] = Key_GetState(i);
 
             /* 持续按住标志 */
-            if (CurrState[i] == KEY_PRESSED)
-                Key_Flag[i] |= KEY_HOLD;
+            if (CurrState[i] == KEY_PRESSED) //0000 0001
+                Key_Flag[i] |= KEY_HOLD;     //0000 0001
             else
-                Key_Flag[i] &= ~KEY_HOLD;
+                Key_Flag[i] &= ~KEY_HOLD;    //0000 0000
 
             /* 按下边沿 */
             if (CurrState[i] == KEY_PRESSED && PrevState[i] == KEY_UNPRESSED)

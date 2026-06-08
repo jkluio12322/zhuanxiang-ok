@@ -16,7 +16,7 @@
 #define KEY_3           2   /**< 按键3: SET/确认 */
 
 #define KEY_HOLD        0x01  /**< 持续按住 */
-#define KEY_DOWN        0x02  /**< 刚按下 (边沿) */
+#define KEY_DOWN        0x02  /**< 刚按下 (边沿) 0000 0010*/ 
 #define KEY_UP          0x04  /**< 刚抬起 (边沿) */
 #define KEY_SINGLE      0x08  /**< 短按 (按下+抬起) */
 #define KEY_DOUBLE      0x10  /**< 双击 */

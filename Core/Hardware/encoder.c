@@ -47,7 +47,8 @@ int16_t Encoder_Get(TIM_TypeDef *TIMx)
     TIMx->CNT = 0;   /* 读后清零, 适用于周期采样 */
     return Temp;
 }
-
+/*50ms 内电机转速再快也攒不够 65535 个脉冲，所以溢出从来不会发生。
+这个中断只是预留的后备，防止以后需要长距离累计时才用。*/
 /* TIM2 溢出中断: 计数器翻转次数 +1 (当前项目中未使用溢出累积) */
 void TIM2_IRQHandler(void)
 {
@@ -107,7 +108,7 @@ void updateEncoderLoopSimpleVersion(Encoder *ecd, uint16_t loop_period, TIM_Type
     /* 右轮编码器物理方向相反, 取反 */
     if (TIMx == TIM3)
         ecd->counter.count_now = -ecd->counter.count_now;
-
+  
     /* 本周期增量 = 当前值 (因为已清零, 上次值为0) */
     ecd->counter.count_increment = (int64_t)(int16_t)(ecd->counter.count_now - 0);
     ecd->counter.count_total += ecd->counter.count_increment;
@@ -116,7 +117,7 @@ void updateEncoderLoopSimpleVersion(Encoder *ecd, uint16_t loop_period, TIM_Type
     ecd->position.rotations = (double)ecd->counter.count_total
         / ((double)ecd->param.multiple * ecd->param.reduction_ratio * ecd->param.ppr);
     ecd->position.angle = ecd->position.rotations * 360.0;
-    ecd->position.distance = ecd->position.rotations / 60.0 * PI * 2.0 * ecd->param.r;
+    ecd->position.distance = ecd->position.rotations * PI * 2.0 * ecd->param.r;
 
     /* --- 速度解算 (RPM & m/s) --- */
     ecd->velocity.angular = (float)(ecd->counter.count_increment
