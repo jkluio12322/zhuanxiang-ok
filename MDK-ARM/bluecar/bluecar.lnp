@@ -3,6 +3,7 @@
 "bluecar\motor.o"
 "bluecar\encoder.o"
 "bluecar\pid.o"
+"bluecar\pid_tune.o"
 "bluecar\mpu6050.o"
 "bluecar\oled.o"
 "bluecar\key.o"

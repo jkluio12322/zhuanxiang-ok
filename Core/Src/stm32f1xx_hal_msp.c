@@ -57,10 +57,6 @@
 
 /* USER CODE END 0 */
 /**
- * @brief  HAL 全局 MSP 初始化 (CubeMX 生成)
- * @note   使能 AFIO 和 PWR 时钟, 禁用 JTAG 保留 SW-DP
- */
-/**
   * Initializes the Global MSP.
   */
 void HAL_MspInit(void)

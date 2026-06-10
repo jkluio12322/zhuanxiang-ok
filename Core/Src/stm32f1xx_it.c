@@ -69,15 +69,6 @@ extern UART_HandleTypeDef huart3;
 
 /* USER CODE END EV */
 
-/**
- * @brief  中断服务程序 (CubeMX 生成)
- * @note   外设中断:
- *           DMA1_CH2~CH7: I2C1/I2C2/USART3 DMA 传输
- *           USART2: HC-05 蓝牙接收中断
- *           USART3: VOFA+ 串口 DMA 中断
- *           TIM5/TIM6: 定时器中断
- */
-
 /******************************************************************************/
 /*           Cortex-M3 Processor Interruption and Exception Handlers          */
 /******************************************************************************/

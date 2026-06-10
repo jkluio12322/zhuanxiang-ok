@@ -57,23 +57,16 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-/** @note 电机A 方向控制: PF1=方向1, PF2=方向2, PE11=TIM1_CH2 PWM */
 #define pwm1_1_Pin GPIO_PIN_1
 #define pwm1_1_GPIO_Port GPIOF
 #define pwm1_0_Pin GPIO_PIN_2
 #define pwm1_0_GPIO_Port GPIOF
-
-/** @note 电机B 方向控制: PF3=方向1, PF4=方向2, PE9=TIM1_CH1 PWM */
 #define pwm2_1_Pin GPIO_PIN_3
 #define pwm2_1_GPIO_Port GPIOF
 #define pwm2_0_Pin GPIO_PIN_4
 #define pwm2_0_GPIO_Port GPIOF
-
-/** @note 蜂鸣器: PG6, 低电平开启 */
 #define buzzer_Pin GPIO_PIN_6
 #define buzzer_GPIO_Port GPIOG
-
-/** @note 按键 (上拉输入, 低有效): PC6=DEC, PC7=ADD, PC8=SET */
 #define key3_Pin GPIO_PIN_6
 #define key3_GPIO_Port GPIOC
 #define key2_Pin GPIO_PIN_7

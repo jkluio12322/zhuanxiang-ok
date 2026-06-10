@@ -32,10 +32,8 @@ extern "C" {
 
 /* USER CODE END Includes */
 
-/** USART2: HC-05 蓝牙模块 (PA2=TX, PA3=RX), 9600bps */
 extern UART_HandleTypeDef huart2;
 
-/** USART3: VOFA+ 调试串口 (PD8=TX, PD9=RX), 115200bps, DMA */
 extern UART_HandleTypeDef huart3;
 
 /* USER CODE BEGIN Private defines */

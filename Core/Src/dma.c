@@ -34,16 +34,6 @@
 /* USER CODE END 1 */
 
 /**
- * @brief  DMA 初始化 (CubeMX 生成)
- * @note   DMA 通道分配:
- *           CH2: USART3_TX  (VOFA+ 串口发送)
- *           CH3: USART3_RX  (VOFA+ 串口接收)
- *           CH4: I2C2_TX    (MPU6050 发送)
- *           CH5: I2C2_RX    (MPU6050 接收)
- *           CH6: I2C1_TX    (OLED 发送)
- *           CH7: I2C1_RX    (OLED 接收)
- */
-/**
   * Enable DMA controller clock
   */
 void MX_DMA_Init(void)

@@ -2,8 +2,8 @@
  * @file    encoder.c
  * @brief   JGB37-520 霍尔编码器驱动 + 速度/位置解算
  * @note    使用 TIM2/TIM3 编码器模式 (4倍频)
- *          - TIM2: 左轮编码器 (PA0=CH1, PA1=CH2)
- *          - TIM3: 右轮编码器 (PA6=CH1, PA7=CH2)
+ *          - TIM3: 左轮编码器 (PA6=CH1, PA7=CH2)
+ *          - TIM2: 右轮编码器 (PA0=CH1, PA1=CH2)
  *
  *          转速计算公式:
  *            RPM = count_increment / (multiple * ratio * ppr) * 1000 / T * 60
@@ -36,16 +36,30 @@ void Encoder_Init_TIM_All(void)
 }
 
 /**
- * @brief  读取编码器当前计数值并清零
+ * @brief  读取本周期编码器脉冲增量 (差分, 不修改硬件计数器)
  * @param  TIMx 编码器定时器 (TIM2 或 TIM3)
- * @return 16位有符号计数值 (带方向)
+ * @return 自上次调用以来的 16 位有符号脉冲增量 (带方向)
  */
 int16_t Encoder_Get(TIM_TypeDef *TIMx)
 {
-    int16_t Temp;
-    Temp = TIMx->CNT;
-    TIMx->CNT = 0;   /* 读后清零, 适用于周期采样 */
-    return Temp;
+    static uint16_t last_TIM2 = 0;
+    static uint16_t last_TIM3 = 0;
+    static uint8_t first_TIM2 = 1;
+    static uint8_t first_TIM3 = 1;
+
+    uint16_t now = TIMx->CNT;
+    int16_t delta;
+
+    if (TIMx == TIM2) {
+        delta = first_TIM2 ? 0 : (int16_t)(now - last_TIM2);
+        last_TIM2 = now;
+        first_TIM2 = 0;
+    } else {
+        delta = first_TIM3 ? 0 : (int16_t)(now - last_TIM3);
+        last_TIM3 = now;
+        first_TIM3 = 0;
+    }
+    return delta;
 }
 /*50ms 内电机转速再快也攒不够 65535 个脉冲，所以溢出从来不会发生。
 这个中断只是预留的后备，防止以后需要长距离累计时才用。*/
@@ -90,7 +104,7 @@ void initEncoder(Encoder *ecd, const Parameter param)
  * @brief  更新编码器: 读取脉冲并计算速度/位置 (简化版, 仅用当前值)
  * @param  ecd         编码器对象指针
  * @param  loop_period 采样周期 (ms)
- * @param  TIMx        编码器定时器 (TIM2=左轮, TIM3=右轮, TIM3 自动反转符号)
+ * @param  TIMx        编码器定时器 (TIM3=左轮, TIM2=右轮)
  *
  * @note   速度计算:
  *           RPM = count / (multiple * ratio * ppr) * (1000/T) * 60
@@ -102,15 +116,13 @@ void initEncoder(Encoder *ecd, const Parameter param)
  */
 void updateEncoderLoopSimpleVersion(Encoder *ecd, uint16_t loop_period, TIM_TypeDef *TIMx)
 {
-    /* 读取当前周期脉冲数 (读后自动清零) */
     ecd->counter.count_now = Encoder_Get(TIMx);
 
-    /* 右轮编码器物理方向相反, 取反 */
+    /* 左轮编码器(TIM3)正转时计数为负, 取反统一方向 */
     if (TIMx == TIM3)
         ecd->counter.count_now = -ecd->counter.count_now;
-  
-    /* 本周期增量 = 当前值 (因为已清零, 上次值为0) */
-    ecd->counter.count_increment = (int64_t)(int16_t)(ecd->counter.count_now - 0);
+
+    ecd->counter.count_increment = ecd->counter.count_now;
     ecd->counter.count_total += ecd->counter.count_increment;
 
     /* --- 位置解算 --- */

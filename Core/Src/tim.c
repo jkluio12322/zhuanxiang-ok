@@ -30,15 +30,6 @@ TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim5;
 TIM_HandleTypeDef htim6;
 
-/**
- * @brief  定时器初始化 (CubeMX 生成)
- * @note   定时器分配:
- *           TIM1 (PE9=CH1, PE11=CH2): PWM 电机驱动, 244Hz
- *           TIM2 (PA0=CH1, PA1=CH2): 编码器模式 (左轮)
- *           TIM3 (PA6=CH1, PA7=CH2): 编码器模式 (右轮)
- *           TIM5: millis 计数器, 1kHz 中断
- *           TIM6: 周期标志发生器, 1kHz 中断
- */
 /* TIM1 init function */
 void MX_TIM1_Init(void)
 {

@@ -44,3 +44,7 @@ bluecar\main.o: ../Core/Hardware/buzzer.h
 bluecar\main.o: ../Core/Hardware/serial.h
 bluecar\main.o: F:\kilv5\ARM\ARMCC\Bin\..\include\stdio.h
 bluecar\main.o: ../Core/Hardware/timer.h
+bluecar\main.o: ../Core/Hardware/blueserial.h
+bluecar\main.o: F:\kilv5\ARM\ARMCC\Bin\..\include\string.h
+bluecar\main.o: F:\kilv5\ARM\ARMCC\Bin\..\include\stdlib.h
+bluecar\main.o: F:\kilv5\ARM\ARMCC\Bin\..\include\stdarg.h

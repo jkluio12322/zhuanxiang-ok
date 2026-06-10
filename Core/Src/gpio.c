@@ -32,13 +32,6 @@
 
 /* USER CODE END 1 */
 
-/**
- * @brief  GPIO 初始化 (CubeMX 生成)
- * @note   引脚功能:
- *           PF1~PF4:  TB6612 电机方向控制 (推挽输出)
- *           PG6:      蜂鸣器控制
- *           PC6~PC8:  按键输入 (上拉输入, 低有效)
- */
 /** Configure pins as
         * Analog
         * Input

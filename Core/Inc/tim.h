@@ -32,19 +32,14 @@ extern "C" {
 
 /* USER CODE END Includes */
 
-/** TIM1: PWM 电机驱动 (PE9=CH1, PE11=CH2), 244Hz */
 extern TIM_HandleTypeDef htim1;
 
-/** TIM2: 编码器模式, 左轮 (PA0=CH1, PA1=CH2) */
 extern TIM_HandleTypeDef htim2;
 
-/** TIM3: 编码器模式, 右轮 (PA6=CH1, PA7=CH2) */
 extern TIM_HandleTypeDef htim3;
 
-/** TIM5: millis 计数器, 1kHz (TIM5_IRQn) */
 extern TIM_HandleTypeDef htim5;
 
-/** TIM6: 周期标志发生器, 1kHz (TIM6_IRQn) */
 extern TIM_HandleTypeDef htim6;
 
 /* USER CODE BEGIN Private defines */

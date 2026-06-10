@@ -2,8 +2,14 @@
 /**
   ******************************************************************************
   * @file           : main.c
-  * @brief          : BlueCar - 蓝牙遥控 + 按键双控四轮小车
+  * @brief          : BlueCar - 蓝牙遥控 + 按键双控四轮小车 (串级 PID)
   *                   硬件: STM32F103ZET6 + TB6612 + JGB37-520 + HC-05 + MPU6050 + OLED
+  *
+  *                   控制架构 (参考平衡车测试程序-V1.0):
+  *                     SpeedPID(内环, 50ms) → base PWM
+  *                     YawPID(外环, 100ms)  → diff_yaw 纠偏
+  *                     手动转向(BT/按键)     → diff_manual 直接叠加
+  *                     L = base + diff, R = base - diff
   *
   *                   按键功能:
   *                     C7(KEY1): 单击 → 进入/退出 PWM 设置模式
@@ -40,28 +46,72 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <math.h>
 
 /* Private typedef -----------------------------------------------------------*/
 typedef enum { MODE_RUN, MODE_PWM_SET } Mode_t;
 
-/* Private variables ---------------------------------------------------------*/
-static Mode_t   Mode       = MODE_RUN;
-static uint8_t  RunFlag    = 0;
-static int16_t  PWMDuty    = 0;
+/* Shared with pid_tune.c ----------------------------------------------------*/
+Mode_t   Mode       = MODE_RUN;
+uint8_t  RunFlag    = 0;
+int16_t  PWMDuty    = 0;
 static uint8_t  SpeedLevel = 3;        /* 蓝牙速度档位 1~6 */
-static uint32_t bt_last_rx = 0;        /* 上次收到蓝牙数据的时间戳 */
-#define RPM_PER_LEVEL  30.0f
+uint32_t bt_last_rx = 0;               /* 上次收到蓝牙数据的时间戳 */
+static const float SpeedTable[6] = {20, 60, 120, 180, 250, 350}; /* 档位1~6 RPM映射 */
 
+float    TurnTarget = 0;               /* 手动差速目标 (RPM), BT/按键/串口设置 */
+float    YawTarget  = 0;               /* 航向角目标 (°) */
+int8_t   BT_LV = 0, BT_RH = 0;        /* 蓝牙摇杆值, VOFA 显示用 */
+
+/* PID 控制器 ----------------------------------------------------------------
+ *
+ * SpeedPID: P 主导纯反馈控制 (无前馈, 无变化率限制)
+ *
+ *   设计策略:
+ *     Kf=0 完全去掉前馈 — 纯反馈, P 项主导输出
+ *     Kp=0.8 大比例增益 — 50RPM 误差 → POut=40, 加 OutOffset=15 得 55%起步PWM
+ *     Kd=0.6 强微分阻尼 — 配合大Kp抑制超调震荡 (旧 Kd=0.15 时 Kp>0.5 就震荡)
+ *     Ki=0.01 适中的积分 — Kf归零后 I 需承担更多稳态输出
+ *     IntegralLimit=50 — 放宽积分上限, I 最多补 50% PWM
+ *     OutputRateLimit=0 — 完全解除变化率限制, 响应即时, 靠 Kd 天然软限速
+ *
+ *   输出估算 (Target=50RPM):
+ *     起步: POut(40) + IOut(0) + OutOffset(15) = 55
+ *     稳态: POut(~1.6) + IOut(~45) + OutOffset(15) ≈ 61.6  (误差2RPM时)
+ *
+ * YawPID 输出限幅 ±20: 外环只微调, 不主导转向, 手动 diff 直接叠加不走 PID
+ *----------------------------------------------------------------------------*/
+PID_t SpeedPID = {
+    .Kp = 0.8f, .Ki = 0.01f, .Kd = 0.6f, .Kf = 0.0f,  /* P主导, 无前馈 */
+    .OutMax =  100,  .OutMin = -100,   /* PWM 物理上下限 */
+    .OutOffset       = 15.0f,          /* 电机死区补偿 (不变) */
+    .IntegralLimit   = 50.0f,          /* 积分限幅 30→50 (Kf归零后I需补更多) */
+    .Deadband        = 3.0f,           /* 积分死区 (不变, 编码器抖动特性没变) */
+    .OutputRateLimit = 0.0f,           /* 变化率限制 20→0 (完全解除, 靠Kd抑制突变) */
+};
+PID_t YawPID = {
+    .Kp = 0.3f, .Ki = 0.02f, .Kd = 0.0f,
+    .OutMax =  20,   .OutMin = -20,   /* 差速 ±20RPM */
+    .OutOffset       = 0,              /* 差速不需要死区补偿 */
+    .IntegralLimit   = 40.0f,          /* 比SpeedPID大, 陀螺仪漂移需更多积分余量 */
+    .Deadband        = 1.0f,           /* ±1°停止积分, 防陀螺仪噪声摇摆 */
+    .OutputRateLimit = 10.0f,          /* 外环100ms, 变化更平缓 */
+};
+
+/* 编码器 --------------------------------------------------------------------*/
 static Encoder  ecd_left, ecd_right;
-static PID      SpeedPID, TurnPID;
-
-static int16_t  AX, AY, AZ, GX, GY, GZ;
-static int16_t  GY_Offset  = 0;
-static float    YawAngle   = 0.0f;
-
 static const Parameter JGB37_520 = {
     .multiple = 4, .reduction_ratio = 30.0f, .ppr = 11, .r = 0.065f,
 };
+
+/* MPU6050 传感器数据 ---------------------------------------------------------*/
+static int16_t AX, AY, AZ, GX, GY, GZ;
+static int16_t GZ_Offset       = 0;   /* GZ 陀螺仪零偏 */
+static int16_t AX_Offset       = 0;   /* AX 加速度计零偏 */
+static int16_t AZ_Offset       = 0;   /* AZ 加速度计零偏 */
+static float YawAngle    = 0.0f;      /* Z 轴积分偏航角 (°) */
+static float TiltAngle   = 0.0f;      /* 倾角 (AX/AZ atan2) */
+static float TiltFilter  = 0.0f;      /* 倾角一阶低通滤波值 */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
@@ -71,6 +121,7 @@ static void Process_Control(void);
 static void Update_OLED(void);
 static void VOFA_Send(void);
 static void MPU6050_Calibrate(void);
+static void MPU6050_Process(void);
 
 /* Private user code ---------------------------------------------------------*/
 
@@ -105,21 +156,82 @@ int main(void)
     initEncoder(&ecd_left,  JGB37_520);
     initEncoder(&ecd_right, JGB37_520);
 
-    initPID(&SpeedPID, 100.0f, 200.0f);
-    setPIDParam(&SpeedPID, 2.0f, 0.5f, 0.1f);   /* Kp=2.0 Ki=0.5 Kd=0.1 */
+/**
+ * @brief 串级 PID 参数初始化
+ *
+ * ┌──────────────────────────────────────────────────────────┐
+ * │ 串级控制架构 (参考平衡车测试程序-V1.0)                      │
+ * │                                                          │
+ * │   SpeedTarget ─→ SpeedPID(内环50ms) ─→ base PWM          │
+ * │                     ↑                                    │
+ * │                  平均转速                                 │
+ * │                                                          │
+ * │   YawTarget ─→ YawPID(外环100ms) ─→ diff_yaw             │
+ * │                     ↑                  ↘                 │
+ * │                  偏航角               diff ─→ L/R PWM     │
+ * │                                    ↗                     │
+ * │   BT摇杆/按键 ─→ TurnTarget ─→ diff_manual               │
+ * │                                                          │
+ * │   最终: L = base+diff, R = base-diff, 双侧钳位±100       │
+ * └──────────────────────────────────────────────────────────┘
+ *
+ * SpeedPID: 输出是 PWM 占空比 (-100~+100)
+ * YawPID:   输出是差速 RPM (-20~+20), 只做微调不主导转向
+ */
 
-    initPID(&TurnPID,   30.0f,  60.0f);
-    setPIDParam(&TurnPID,   1.0f, 0.3f, 0.05f);  /* Kp=1.0 Ki=0.3 Kd=0.05 */
+/*───────────────────────────────────────────────────────────
+ * SpeedPID (内环, 50ms): 平均转速 → PWM 占空比
+ *
+ * 设计策略: P 主导纯反馈 (Kf=0, OutputRateLimit=0)
+ *   Kp=0.8  大比例增益 — 50RPM 误差 → POut=40, P项主导输出
+ *   Kd=0.6  强微分阻尼 — 配合大Kp抑制超调, RPM突变100时抵消60单位输出
+ *   Ki=0.01 适中积分   — Kf归零后 I 承担稳态输出, 累积速度提升 2x
+ *   Kf=0    无前馈     — 纯反馈控制, 不为Target预设输出基线
+ *   OutputRateLimit=0   — 完全解除变化率限制, 响应即时, Kd天然软限速
+ *   IntegralLimit=50   — 积分上限 30→50, Kf归零后I需补更多
+ *
+ * 输出估算 (Target=50RPM):
+ *   起步: POut(40) + IOut(0) + OutOffset(15) = 55
+ *   稳态: POut(~1.6) + IOut(~45) + OutOffset(15) ≈ 61.6  (误差2RPM时)
+ *───────────────────────────────────────────────────────────*/
+PID_Init(&SpeedPID);
+PID_SetParam(&SpeedPID, 0.2f, 0.04f, 0.1f);  /* Kp=0.3 Ki=0.02 Kd=0.1 */
+SpeedPID.Kf = 0.50f;              /* 前馈: 0.65→0 (完全去掉前馈, 纯反馈) */
+SpeedPID.OutMax =  100;           /* 正转PWM上限 (物理边界, 不变) */
+SpeedPID.OutMin = -100;           /* 反转PWM下限 (物理边界, 不变) */
+SpeedPID.OutOffset       = 15.0f; /* 死区补偿 (不变, TB6612硬件特性) */
+SpeedPID.IntegralLimit   = 35.0f; /* 积分限幅 30→50 (Kf归零后I需承担更多稳态输出) */
+SpeedPID.Deadband        = 3.0f;  /* 积分死区 (不变, 编码器抖动特性没变) */
+SpeedPID.OutputRateLimit = 25.0f;  /* 变化率限制 20→0 (完全解除, 靠Kd微分先行抑制突变) */
 
-    setPIDTarget(&SpeedPID, 0);
-    setPIDTarget(&TurnPID,   0);
+/*───────────────────────────────────────────────────────────
+ * YawPID (外环, 100ms): 航向角 → 差速 RPM 纠偏
+ *
+ * 设计思路:
+ *   外环只做微调, 输出限幅 ±20 RPM, 不主导转向
+ *   手动转向 (TurnTarget) 直接叠加, 不走PID, 响应即时
+ *   航向角由 MPU6050 陀螺仪 Z 轴积分得到
+ *
+ * 为什么外环比内环慢一倍 (100ms vs 50ms)?
+ *   - 航向变化本身是个慢过程 (转动惯量大)
+ *   - 内外环频率错开 = 分离时间尺度, 互不干涉
+ *   - 内环先稳定速度, 外环再在稳定速度上做航向纠偏
+ *───────────────────────────────────────────────────────────*/
+PID_Init(&YawPID);
+PID_SetParam(&YawPID, 0.0f, 0.0f, 0.0f);//0.3 0.02 0.0
+YawPID.OutMax =  20;              /* 差速上限: ±20RPM差速足以产生明显转向力矩 */
+YawPID.OutMin = -20;              /* 差速下限: 对称限幅 */
+/* OutOffset=0: 差速RPM不需要死区补偿 (直接叠加到PWM, 死区已在SpeedPID处理) */
+YawPID.IntegralLimit   = 40.0f;   /* 积分限幅: 比SpeedPID大10, 陀螺仪漂移需更多积分余量 */
+YawPID.Deadband        = 1.0f;    /* 积分死区: 航向误差≤1°停积积分, 防陀螺仪噪声引起左右摇摆 */
+YawPID.OutputRateLimit = 10.0f;   /* 变化率限制: 外环100ms一次, 每周期最多变±10RPM, 防突然甩头 */
 
     MPU6050_Calibrate();
 
     OLED_Clear();
     OLED_ShowString(1, 1, " [BlueCar V2.1] ");
-    OLED_ShowString(2, 1, " BT  + Encoder  ");
-    OLED_ShowString(3, 1, " Keys: F/B/PWM  ");
+    OLED_ShowString(2, 1, " Cascade PID    ");
+    OLED_ShowString(3, 1, " Speed+Yaw Ctrl ");
     OLED_ShowString(4, 1, " Press C8 start ");
     Buzzer_ON();  HAL_Delay(200);  Buzzer_OFF();
 
@@ -128,20 +240,20 @@ int main(void)
 
     while (1)
     {
-        Process_Bluetooth();   /* 蓝牙先跑, 防止 Process_Keys 误清目标 */
+        Process_Bluetooth();
         Process_Keys();
 
+        /* 10ms: MPU6050 GZ积分偏航角 (参考平衡车陀螺仪解算) */
         if (flag_10ms) {
             flag_10ms = 0;
-            MPU6050_GetData(&AX, &AY, &AZ, &GX, &GY, &GZ);
-            float gz = (float)(GZ - GY_Offset) / 32768.0f * 2000.0f;
-            YawAngle += gz * 0.01f;
+            MPU6050_Process();
         }
 
+        /* 50ms: 编码器 + PID 控制 */
         if (flag_50ms) {
             flag_50ms = 0;
-            updateEncoderLoopSimpleVersion(&ecd_left,  50, TIM2);
-            updateEncoderLoopSimpleVersion(&ecd_right, 50, TIM3);
+            updateEncoderLoopSimpleVersion(&ecd_left,  50, TIM3);  /* 左轮编码器 → TIM3 */
+            updateEncoderLoopSimpleVersion(&ecd_right, 50, TIM2);  /* 右轮编码器 → TIM2 */
 
             if (Mode == MODE_RUN)
                 Process_Control();
@@ -154,15 +266,55 @@ int main(void)
         static uint32_t oled_tick = 0;
         if (millis - oled_tick > 200) {
             oled_tick = millis;
-            __disable_irq();
             Update_OLED();
-            __enable_irq();
         }
 
         if (!RunFlag) {
             Motor_SetSpeedA(0); Motor_SetSpeedB(0);
         }
     }
+}
+
+/*============================================================
+ * MPU6050 数据解算 (参考平衡车测试程序-V1.0)
+ *   每 10ms 调用: 读取原始数据 → 零偏校准 → 积分偏航角 + 倾角互补滤波
+ *   停车时自动追踪 GZ 零偏漂移 (指数滑动平均), 无需手动校准
+ *============================================================*/
+static void MPU6050_Process(void)
+{
+    MPU6050_GetData(&AX, &AY, &AZ, &GX, &GY, &GZ);
+
+    /* ---- 停车时自动校准 GZ 零偏 (指数滑动平均, 追踪温漂) ---- */
+    static int32_t gz_sum = 0;
+    static uint16_t gz_cnt = 0;
+    if (!RunFlag) {
+        gz_sum += GZ;
+        if (++gz_cnt >= 100) {                          /* 1 秒采集 100 个点 */
+            int16_t new_offset = (int16_t)(gz_sum / 100);
+            GZ_Offset = (int16_t)(GZ_Offset * 0.9f + new_offset * 0.1f);  /* EMA α=0.1 */
+            gz_sum = 0;
+            gz_cnt = 0;
+        }
+    } else {
+        gz_sum = 0;
+        gz_cnt = 0;
+    }
+
+    /* GZ 陀螺仪校准 → °/s (参考平衡车: GY_Cali / 32768.0 * 2000.0) */
+    float gz = (float)(GZ - GZ_Offset) / 32768.0f * 2000.0f;
+
+    /* 偏航角积分 (10ms 周期) */
+    YawAngle += gz * 0.01f;
+
+    /* 倾角计算 (参考平衡车: AngleAcc = -atan2(AX, AZ) / PI * 180) */
+    float ax_cali = (float)(AX - AX_Offset);
+    float az_cali = (float)(AZ - AZ_Offset);
+    float AngleAcc = -atan2f(ax_cali, az_cali) / 3.1415926535f * 180.0f;
+
+    /* 一阶低通滤波 (参考平衡车 Alpha0 = 0.8) */
+    float Alpha0 = 0.8f;
+    TiltFilter = Alpha0 * TiltFilter + (1.0f - Alpha0) * AngleAcc;
+    TiltAngle = TiltFilter;
 }
 
 /*============================================================
@@ -181,6 +333,12 @@ static void Process_Keys(void)
         }
     }
 
+    /* 独立于模式的档位切换: 双击升档 / 长按降档 */
+    if (Key_Check(KEY_1, KEY_DOUBLE)) { if (SpeedLevel < 6) SpeedLevel++;
+        OLED_ShowString(4, 1, "                "); }
+    if (Key_Check(KEY_1, KEY_LONG))  { if (SpeedLevel > 1) SpeedLevel--;
+        OLED_ShowString(4, 1, "                "); }
+
     if (Mode == MODE_PWM_SET) {
         if (Key_Check(KEY_2, KEY_SINGLE)) { PWMDuty += 10; if (PWMDuty >  100) PWMDuty =  100; }
         if (Key_Check(KEY_3, KEY_SINGLE)) { PWMDuty -= 10; if (PWMDuty < -100) PWMDuty = -100; }
@@ -189,19 +347,19 @@ static void Process_Keys(void)
         /* RUN 模式: C6 前进 / C8 后退, 蓝牙可覆盖 */
         if (Key_Check(KEY_2, KEY_HOLD)) {
             RunFlag = 1;
-            setPIDTarget(&SpeedPID, +50.0f);
-            setPIDTarget(&TurnPID,   0);
+            PID_SetTarget(&SpeedPID, +50.0f);
+            TurnTarget = 0;
         }
         else if (Key_Check(KEY_3, KEY_HOLD)) {
             RunFlag = 1;
-            setPIDTarget(&SpeedPID, -50.0f);
-            setPIDTarget(&TurnPID,   0);
+            PID_SetTarget(&SpeedPID, -50.0f);
+            TurnTarget = 0;
         }
         else if (millis - bt_last_rx > 300) {
             /* 300ms 内没按键也没蓝牙 → 停车 */
             RunFlag = 0;
-            setPIDTarget(&SpeedPID, 0);
-            setPIDTarget(&TurnPID,   0);
+            PID_SetTarget(&SpeedPID, 0);
+            TurnTarget = 0;
         }
     }
 }
@@ -214,20 +372,20 @@ static void Process_Bluetooth(void)
     if (Mode == MODE_PWM_SET) return;
     if (!BlueSerial_ReceiveFlag()) return;
     BlueSerial_Receive();
-    bt_last_rx = millis;   /* 记录收到蓝牙数据的时间 */
+    bt_last_rx = millis;
 
     /* 摇杆: [joystick,LH,LV,RH,RV] */
     if (strcmp(BlueSerial_StringArray[0], "joystick") == 0) {
         int8_t LV = atoi(BlueSerial_StringArray[2]);
         int8_t RH = atoi(BlueSerial_StringArray[3]);
+        BT_LV = LV; BT_RH = RH;
         if (LV != 0 || RH != 0) {
             RunFlag = 1;
-            setPIDTarget(&SpeedPID, LV / 100.0f * SpeedLevel * RPM_PER_LEVEL);
-            setPIDTarget(&TurnPID,  RH / 100.0f * SpeedLevel * RPM_PER_LEVEL * 0.5f);
+            PID_SetTarget(&SpeedPID, LV / 100.0f * SpeedTable[SpeedLevel-1]);
+            TurnTarget = RH / 100.0f * SpeedTable[SpeedLevel-1] * 0.5f;
         } else {
-            /* 摇杆回中 → 停车, 但不立即清 RunFlag (等 300ms 超时) */
-            setPIDTarget(&SpeedPID, 0);
-            setPIDTarget(&TurnPID,   0);
+            PID_SetTarget(&SpeedPID, 0);
+            TurnTarget = 0;
         }
     }
     /* 按键: [key,N,up/down] */
@@ -248,29 +406,76 @@ static void Process_Bluetooth(void)
     }
 }
 
-/*============================================================
- * PID 控制: 转速闭环
- *============================================================*/
+/*────────────────────────────────────────────────────────────
+ * PID 控制: 串级结构 (参考平衡车测试程序-V1.0)
+ *
+ *   调用频率: 每 50ms (由 TIM6 中断的 flag_50ms 触发)
+ *
+ *   内环 SpeedPID (50ms): 平均转速 → base PWM
+ *     输入: (左轮RPM + 右轮RPM) / 2
+ *     输出: base PWM ( -100 ~ +100 )
+ *     作用: 让车按目标速度跑, 不关心航向
+ *
+ *   外环 YawPID (100ms): 航向角 → diff_yaw 纠偏
+ *     输入: MPU6050 陀螺仪Z轴积分偏航角
+ *     输出: diff_yaw RPM ( -20 ~ +20, 限幅在PID内部 )
+ *     作用: 航向偏离时自动拉回, 100ms一次比内环慢一倍
+ *           (航向变化慢 + 分离时间尺度, 内外环互不干涉)
+ *
+ *   手动转向: TurnTarget → diff_manual
+ *     来源: 蓝牙摇杆RH / 按键 / 串口 turn 命令
+ *     不走PID, 直接叠加, 响应即时
+ *
+ *   合成: diff = diff_manual + diff_yaw
+ *         L = base + diff    (左轮PWM)
+ *         R = base - diff    (右轮PWM)
+ *         双侧钳位 ±100 (最后一道防线, 防止PWM溢出)
+ *──────────────────────────────────────────────────────────*/
 static void Process_Control(void)
 {
+    /* 平均转速 = 左右轮 RPM 均值 */
     float ave = (ecd_left.velocity.angular + ecd_right.velocity.angular) / 2.0f;
-    float dif = ecd_left.velocity.angular - ecd_right.velocity.angular;
 
-    if (RunFlag) {
-        updatePID(&SpeedPID, ave);
-        updatePID(&TurnPID,  dif);
+    if (!RunFlag) return;
 
-        float base = SpeedPID.output;
-        float diff = TurnPID.output;
-        int16_t L = (int16_t)(base + diff);
-        int16_t R = (int16_t)(base - diff);
+    /* ---- 内环 SpeedPID (50ms): 平均转速闭环 ---- */
+    SpeedPID.Actual = ave;
+    PID_Update(&SpeedPID);
+    float base = SpeedPID.Out;        /* base ∈ [-100, +100] */
 
-        if (L >  100) L =  100;  if (L < -100) L = -100;
-        if (R >  100) R =  100;  if (R < -100) R = -100;
+    /* ---- 超速保护: |RPM| > 110 时反向拉输出, 抑制冲过头 ---- */
+    if      (ave >  110.0f) base -= (ave - 110.0f) * 1.5f;
+    else if (ave < -110.0f) base -= (ave + 110.0f) * 1.5f;
 
-        Motor_SetSpeedA(L);
-        Motor_SetSpeedB(R);
+    /* ---- 外环 YawPID (100ms): 航向角闭环 ----
+     * 外环每 2 次 (100ms) 才执行一次, 原因:
+     *   1. 航向变化是慢过程 (转动惯量大), 不需要 50ms 高频
+     *   2. 内外环时间尺度分离, 内环先收敛再纠航向, 互不干涉
+     */
+    static uint8_t outer_cycle = 0;
+    if (++outer_cycle >= 2) {
+        outer_cycle = 0;
+        YawPID.Actual = YawAngle;
+        PID_Update(&YawPID);
     }
+    float diff_yaw = 0;  //YawPID.Out;    /* YawPID 暂关, 先调 SpeedPID */
+
+    /* ---- 手动转向 (BT/按键直接叠加, 不走PID, 响应即时) ---- */
+    float diff_manual = TurnTarget;
+
+    /* 合成差速 + 左右轮 PWM 分配 */
+    float diff = diff_manual + diff_yaw;
+    int16_t L = (int16_t)(base + diff);   /* 左轮 = base + 差速 */
+    int16_t R = (int16_t)(base - diff);   /* 右轮 = base - 差速 (差速转向原理) */
+
+    /* 最终输出钳位 — 最后一道防线
+     * 理论上 base(≤±100) + diff(≤±40) 可能超限, 必须钳位
+     * 钳位后可能导致短暂转向失效 (两侧同时被限), 但优先保证PWM不溢出 */
+    if (L >  100) L =  100;  if (L < -100) L = -100;
+    if (R >  100) R =  100;  if (R < -100) R = -100;
+
+    Motor_SetSpeedA(L);
+    Motor_SetSpeedB(R);
 }
 
 /*============================================================
@@ -281,47 +486,54 @@ static void Update_OLED(void)
     char buf[21];
     if (Mode == MODE_PWM_SET) {
         OLED_ShowString(1, 1, "[PWM SET MODE]  ");
-        sprintf(buf, "Duty: %+04d %%    ", PWMDuty);
+        snprintf(buf, sizeof(buf), "Duty: %+04d %%    ", PWMDuty);
     } else {
-        OLED_ShowString(1, 1, RunFlag ? "[RUN] BT+Key   " : "[STOP]          ");
-        sprintf(buf, "T:%+05.0f D:%+05.0f ", SpeedPID.target, TurnPID.target);
+        OLED_ShowString(1, 1, RunFlag ? "[RUN] Cascade   " : "[STOP]          ");
+        snprintf(buf, sizeof(buf), "T:%+05.0f D:%+05.0f ", SpeedPID.Target, TurnTarget);
     }
     OLED_ShowString(2, 1, buf);
 
-    sprintf(buf, "L:%+05.0f R:%+05.0f ", ecd_left.velocity.angular, ecd_right.velocity.angular);
+    snprintf(buf, sizeof(buf), "L:%+05.0f R:%+05.0f ", ecd_left.velocity.angular, ecd_right.velocity.angular);
     OLED_ShowString(3, 1, buf);
 
-    sprintf(buf, "Yaw:%+06.1f Lv:%1d", YawAngle, SpeedLevel);
+    snprintf(buf, sizeof(buf), "Yaw:%+06.1f Lv:%1d", YawAngle, SpeedLevel);
     OLED_ShowString(4, 1, buf);
 }
 
 /*============================================================
- * VOFA+: 编码器数据通过 USART3 发送
+ * VOFA+: 编码器数据通过 USART3 发送 (兼容平衡车数据格式)
  *============================================================*/
 static void VOFA_Send(void)
 {
-    Serial_Printf("%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,%d\r\n",
-        SpeedPID.target,
-        ecd_left.velocity.angular,
+    Serial_Printf("%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,%d,%d,%d\r\n",
+        SpeedPID.Target,
         ecd_right.velocity.angular,
-        TurnPID.target,
+        ecd_left.velocity.angular,
+        SpeedPID.Out,
+        YawPID.Out,
+        TurnTarget,
         ecd_left.velocity.angular - ecd_right.velocity.angular,
         YawAngle,
+        BT_LV, BT_RH,
         RunFlag);
 }
 
 /*============================================================
- * MPU6050 零偏校准
+ * MPU6050 零偏校准 (参考平衡车测试程序-V1.0)
  *============================================================*/
 static void MPU6050_Calibrate(void)
 {
-    int32_t sum = 0;
+    int32_t sum_gz = 0, sum_ax = 0, sum_az = 0;
     for (uint16_t i = 0; i < 200; i++) {
         MPU6050_GetData(&AX, &AY, &AZ, &GX, &GY, &GZ);
-        sum += GZ;
+        sum_gz += GZ;
+        sum_ax += AX;
+        sum_az += AZ;
         HAL_Delay(5);
     }
-    GY_Offset = (int16_t)(sum / 200);
+    GZ_Offset = (int16_t)(sum_gz / 200);
+    AX_Offset = (int16_t)(sum_ax / 200);
+    AZ_Offset = (int16_t)(sum_az / 200);
 }
 
 void SystemClock_Config(void)

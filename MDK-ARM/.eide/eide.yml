@@ -34,6 +34,7 @@ virtualFolder:
                     - path: ../Core/Hardware/motor.c
                     - path: ../Core/Hardware/encoder.c
                     - path: ../Core/Hardware/pid.c
+                    - path: ../Core/Hardware/pid_tune.c
                     - path: ../Core/Hardware/mpu6050.c
                     - path: ../Core/Hardware/oled.c
                     - path: ../Core/Hardware/key.c

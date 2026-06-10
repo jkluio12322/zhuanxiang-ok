@@ -13,8 +13,10 @@
  */
 
 #include "blueserial.h"
+#include "pid_tune.h"
 
 extern UART_HandleTypeDef huart2;
+extern UART_HandleTypeDef huart3;
 
 #define BLUE_SERIAL_BUFFER_SIZE  100  /**< 环形缓冲区大小 */
 
@@ -209,5 +211,9 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
     if (huart->Instance == USART2) {
         BlueSerial_Put(BlueSerial_Buffer[0]);
         HAL_UART_Receive_IT(&huart2, (uint8_t *)BlueSerial_Buffer, 1);
+    }
+    else if (huart->Instance == USART3) {
+        PIDTune_RxCallback(pid_tune_rx_byte);
+        HAL_UART_Receive_IT(&huart3, (uint8_t *)&pid_tune_rx_byte, 1);
     }
 }

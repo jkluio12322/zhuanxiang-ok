@@ -32,10 +32,8 @@ extern "C" {
 
 /* USER CODE END Includes */
 
-/** I2C1: SSD1306 OLED (PB6=SCL, PB7=SDA) */
 extern I2C_HandleTypeDef hi2c1;
 
-/** I2C2: MPU6050 六轴传感器 (PB10=SCL, PB11=SDA) */
 extern I2C_HandleTypeDef hi2c2;
 
 /* USER CODE BEGIN Private defines */

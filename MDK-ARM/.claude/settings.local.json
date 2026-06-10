@@ -4,7 +4,11 @@
       "Read(//e/32/32/STM32HAL/f103zet6/bluecar/**)",
       "Bash(unify_builder -p \"e:\\\\32\\\\32\\\\STM32HAL\\\\f103zet6\\\\bluecar\\\\MDK-ARM\\\\build\\\\bluecar\\\\builder.params\" --rebuild)",
       "Bash(ls -la \"c:/Users/Lenovo/.eide/\" 2>/dev/null || echo \"No .eide folder in user home\")",
-      "Read(//c/Users/Lenovo/.eide/**)"
+      "Read(//c/Users/Lenovo/.eide/**)",
+      "Bash(\"c:/Users/Lenovo/.vscode/extensions/cl.eide-3.27.2/res/tools/win32/unify_builder/unify_builder.exe\" -p \"e:/32/32/STM32HAL/f103zet6/bluecar/MDK-ARM/build/bluecar/builder.params\" --rebuild)",
+      "Bash(where STM32CubeMX)",
+      "Read(//c/Program Files/STMicroelectronics/STM32Cube/STM32CubeMX/**)",
+      "Bash(dir \"C:\\\\Program Files\\\\STMicroelectronics\\\\\" 2>/dev/null)"
     ]
   }
 }

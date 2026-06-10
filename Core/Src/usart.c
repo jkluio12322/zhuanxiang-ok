@@ -29,11 +29,6 @@ UART_HandleTypeDef huart3;
 DMA_HandleTypeDef hdma_usart3_rx;
 DMA_HandleTypeDef hdma_usart3_tx;
 
-/**
- * @brief  USART 初始化 (CubeMX 生成)
- * @note   USART2 (PA2=TX, PA3=RX): HC-05 蓝牙模块, 9600bps
- *         USART3 (PD8=TX, PD9=RX): VOFA+ 调试串口, 115200bps (DMA)
- */
 /* USART2 init function */
 
 void MX_USART2_UART_Init(void)

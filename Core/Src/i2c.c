@@ -31,11 +31,6 @@ DMA_HandleTypeDef hdma_i2c1_tx;
 DMA_HandleTypeDef hdma_i2c2_rx;
 DMA_HandleTypeDef hdma_i2c2_tx;
 
-/**
- * @brief  I2C 初始化 (CubeMX 生成)
- * @note   I2C1 (PB6=SCL, PB7=SDA): SSD1306 OLED 显示屏, 400kHz
- *         I2C2 (PB10=SCL, PB11=SDA): MPU6050 六轴传感器, 400kHz
- */
 /* I2C1 init function */
 void MX_I2C1_Init(void)
 {

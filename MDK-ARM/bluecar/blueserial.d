@@ -34,3 +34,4 @@ bluecar\blueserial.o: F:\kilv5\ARM\ARMCC\Bin\..\include\string.h
 bluecar\blueserial.o: F:\kilv5\ARM\ARMCC\Bin\..\include\stdlib.h
 bluecar\blueserial.o: F:\kilv5\ARM\ARMCC\Bin\..\include\stdio.h
 bluecar\blueserial.o: F:\kilv5\ARM\ARMCC\Bin\..\include\stdarg.h
+bluecar\blueserial.o: ../Core/Hardware/pid_tune.h
