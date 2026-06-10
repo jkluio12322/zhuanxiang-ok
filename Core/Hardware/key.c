@@ -49,7 +49,11 @@ static uint8_t Key_GetState(uint8_t n)
             return KEY_PRESSED;
     }
     else if (n == KEY_3) {
-        if (HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_8) == GPIO_PIN_RESET)  /* PC8, CubeMX 已配上拉 */
+        if (HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_8) == GPIO_PIN_RESET)  /* PC8 */
+            return KEY_PRESSED;
+    }
+    else if (n == KEY_4) {
+        if (HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_9) == GPIO_PIN_RESET)  /* PC9 */
             return KEY_PRESSED;
     }
     return KEY_UNPRESSED;
@@ -193,6 +197,10 @@ uint8_t Key_GetNum(void)
     if (HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_8) == 0) {
         HAL_Delay(20); while (HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_8) == 0); HAL_Delay(20);
         return 3;
+    }
+    if (HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_9) == 0) {
+        HAL_Delay(20); while (HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_9) == 0); HAL_Delay(20);
+        return 4;
     }
     return 0;
 }

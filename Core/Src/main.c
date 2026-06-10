@@ -55,7 +55,8 @@ typedef enum { MODE_RUN, MODE_PWM_SET } Mode_t;
 Mode_t   Mode       = MODE_RUN;
 uint8_t  RunFlag    = 0;
 int16_t  PWMDuty    = 0;
-static uint8_t  SpeedLevel = 3;        /* 蓝牙速度档位 1~6 */
+static uint8_t  SpeedLevel   = 3;        /* 蓝牙速度档位 1~6 */
+static uint8_t  SpeedPercent = 50;       /* 按键速度百分比 0~100 */
 uint32_t bt_last_rx = 0;               /* 上次收到蓝牙数据的时间戳 */
 static const float SpeedTable[6] = {20, 60, 120, 180, 250, 350}; /* 档位1~6 RPM映射 */
 
@@ -195,14 +196,14 @@ int main(void)
  *   稳态: POut(~1.6) + IOut(~45) + OutOffset(15) ≈ 61.6  (误差2RPM时)
  *───────────────────────────────────────────────────────────*/
 PID_Init(&SpeedPID);
-PID_SetParam(&SpeedPID, 0.2f, 0.04f, 0.1f);  /* Kp=0.3 Ki=0.02 Kd=0.1 */
-SpeedPID.Kf = 0.50f;              /* 前馈: 0.65→0 (完全去掉前馈, 纯反馈) */
+PID_SetParam(&SpeedPID, 0.2f, 0.06f, 0.1f);  /* Kp=0.3 Ki=0.02 Kd=0.1 */
+SpeedPID.Kf = 0.30f;              /* 前馈: 0.65→0 (完全去掉前馈, 纯反馈) */
 SpeedPID.OutMax =  100;           /* 正转PWM上限 (物理边界, 不变) */
 SpeedPID.OutMin = -100;           /* 反转PWM下限 (物理边界, 不变) */
 SpeedPID.OutOffset       = 15.0f; /* 死区补偿 (不变, TB6612硬件特性) */
 SpeedPID.IntegralLimit   = 35.0f; /* 积分限幅 30→50 (Kf归零后I需承担更多稳态输出) */
 SpeedPID.Deadband        = 3.0f;  /* 积分死区 (不变, 编码器抖动特性没变) */
-SpeedPID.OutputRateLimit = 25.0f;  /* 变化率限制 20→0 (完全解除, 靠Kd微分先行抑制突变) */
+SpeedPID.OutputRateLimit = 12.0f;  /* 变化率限制 20→0 (完全解除, 靠Kd微分先行抑制突变) */
 
 /*───────────────────────────────────────────────────────────
  * YawPID (外环, 100ms): 航向角 → 差速 RPM 纠偏
@@ -322,6 +323,7 @@ static void MPU6050_Process(void)
  *============================================================*/
 static void Process_Keys(void)
 {
+    /* KEY1: 单击切换模式 */
     if (Key_Check(KEY_1, KEY_SINGLE)) {
         if (Mode == MODE_RUN) {
             Mode = MODE_PWM_SET;
@@ -333,33 +335,36 @@ static void Process_Keys(void)
         }
     }
 
-    /* 独立于模式的档位切换: 双击升档 / 长按降档 */
-    if (Key_Check(KEY_1, KEY_DOUBLE)) { if (SpeedLevel < 6) SpeedLevel++;
-        OLED_ShowString(4, 1, "                "); }
-    if (Key_Check(KEY_1, KEY_LONG))  { if (SpeedLevel > 1) SpeedLevel--;
-        OLED_ShowString(4, 1, "                "); }
+    /* KEY4: 单击循环升档 1→6, 同时复位速度百分比 */
+    if (Key_Check(KEY_4, KEY_SINGLE)) {
+        SpeedLevel = (SpeedLevel < 6) ? SpeedLevel + 1 : 1;
+        SpeedPercent = 50;
+    }
 
     if (Mode == MODE_PWM_SET) {
         if (Key_Check(KEY_2, KEY_SINGLE)) { PWMDuty += 10; if (PWMDuty >  100) PWMDuty =  100; }
         if (Key_Check(KEY_3, KEY_SINGLE)) { PWMDuty -= 10; if (PWMDuty < -100) PWMDuty = -100; }
         RunFlag = (PWMDuty != 0);
     } else {
-        /* RUN 模式: C6 前进 / C8 后退, 蓝牙可覆盖 */
-        if (Key_Check(KEY_2, KEY_HOLD)) {
+        /* RUN 模式: KEY2=前进(百分比递增) / KEY3=后退(百分比递增) */
+        uint8_t k2 = Key_Check(KEY_2, KEY_HOLD);
+        uint8_t k3 = Key_Check(KEY_3, KEY_HOLD);
+
+        if (k2 || k3) {
+            /* 按住时百分比递增 (每50ms+1, 5秒满) */
+            if (SpeedPercent < 100) SpeedPercent++;
             RunFlag = 1;
-            PID_SetTarget(&SpeedPID, +50.0f);
+            float spd = SpeedTable[SpeedLevel-1] * SpeedPercent / 100.0f;
+            PID_SetTarget(&SpeedPID, k2 ? spd : -spd);
             TurnTarget = 0;
-        }
-        else if (Key_Check(KEY_3, KEY_HOLD)) {
-            RunFlag = 1;
-            PID_SetTarget(&SpeedPID, -50.0f);
-            TurnTarget = 0;
+            bt_last_rx = millis;  /* 防止超时停车 */
         }
         else if (millis - bt_last_rx > 300) {
-            /* 300ms 内没按键也没蓝牙 → 停车 */
+            /* 松手 + 无蓝牙 → 停车, 百分比归零 */
             RunFlag = 0;
             PID_SetTarget(&SpeedPID, 0);
             TurnTarget = 0;
+            SpeedPercent = 0;
         }
     }
 }
@@ -439,7 +444,7 @@ static void Process_Control(void)
     if (!RunFlag) return;
 
     /* ---- 内环 SpeedPID (50ms): 平均转速闭环 ---- */
-    SpeedPID.Actual = ave;
+    SpeedPID.Actual = -ave;   /* 编码器与PWM输出方向相反 */
     PID_Update(&SpeedPID);
     float base = SpeedPID.Out;        /* base ∈ [-100, +100] */
 
@@ -505,11 +510,12 @@ static void Update_OLED(void)
  *============================================================*/
 static void VOFA_Send(void)
 {
+    float spd_max = SpeedTable[SpeedLevel-1];
     Serial_Printf("%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,%d,%d,%d\r\n",
-        SpeedPID.Target,
-        ecd_right.velocity.angular,
-        ecd_left.velocity.angular,
-        SpeedPID.Out,
+        SpeedPID.Target / spd_max * 100.0f,                /* 目标%% */
+        ecd_right.velocity.angular / spd_max * 100.0f,     /* 右轮%% */
+        ecd_left.velocity.angular  / spd_max * 100.0f,     /* 左轮%% */
+        SpeedPID.Out,                                      /* PWM% */
         YawPID.Out,
         TurnTarget,
         ecd_left.velocity.angular - ecd_right.velocity.angular,

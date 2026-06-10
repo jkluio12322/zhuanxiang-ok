@@ -9,11 +9,12 @@
 #define __BSP_KEY_H
 #include "main.h"
 
-#define KEY_COUNT       3
+#define KEY_COUNT       4
 
-#define KEY_1           0   /**< 按键1: ADD/前进 */
-#define KEY_2           1   /**< 按键2: DEC/后退 */
-#define KEY_3           2   /**< 按键3: SET/确认 */
+#define KEY_1           0   /**< 按键1: PC7 */
+#define KEY_2           1   /**< 按键2: PC6 */
+#define KEY_3           2   /**< 按键3: PC8 */
+#define KEY_4           3   /**< 按键4: PC9 */
 
 #define KEY_HOLD        0x01  /**< 持续按住 */
 #define KEY_DOWN        0x02  /**< 刚按下 (边沿) 0000 0010*/ 

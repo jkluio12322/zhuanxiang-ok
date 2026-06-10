@@ -73,6 +73,8 @@ void Error_Handler(void);
 #define key2_GPIO_Port GPIOC
 #define key1_Pin GPIO_PIN_8
 #define key1_GPIO_Port GPIOC
+#define key4_Pin GPIO_PIN_9
+#define key4_GPIO_Port GPIOC
 
 /* USER CODE BEGIN Private defines */
 
