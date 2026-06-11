@@ -5,23 +5,18 @@
  *
  *          控制架构:
  *            内环 SpeedPID (50ms): 平均转速 → base PWM
- *              限制: OutMax±100 OutOffset=15 IntegralLimit=30 Deadband=3 RateLimit=20
- *
  *            外环 YawPID (100ms):  航向角 → diff_yaw
- *              限制: OutMax±20 OutOffset=0 IntegralLimit=40 Deadband=1 RateLimit=10
- *
  *            手动差速: TurnTarget 直接叠加到电机 (不走PID, 响应即时)
  *
  *          可用命令:
- *            skp/ski/skd N  → 内环 SpeedPID Kp/Ki/Kd
- *            ykp/yki/ykd N  → 外环 YawPID   Kp/Ki/Kd
- *            soff/sdb/srl N → 内环 OutOffset/Deadband/OutputRateLimit
- *            t N            → 速度目标 RPM
- *            yaw N          → 航向目标 °
- *            turn N         → 手动差速 RPM (直接叠加)
- *            start/stop     → 启停
- *            duty N         → 开环 PWM (-100~100)
- *            show           → 查看所有参数
+ *            skp/ski/skd/skf N → 内环 SpeedPID Kp/Ki/Kd/Kf
+ *            ykp/yki/ykd/ykf N → 外环 YawPID   Kp/Ki/Kd/Kf
+ *            t N               → 速度目标 RPM
+ *            yaw N             → 航向目标 °
+ *            turn N            → 手动差速 RPM (直接叠加)
+ *            start/stop        → 启停
+ *            duty N            → 开环 PWM (-100~100)
+ *            show              → 查看所有参数
  */
 
 #include "pid_tune.h"
@@ -42,6 +37,7 @@ extern int        Mode;
 extern float      TurnTarget;
 extern float      YawTarget;
 extern uint32_t   bt_last_rx;
+extern uint8_t    VOFA_Enable;
 extern volatile uint64_t millis;
 
 volatile uint8_t pid_tune_rx_byte;
@@ -74,35 +70,45 @@ static void PIDTune_Parse(char *cmd)
     /* ---- 内环 SpeedPID ---- */
     if (strcmp(tok, "skp") == 0 && n >= 2) {
         SpeedPID.Kp = val;
-        tune_rsp("[SpeedPID] Kp=%.2f Ki=%.2f Kd=%.2f\r\n",
-                 SpeedPID.Kp, SpeedPID.Ki, SpeedPID.Kd);
+        tune_rsp("[SpeedPID] Kp=%.2f Ki=%.2f Kd=%.2f Kf=%.2f\r\n",
+                 SpeedPID.Kp, SpeedPID.Ki, SpeedPID.Kd, SpeedPID.Kf);
     }
     else if (strcmp(tok, "ski") == 0 && n >= 2) {
         SpeedPID.Ki = val;
-        tune_rsp("[SpeedPID] Kp=%.2f Ki=%.2f Kd=%.2f\r\n",
-                 SpeedPID.Kp, SpeedPID.Ki, SpeedPID.Kd);
+        tune_rsp("[SpeedPID] Kp=%.2f Ki=%.2f Kd=%.2f Kf=%.2f\r\n",
+                 SpeedPID.Kp, SpeedPID.Ki, SpeedPID.Kd, SpeedPID.Kf);
     }
     else if (strcmp(tok, "skd") == 0 && n >= 2) {
         SpeedPID.Kd = val;
-        tune_rsp("[SpeedPID] Kp=%.2f Ki=%.2f Kd=%.2f\r\n",
-                 SpeedPID.Kp, SpeedPID.Ki, SpeedPID.Kd);
+        tune_rsp("[SpeedPID] Kp=%.2f Ki=%.2f Kd=%.2f Kf=%.2f\r\n",
+                 SpeedPID.Kp, SpeedPID.Ki, SpeedPID.Kd, SpeedPID.Kf);
+    }
+    else if (strcmp(tok, "skf") == 0 && n >= 2) {
+        SpeedPID.Kf = val;
+        tune_rsp("[SpeedPID] Kp=%.2f Ki=%.2f Kd=%.2f Kf=%.2f\r\n",
+                 SpeedPID.Kp, SpeedPID.Ki, SpeedPID.Kd, SpeedPID.Kf);
     }
 
     /* ---- 外环 YawPID ---- */
     else if (strcmp(tok, "ykp") == 0 && n >= 2) {
         YawPID.Kp = val;
-        tune_rsp("[YawPID]   Kp=%.2f Ki=%.2f Kd=%.2f\r\n",
-                 YawPID.Kp, YawPID.Ki, YawPID.Kd);
+        tune_rsp("[YawPID]   Kp=%.2f Ki=%.2f Kd=%.2f Kf=%.2f\r\n",
+                 YawPID.Kp, YawPID.Ki, YawPID.Kd, YawPID.Kf);
     }
     else if (strcmp(tok, "yki") == 0 && n >= 2) {
         YawPID.Ki = val;
-        tune_rsp("[YawPID]   Kp=%.2f Ki=%.2f Kd=%.2f\r\n",
-                 YawPID.Kp, YawPID.Ki, YawPID.Kd);
+        tune_rsp("[YawPID]   Kp=%.2f Ki=%.2f Kd=%.2f Kf=%.2f\r\n",
+                 YawPID.Kp, YawPID.Ki, YawPID.Kd, YawPID.Kf);
     }
     else if (strcmp(tok, "ykd") == 0 && n >= 2) {
         YawPID.Kd = val;
-        tune_rsp("[YawPID]   Kp=%.2f Ki=%.2f Kd=%.2f\r\n",
-                 YawPID.Kp, YawPID.Ki, YawPID.Kd);
+        tune_rsp("[YawPID]   Kp=%.2f Ki=%.2f Kd=%.2f Kf=%.2f\r\n",
+                 YawPID.Kp, YawPID.Ki, YawPID.Kd, YawPID.Kf);
+    }
+    else if (strcmp(tok, "ykf") == 0 && n >= 2) {
+        YawPID.Kf = val;
+        tune_rsp("[YawPID]   Kp=%.2f Ki=%.2f Kd=%.2f Kf=%.2f\r\n",
+                 YawPID.Kp, YawPID.Ki, YawPID.Kd, YawPID.Kf);
     }
 
     /* ---- 电机控制 ---- */
@@ -140,6 +146,14 @@ static void PIDTune_Parse(char *cmd)
         YawTarget = 0;
         tune_rsp("[Motor] Stopped\r\n");
     }
+    else if (strcmp(tok, "quiet") == 0) {
+        VOFA_Enable = 0;
+        tune_rsp("[VOFA] Silent mode, '%slog' to resume\r\n", "log");
+    }
+    else if (strcmp(tok, "log") == 0) {
+        VOFA_Enable = 1;
+        tune_rsp("[VOFA] Log resumed\r\n");
+    }
     else if (strcmp(tok, "duty") == 0 && n >= 2) {
         PWMDuty = (int16_t)val;
         if (PWMDuty >  100) PWMDuty =  100;
@@ -150,42 +164,25 @@ static void PIDTune_Parse(char *cmd)
         tune_rsp("[Motor] Duty=%d%%\r\n", PWMDuty);
     }
 
-    /* ---- SpeedPID 参数 ---- */
-    else if (strcmp(tok, "soff") == 0 && n >= 2) {
-        SpeedPID.OutOffset = val;
-        tune_rsp("[SpeedPID] OutOffset=%.1f\r\n", val);
-    }
-    else if (strcmp(tok, "sdb") == 0 && n >= 2) {
-        SpeedPID.Deadband = val;
-        tune_rsp("[SpeedPID] Deadband=%.1f\r\n", val);
-    }
-    else if (strcmp(tok, "srl") == 0 && n >= 2) {
-        SpeedPID.OutputRateLimit = val;
-        tune_rsp("[SpeedPID] RateLimit=%.1f\r\n", val);
-    }
-
     /* ---- 查询 ---- */
     else if (strcmp(tok, "show") == 0) {
         tune_rsp("=== Cascade PID ===\r\n"
                  "[SpeedPID] Kp=%.2f Ki=%.2f Kd=%.2f Kf=%.2f  Tgt=%.1f Out=%.1f\r\n"
-                 "           Off=%.1f DB=%.1f RL=%.1f Intgl=%.1f\r\n"
-                 "[YawPID]   Kp=%.2f Ki=%.2f Kd=%.2f  Tgt=%.1f Out=%.1f\r\n"
+                 "[YawPID]   Kp=%.2f Ki=%.2f Kd=%.2f Kf=%.2f  Tgt=%.1f Out=%.1f\r\n"
                  "TurnDiff=%.1f  YawTarget=%.1f  Run=%d Mode=%d\r\n",
                  SpeedPID.Kp, SpeedPID.Ki, SpeedPID.Kd, SpeedPID.Kf,
                  SpeedPID.Target, SpeedPID.Out,
-                 SpeedPID.OutOffset, SpeedPID.Deadband, SpeedPID.OutputRateLimit,
-                 SpeedPID.IOut,
-                 YawPID.Kp, YawPID.Ki, YawPID.Kd,
+                 YawPID.Kp, YawPID.Ki, YawPID.Kd, YawPID.Kf,
                  YawPID.Target, YawPID.Out,
                  TurnTarget, YawTarget, RunFlag, Mode);
     }
     else if (strcmp(tok, "help") == 0 || strcmp(tok, "?") == 0) {
         tune_rsp("=== Cascade PID ===\r\n"
-                 " Inner:  skp/ski/skd N     (SpeedPID)\r\n"
-                 "         soff/sdb/srl N    (Offset/Deadband/RateLimit)\r\n"
-                 " Outer:  ykp/yki/ykd N     (YawPID)\r\n"
+                 " Speed:  skp/ski/skd/skf N  (Kp/Ki/Kd/Kf)\r\n"
+                 " Yaw:    ykp/yki/ykd/ykf N  (Kp/Ki/Kd/Kf)\r\n"
                  " Motor:  t N | yaw N | turn N\r\n"
                  "         start | stop | duty N\r\n"
+                 " VOFA:   quiet | log\r\n"
                  " Info:   show\r\n");
     }
     else if (strlen(tok) > 0) {

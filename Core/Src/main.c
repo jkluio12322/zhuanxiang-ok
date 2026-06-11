@@ -43,6 +43,7 @@
 #include "serial.h"
 #include "timer.h"
 #include "blueserial.h"
+#include "pid_tune.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -58,6 +59,7 @@ int16_t  PWMDuty    = 0;
 static uint8_t  SpeedLevel   = 3;        /* 蓝牙速度档位 1~6 */
 static uint8_t  SpeedPercent = 50;       /* 按键速度百分比 0~100 */
 uint32_t bt_last_rx = 0;               /* 上次收到蓝牙数据的时间戳 */
+uint8_t  VOFA_Enable = 1;              /* 1=VOFA数据流打开, 0=静默 */
 static const float SpeedTable[6] = {20, 60, 120, 180, 250, 350}; /* 档位1~6 RPM映射 */
 
 float    TurnTarget = 0;               /* 手动差速目标 (RPM), BT/按键/串口设置 */
@@ -241,6 +243,12 @@ YawPID.OutputRateLimit = 10.0f;   /* 变化率限制: 外环100ms一次, 每周�
 
     while (1)
     {
+        /* 串口命令响应 (不受 VOFA 数据流影响) */
+        if (tune_rsp_pending) {
+            Serial_SendString(tune_rsp_buf);
+            tune_rsp_pending = 0;
+        }
+
         Process_Bluetooth();
         Process_Keys();
 
@@ -441,7 +449,14 @@ static void Process_Control(void)
     /* 平均转速 = 左右轮 RPM 均值 */
     float ave = (ecd_left.velocity.angular + ecd_right.velocity.angular) / 2.0f;
 
-    if (!RunFlag) return;
+    if (!RunFlag) {
+        SpeedPID.Out   = 0;
+        SpeedPID.IOut  = 0;
+        SpeedPID.POut  = 0;
+        SpeedPID.DOut  = 0;
+        SpeedPID.LastOutput = 0;
+        return;
+    }
 
     /* ---- 内环 SpeedPID (50ms): 平均转速闭环 ---- */
     SpeedPID.Actual = -ave;   /* 编码器与PWM输出方向相反 */
@@ -510,6 +525,7 @@ static void Update_OLED(void)
  *============================================================*/
 static void VOFA_Send(void)
 {
+    if (!VOFA_Enable) return;
     float spd_max = SpeedTable[SpeedLevel-1];
     Serial_Printf("%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,%d,%d,%d\r\n",
         SpeedPID.Target / spd_max * 100.0f,                /* 目标%% */
