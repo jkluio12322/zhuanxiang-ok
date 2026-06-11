@@ -20,10 +20,13 @@ extern UART_HandleTypeDef huart3;
 
 #define BLUE_SERIAL_BUFFER_SIZE  100  /**< 环形缓冲区大小 */
 
-/** 环形缓冲区 */
+/** 环形缓冲区 (ISR 写入, 主循环读取 → volatile 防止编译器缓存) */
 static uint8_t BlueSerial_Buffer[BLUE_SERIAL_BUFFER_SIZE];
-static uint16_t BlueSerial_PutIndex = 0;  /**< 写入索引 */
-static uint16_t BlueSerial_GetIndex = 0;  /**< 读取索引 */
+static volatile uint16_t BlueSerial_PutIndex = 0;  /**< 写入索引 (ISR→) */
+static volatile uint16_t BlueSerial_GetIndex = 0;  /**< 读取索引 (←主循环) */
+
+/** HAL 中断接收单字节缓冲 (与环形缓冲区分离, 防止数据冲突) */
+static volatile uint8_t bt_rx_byte;
 
 /** 协议解析结果: 最多 6 个字段, 每字段最长 20 字符 */
 char BlueSerial_StringArray[6][20];
@@ -35,7 +38,7 @@ static char BlueSerial_String[100];  /**< 帧内字符串 (去除 '[' 和 ']') *
 void BlueSerial_Init(void)
 {
     BlueSerial_ClearBuffer();
-    HAL_UART_Receive_IT(&huart2, (uint8_t *)BlueSerial_Buffer, 1);
+    HAL_UART_Receive_IT(&huart2, (uint8_t *)&bt_rx_byte, 1);
 }
 
 /**
@@ -209,8 +212,8 @@ void BlueSerial_Receive(void)
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
     if (huart->Instance == USART2) {
-        BlueSerial_Put(BlueSerial_Buffer[0]);
-        HAL_UART_Receive_IT(&huart2, (uint8_t *)BlueSerial_Buffer, 1);
+        BlueSerial_Put(bt_rx_byte);
+        HAL_UART_Receive_IT(&huart2, (uint8_t *)&bt_rx_byte, 1);
     }
     else if (huart->Instance == USART3) {
         PIDTune_RxCallback(pid_tune_rx_byte);

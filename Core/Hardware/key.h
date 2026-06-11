@@ -27,8 +27,9 @@
 extern uint8_t Key_Flag[];
 
 void Key_Init(void);
-void Key_Tick(void);                    /**< 状态机驱动, 每 1ms 调用 */
-uint8_t Key_Check(uint8_t n, uint8_t Flag);  /**< 查询按键事件 */
-void Key_Clear(void);                  /**< 清除所有按键标志 */
+void Key_Tick(void);
+uint8_t Key_Check(uint8_t n, uint8_t Flag);
+void Key_Clear(void);
+uint8_t Key_GetNum(void);              /**< 阻塞式按键读取 (启动画面用) */
 
 #endif

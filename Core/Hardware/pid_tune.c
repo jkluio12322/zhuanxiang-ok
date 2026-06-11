@@ -1,22 +1,15 @@
 /**
  * @file    pid_tune.c
- * @brief   PID 串口在线调参 + 电机控制 (串级 PID)
- * @note    通过 USB-TTL 接 USART3 (PD8=TX, PD9=RX), 115200bps
+ * @brief   PID 串口在线调参 + 电机控制 (命令通过 CmdQueue 解耦)
+ * @note    PIDTune_RxCallback: ISR 中仅缓冲字节到 tune_line
+ *          PIDTune_Process:    主循环中解析 → CmdQueue_Put / 直接改 PID 参数
  *
- *          控制架构:
- *            内环 SpeedPID (50ms): 平均转速 → base PWM
- *            外环 YawPID (100ms):  航向角 → diff_yaw
- *            手动差速: TurnTarget 直接叠加到电机 (不走PID, 响应即时)
- *
- *          可用命令:
- *            skp/ski/skd/skf N → 内环 SpeedPID Kp/Ki/Kd/Kf
- *            ykp/yki/ykd/ykf N → 外环 YawPID   Kp/Ki/Kd/Kf
- *            t N               → 速度目标 RPM
- *            yaw N             → 航向目标 °
- *            turn N            → 手动差速 RPM (直接叠加)
- *            start/stop        → 启停
- *            duty N            → 开环 PWM (-100~100)
- *            show              → 查看所有参数
+ *          命令:
+ *            skp/ski/skd/skf N → SpeedPID Kp/Ki/Kd/Kf (直接生效)
+ *            ykp/yki/ykd/ykf N → YawPID   Kp/Ki/Kd/Kf (直接生效)
+ *            t N / turn N / start / stop / duty N → CmdQueue → Control
+ *            quiet / log       → CmdQueue → Control
+ *            show / help       → tune_rsp
  */
 
 #include "pid_tune.h"
@@ -33,7 +26,7 @@ extern PID_t      YawPID;
 extern UART_HandleTypeDef huart3;
 extern uint8_t    RunFlag;
 extern int16_t    PWMDuty;
-extern int        Mode;
+extern Mode_t     Mode;
 extern float      TurnTarget;
 extern float      YawTarget;
 extern uint32_t   bt_last_rx;
@@ -41,12 +34,11 @@ extern uint8_t    VOFA_Enable;
 extern volatile uint64_t millis;
 
 volatile uint8_t pid_tune_rx_byte;
-
-static char    rx_line[32];
-static uint8_t rx_idx = 0;
-
-char    tune_rsp_buf[128];
 volatile uint8_t tune_rsp_pending = 0;
+volatile uint8_t tune_line_ready  = 0;
+char    tune_rsp_buf[128];
+char    tune_line[32];
+static uint8_t rx_idx = 0;
 
 static void tune_rsp(const char *fmt, ...)
 {
@@ -58,16 +50,26 @@ static void tune_rsp(const char *fmt, ...)
     tune_rsp_pending = 1;
 }
 
-static void PIDTune_Parse(char *cmd)
+/**
+ * @brief  串口命令解析 (主循环调用, 非 ISR 上下文)
+ * @note   PID 参数直接修改 (即时生效)
+ *         电机控制命令通过 CmdQueue_Put 解耦 (下一 50ms 周期生效)
+ */
+void PIDTune_Process(void)
 {
+    if (!tune_line_ready) return;
+
     char  tok[16];
     float val = 0.0f;
     int   n   = 0;
 
+    char *cmd = tune_line;
     while (*cmd == ' ') cmd++;
     n = sscanf(cmd, "%15s %f", tok, &val);
 
-    /* ---- 内环 SpeedPID ---- */
+    CmdMsg msg;
+
+    /* ---- 内环 SpeedPID (直接修改, 即时生效) ---- */
     if (strcmp(tok, "skp") == 0 && n >= 2) {
         SpeedPID.Kp = val;
         tune_rsp("[SpeedPID] Kp=%.2f Ki=%.2f Kd=%.2f Kf=%.2f\r\n",
@@ -89,7 +91,7 @@ static void PIDTune_Parse(char *cmd)
                  SpeedPID.Kp, SpeedPID.Ki, SpeedPID.Kd, SpeedPID.Kf);
     }
 
-    /* ---- 外环 YawPID ---- */
+    /* ---- 外环 YawPID (直接修改, 即时生效) ---- */
     else if (strcmp(tok, "ykp") == 0 && n >= 2) {
         YawPID.Kp = val;
         tune_rsp("[YawPID]   Kp=%.2f Ki=%.2f Kd=%.2f Kf=%.2f\r\n",
@@ -111,55 +113,47 @@ static void PIDTune_Parse(char *cmd)
                  YawPID.Kp, YawPID.Ki, YawPID.Kd, YawPID.Kf);
     }
 
-    /* ---- 电机控制 ---- */
+    /* ---- 电机控制 → cmd_queue (下一 50ms 周期生效) ---- */
     else if (strcmp(tok, "t") == 0 && n >= 2) {
-        PID_SetTarget(&SpeedPID, val);
-        RunFlag = 1;
-        Mode = 0;
+        msg.type = CMD_SPEED; msg.val = val; CmdQueue_Put(msg);
+        msg.type = CMD_START; msg.val = 0;   CmdQueue_Put(msg);
         bt_last_rx = millis;
-        tune_rsp("[Motor] SpeedTarget=%.1f RPM, started\r\n", val);
+        tune_rsp("[Motor] SpeedTarget=%.1f RPM\r\n", val);
     }
     else if (strcmp(tok, "yaw") == 0 && n >= 2) {
-        YawTarget = val;
-        PID_SetTarget(&YawPID, val);
+        msg.type = CMD_YAW_TARGET; msg.val = val; CmdQueue_Put(msg);
         bt_last_rx = millis;
         tune_rsp("[Motor] YawTarget=%.1f deg\r\n", val);
     }
     else if (strcmp(tok, "turn") == 0 && n >= 2) {
-        TurnTarget = val;
+        msg.type = CMD_TURN; msg.val = val; CmdQueue_Put(msg);
         bt_last_rx = millis;
-        tune_rsp("[Motor] TurnDiff=%.1f RPM (manual)\r\n", val);
+        tune_rsp("[Motor] TurnDiff=%.1f RPM\r\n", val);
     }
     else if (strcmp(tok, "start") == 0) {
-        RunFlag = 1;
-        Mode = 0;
+        msg.type = CMD_START; msg.val = 0; CmdQueue_Put(msg);
         bt_last_rx = millis;
         tune_rsp("[Motor] Started\r\n");
     }
     else if (strcmp(tok, "stop") == 0) {
-        RunFlag = 0;
-        Motor_SetSpeedA(0);
-        Motor_SetSpeedB(0);
-        PID_SetTarget(&SpeedPID, 0);
-        PID_SetTarget(&YawPID, 0);
-        TurnTarget = 0;
-        YawTarget = 0;
+        msg.type = CMD_STOP; msg.val = 0; CmdQueue_Put(msg);
         tune_rsp("[Motor] Stopped\r\n");
     }
     else if (strcmp(tok, "quiet") == 0) {
-        VOFA_Enable = 0;
-        tune_rsp("[VOFA] Silent mode, '%slog' to resume\r\n", "log");
+        msg.type = CMD_QUIET; msg.val = 0; CmdQueue_Put(msg);
+        tune_rsp("[VOFA] Silent mode, 'log' to resume\r\n");
     }
     else if (strcmp(tok, "log") == 0) {
-        VOFA_Enable = 1;
+        msg.type = CMD_LOG; msg.val = 0; CmdQueue_Put(msg);
         tune_rsp("[VOFA] Log resumed\r\n");
     }
     else if (strcmp(tok, "duty") == 0 && n >= 2) {
         PWMDuty = (int16_t)val;
         if (PWMDuty >  100) PWMDuty =  100;
         if (PWMDuty < -100) PWMDuty = -100;
-        RunFlag = (PWMDuty != 0);
-        Mode = 1;
+        msg.type = PWMDuty ? CMD_START : CMD_STOP; msg.val = 0;
+        CmdQueue_Put(msg);
+        Mode = MODE_PWM_SET;
         bt_last_rx = millis;
         tune_rsp("[Motor] Duty=%d%%\r\n", PWMDuty);
     }
@@ -169,17 +163,17 @@ static void PIDTune_Parse(char *cmd)
         tune_rsp("=== Cascade PID ===\r\n"
                  "[SpeedPID] Kp=%.2f Ki=%.2f Kd=%.2f Kf=%.2f  Tgt=%.1f Out=%.1f\r\n"
                  "[YawPID]   Kp=%.2f Ki=%.2f Kd=%.2f Kf=%.2f  Tgt=%.1f Out=%.1f\r\n"
-                 "TurnDiff=%.1f  YawTarget=%.1f  Run=%d Mode=%d\r\n",
+                 "TurnDiff=%.1f  Run=%d Mode=%d\r\n",
                  SpeedPID.Kp, SpeedPID.Ki, SpeedPID.Kd, SpeedPID.Kf,
                  SpeedPID.Target, SpeedPID.Out,
                  YawPID.Kp, YawPID.Ki, YawPID.Kd, YawPID.Kf,
                  YawPID.Target, YawPID.Out,
-                 TurnTarget, YawTarget, RunFlag, Mode);
+                 TurnTarget, RunFlag, Mode);
     }
     else if (strcmp(tok, "help") == 0 || strcmp(tok, "?") == 0) {
         tune_rsp("=== Cascade PID ===\r\n"
-                 " Speed:  skp/ski/skd/skf N  (Kp/Ki/Kd/Kf)\r\n"
-                 " Yaw:    ykp/yki/ykd/ykf N  (Kp/Ki/Kd/Kf)\r\n"
+                 " Speed:  skp/ski/skd/skf N\r\n"
+                 " Yaw:    ykp/yki/ykd/ykf N\r\n"
                  " Motor:  t N | yaw N | turn N\r\n"
                  "         start | stop | duty N\r\n"
                  " VOFA:   quiet | log\r\n"
@@ -188,19 +182,24 @@ static void PIDTune_Parse(char *cmd)
     else if (strlen(tok) > 0) {
         tune_rsp("? '%s'  (type 'help')\r\n", tok);
     }
+
+    tune_line_ready = 0;
 }
 
+/**
+ * @brief  UART RX 回调 (ISR 上下文) — 仅缓冲字节, 不做解析
+ */
 void PIDTune_RxCallback(uint8_t byte)
 {
     if (byte == '\r' || byte == '\n') {
         if (rx_idx > 0) {
-            rx_line[rx_idx] = '\0';
-            PIDTune_Parse(rx_line);
+            tune_line[rx_idx] = '\0';
+            tune_line_ready = 1;    /* 主循环稍后消费 */
             rx_idx = 0;
         }
     }
-    else if (rx_idx < sizeof(rx_line) - 1) {
-        rx_line[rx_idx++] = byte;
+    else if (rx_idx < sizeof(tune_line) - 1) {
+        tune_line[rx_idx++] = byte;
     }
 }
 
@@ -208,5 +207,6 @@ void PIDTune_Init(void)
 {
     rx_idx = 0;
     tune_rsp_pending = 0;
+    tune_line_ready = 0;
     HAL_UART_Receive_IT(&huart3, (uint8_t *)&pid_tune_rx_byte, 1);
 }

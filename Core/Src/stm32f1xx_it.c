@@ -209,7 +209,8 @@ void SysTick_Handler(void)
 /******************************************************************************/
 
 /**
-  * @brief This function handles DMA1 channel2 global interrupt.
+  * @brief DMA1 Channel2: USART3 TX DMA Complete ISR
+  *        → Serial_DMA_TX_Complete() 接力发送下一块 ring buf 数据
   */
 void DMA1_Channel2_IRQHandler(void)
 {
@@ -217,13 +218,14 @@ void DMA1_Channel2_IRQHandler(void)
 
   /* USER CODE END DMA1_Channel2_IRQn 0 */
   HAL_DMA_IRQHandler(&hdma_usart3_tx);
+  Serial_DMA_TX_Complete();
   /* USER CODE BEGIN DMA1_Channel2_IRQn 1 */
 
   /* USER CODE END DMA1_Channel2_IRQn 1 */
 }
 
 /**
-  * @brief This function handles DMA1 channel3 global interrupt.
+  * @brief DMA1 Channel3: USART3 RX DMA ISR
   */
 void DMA1_Channel3_IRQHandler(void)
 {
@@ -237,7 +239,7 @@ void DMA1_Channel3_IRQHandler(void)
 }
 
 /**
-  * @brief This function handles DMA1 channel4 global interrupt.
+  * @brief DMA1 Channel4: I2C2 TX DMA ISR (MPU6050 写)
   */
 void DMA1_Channel4_IRQHandler(void)
 {
@@ -251,7 +253,7 @@ void DMA1_Channel4_IRQHandler(void)
 }
 
 /**
-  * @brief This function handles DMA1 channel5 global interrupt.
+  * @brief DMA1 Channel5: I2C2 RX DMA ISR (MPU6050 读)
   */
 void DMA1_Channel5_IRQHandler(void)
 {
@@ -265,7 +267,7 @@ void DMA1_Channel5_IRQHandler(void)
 }
 
 /**
-  * @brief This function handles DMA1 channel6 global interrupt.
+  * @brief DMA1 Channel6: I2C1 TX DMA ISR (OLED 写)
   */
 void DMA1_Channel6_IRQHandler(void)
 {
@@ -279,7 +281,7 @@ void DMA1_Channel6_IRQHandler(void)
 }
 
 /**
-  * @brief This function handles DMA1 channel7 global interrupt.
+  * @brief DMA1 Channel7: I2C1 RX DMA ISR (OLED 读)
   */
 void DMA1_Channel7_IRQHandler(void)
 {
@@ -293,7 +295,7 @@ void DMA1_Channel7_IRQHandler(void)
 }
 
 /**
-  * @brief This function handles USART2 global interrupt.
+  * @brief USART2: HC-05 蓝牙模块中断 (9600bps, PA2=TX PA3=RX)
   */
 void USART2_IRQHandler(void)
 {
@@ -307,21 +309,22 @@ void USART2_IRQHandler(void)
 }
 
 /**
-  * @brief This function handles USART3 global interrupt.
+  * @brief USART3: VOFA+ 遥测 / PID 串口调参 (115200bps, PD8=TX PD9=RX)
+  *        TX 使用 DMA 非阻塞发送, 本 ISR 仅处理 RX
   */
 void USART3_IRQHandler(void)
 {
   /* USER CODE BEGIN USART3_IRQn 0 */
-
+  /* DMA TX, no TXE ISR needed */
   /* USER CODE END USART3_IRQn 0 */
   HAL_UART_IRQHandler(&huart3);
   /* USER CODE BEGIN USART3_IRQn 1 */
-  Serial_TXE_IRQ();
+
   /* USER CODE END USART3_IRQn 1 */
 }
 
 /**
-  * @brief This function handles TIM5 global interrupt.
+  * @brief TIM5: 1kHz 时基 → HAL_TIM_PeriodElapsedCallback → millis 自增
   */
 void TIM5_IRQHandler(void)
 {
@@ -335,7 +338,7 @@ void TIM5_IRQHandler(void)
 }
 
 /**
-  * @brief This function handles TIM6 global interrupt.
+  * @brief TIM6: 1kHz 时基 → flag_10ms / flag_50ms 周期标志 + Key_Tick
   */
 void TIM6_IRQHandler(void)
 {

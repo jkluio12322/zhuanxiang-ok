@@ -42,6 +42,7 @@ virtualFolder:
                     - path: ../Core/Hardware/serial.c
                     - path: ../Core/Hardware/timer.c
                     - path: ../Core/Hardware/blueserial.c
+                    - path: ../Core/Hardware/ringbuf.c
                   folders: []
     - name: Drivers
       files: []

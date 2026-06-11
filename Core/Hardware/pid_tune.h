@@ -1,28 +1,22 @@
 /**
  * @file    pid_tune.h
- * @brief   PID 串口在线调参 + 电机控制 — 串级 PID (USART3 RX, 115200bps)
- *
- *          内环 SpeedPID (50ms) + 外环 YawPID (100ms) + 手动差速
- *
- *          在线可调参数:
- *            skp/ski/skd/skf N → 内环 SpeedPID Kp/Ki/Kd/Kf
- *            ykp/yki/ykd/ykf N → 外环 YawPID   Kp/Ki/Kd/Kf
- *            t N               → 速度目标 RPM
- *            yaw N             → 航向目标 °
- *            turn N            → 手动差速 RPM
- *            start/stop        → 启停
- *            duty N            → 开环 PWM (-100~100)
- *            show              → 查看所有参数
+ * @brief   PID 串口在线调参 — 串级 PID (USART3 RX, 115200bps)
+ * @note    PIDTune_RxCallback 仅在 ISR 中缓冲字节,
+ *          PIDTune_Process 在主循环中解析命令 (避免 ISR 竞争)
  */
+
 #ifndef __PID_TUNE_H
 #define __PID_TUNE_H
 #include "main.h"
 
 extern volatile uint8_t pid_tune_rx_byte;
 extern volatile uint8_t tune_rsp_pending;
+extern volatile uint8_t tune_line_ready;
 extern char           tune_rsp_buf[128];
+extern char           tune_line[32];
 
 void PIDTune_Init(void);
-void PIDTune_RxCallback(uint8_t byte);
+void PIDTune_RxCallback(uint8_t byte);   /* ISR: 缓冲字节 */
+void PIDTune_Process(void);              /* 主循环: 解析命令 */
 
 #endif

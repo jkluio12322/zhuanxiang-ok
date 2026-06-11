@@ -9,20 +9,6 @@
             "problemMatcher": []
         },
         {
-            "label": "flash",
-            "type": "shell",
-            "command": "${command:eide.project.uploadToDevice}",
-            "group": "build",
-            "problemMatcher": []
-        },
-        {
-            "label": "build and flash",
-            "type": "shell",
-            "command": "${command:eide.project.buildAndFlash}",
-            "group": "build",
-            "problemMatcher": []
-        },
-        {
             "label": "rebuild",
             "type": "shell",
             "command": "${command:eide.project.rebuild}",
@@ -30,19 +16,11 @@
             "problemMatcher": []
         },
         {
-            "label": "clean",
+            "label": "flash",
             "type": "shell",
-            "command": "${command:eide.project.clean}",
+            "command": "${command:eide.project.uploadToDevice}",
             "group": "build",
             "problemMatcher": []
-        },
-        {
-            "label": "flash to STM32",
-            "type": "shell",
-            "command": "C:\\Users\\Lenovo\\.eide\\tools\\st_cube_programer\\bin\\STM32_Programmer_CLI.exe -c port=SWD freq=4000 --download .\\build\\bluecar\\bluecar.hex -v --go",
-            "group": "build",
-            "problemMatcher": [],
-            "dependsOn": ["build"]
         }
     ]
 }
