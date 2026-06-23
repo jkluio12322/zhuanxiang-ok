@@ -209,6 +209,11 @@ targets:
         otherCmds: ""
         proType: 1
         speed: 8000
+      OpenOCD:
+        baseAddr: "0x08000000"
+        bin: ""
+        interface: cmsis-dap
+        target: stm32f1x
       STLink:
         address: "0x8000000"
         bin: ""
@@ -219,4 +224,11 @@ targets:
         resetMode: default
         runAfterProgram: true
         speed: 4000
-    uploader: STLink
+      pyOCD:
+        baseAddr: "0x08000000"
+        bin: ""
+        config: .eide/bluecar.pyocd.yaml
+        otherCmds: ""
+        speed: 4M
+        targetName: cortex_m
+    uploader: OpenOCD

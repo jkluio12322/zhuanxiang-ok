@@ -174,6 +174,10 @@ void BlueSerial_Receive(void)
     uint8_t Flag = 0;
     uint16_t Length = BlueSerial_Length();
 
+    /* 清除上一帧残留，防止旧字段值污染新帧解析 */
+    memset(BlueSerial_StringArray, 0, sizeof(BlueSerial_StringArray));
+    memset(BlueSerial_String, 0, sizeof(BlueSerial_String));
+
     /* 提取 '[' 和 ']' 之间的内容 */
     for (uint16_t i = 0; i < Length; i++) {
         uint8_t Byte;
@@ -182,27 +186,37 @@ void BlueSerial_Receive(void)
             Flag = 1;
             p = 0;
         } else if (Byte == ']' && Flag == 1) {
-            BlueSerial_String[p] = '\0';
+            if (p < sizeof(BlueSerial_String)) {
+                BlueSerial_String[p] = '\0';
+            }
             break;
         } else if (Flag == 1) {
-            BlueSerial_String[p] = Byte;
-            p++;
+            if (p < sizeof(BlueSerial_String) - 1) {
+                BlueSerial_String[p] = Byte;
+                p++;
+            }
         }
     }
 
     /* 按逗号分割字段 */
     p = 0;
+    k = 0;
     for (uint16_t i = 0; BlueSerial_String[i] != '\0'; i++) {
         if (BlueSerial_String[i] == ',') {
-            BlueSerial_StringArray[p][k] = '\0';  /* 字段结束 */
+            if (k < 20) BlueSerial_StringArray[p][k] = '\0';
             p++;
+            if (p >= 6) break;  /* 最多 6 个字段 */
             k = 0;
         } else {
-            BlueSerial_StringArray[p][k] = BlueSerial_String[i];
-            k++;
+            if (k < 19) {
+                BlueSerial_StringArray[p][k] = BlueSerial_String[i];
+                k++;
+            }
         }
     }
-    BlueSerial_StringArray[p][k] = '\0';  /* 最后一个字段结束 */
+    if (p < 6 && k < 20) {
+        BlueSerial_StringArray[p][k] = '\0';
+    }
 }
 
 /**

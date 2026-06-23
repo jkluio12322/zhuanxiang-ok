@@ -61,25 +61,7 @@ int16_t Encoder_Get(TIM_TypeDef *TIMx)
     }
     return delta;
 }
-/*50ms 内电机转速再快也攒不够 65535 个脉冲，所以溢出从来不会发生。
-这个中断只是预留的后备，防止以后需要长距离累计时才用。*/
-/* TIM2 溢出中断: 计数器翻转次数 +1 (当前项目中未使用溢出累积) */
-void TIM2_IRQHandler(void)
-{
-    if (__HAL_TIM_GET_FLAG(&htim2, TIM_FLAG_UPDATE)) {
-        overflow_count_TIM2++;
-        __HAL_TIM_CLEAR_FLAG(&htim2, TIM_FLAG_UPDATE);
-    }
-}
-
-/* TIM3 溢出中断: 计数器翻转次数 +1 (当前项目中未使用溢出累积) */
-void TIM3_IRQHandler(void)
-{
-    if (__HAL_TIM_GET_FLAG(&htim3, TIM_FLAG_UPDATE)) {
-        overflow_count_TIM3++;
-        __HAL_TIM_CLEAR_FLAG(&htim3, TIM_FLAG_UPDATE);
-    }
-}
+/* TIM2/TIM3 溢出 ISR 已移至 stm32f1xx_it.c (CubeMX 管理) */
 
 /**
  * @brief  初始化编码器数据结构

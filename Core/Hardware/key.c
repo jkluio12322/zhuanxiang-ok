@@ -67,7 +67,6 @@ void Key_Tick(void)
     for (uint8_t i = 0; i < KEY_COUNT; i++) {
         if (Time[i] > 0) Time[i]--;
 
-        uint8_t pressed  = (Key_Flag[i] & KEY_HOLD) != 0;
         uint8_t just_dn  = (Key_Flag[i] & KEY_DOWN) != 0;
         uint8_t just_up  = (Key_Flag[i] & KEY_UP)   != 0;
 

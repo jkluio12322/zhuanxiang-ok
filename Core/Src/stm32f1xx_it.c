@@ -60,6 +60,11 @@ extern DMA_HandleTypeDef hdma_i2c1_rx;
 extern DMA_HandleTypeDef hdma_i2c1_tx;
 extern DMA_HandleTypeDef hdma_i2c2_rx;
 extern DMA_HandleTypeDef hdma_i2c2_tx;
+extern I2C_HandleTypeDef hi2c1;
+extern I2C_HandleTypeDef hi2c2;
+extern TIM_HandleTypeDef htim1;
+extern TIM_HandleTypeDef htim2;
+extern TIM_HandleTypeDef htim3;
 extern TIM_HandleTypeDef htim5;
 extern TIM_HandleTypeDef htim6;
 extern DMA_HandleTypeDef hdma_usart3_rx;
@@ -209,8 +214,7 @@ void SysTick_Handler(void)
 /******************************************************************************/
 
 /**
-  * @brief DMA1 Channel2: USART3 TX DMA Complete ISR
-  *        → Serial_DMA_TX_Complete() 接力发送下一块 ring buf 数据
+  * @brief This function handles DMA1 channel2 global interrupt.
   */
 void DMA1_Channel2_IRQHandler(void)
 {
@@ -218,14 +222,13 @@ void DMA1_Channel2_IRQHandler(void)
 
   /* USER CODE END DMA1_Channel2_IRQn 0 */
   HAL_DMA_IRQHandler(&hdma_usart3_tx);
-  Serial_DMA_TX_Complete();
   /* USER CODE BEGIN DMA1_Channel2_IRQn 1 */
-
+  Serial_DMA_TX_Complete();
   /* USER CODE END DMA1_Channel2_IRQn 1 */
 }
 
 /**
-  * @brief DMA1 Channel3: USART3 RX DMA ISR
+  * @brief This function handles DMA1 channel3 global interrupt.
   */
 void DMA1_Channel3_IRQHandler(void)
 {
@@ -239,7 +242,7 @@ void DMA1_Channel3_IRQHandler(void)
 }
 
 /**
-  * @brief DMA1 Channel4: I2C2 TX DMA ISR (MPU6050 写)
+  * @brief This function handles DMA1 channel4 global interrupt.
   */
 void DMA1_Channel4_IRQHandler(void)
 {
@@ -253,7 +256,7 @@ void DMA1_Channel4_IRQHandler(void)
 }
 
 /**
-  * @brief DMA1 Channel5: I2C2 RX DMA ISR (MPU6050 读)
+  * @brief This function handles DMA1 channel5 global interrupt.
   */
 void DMA1_Channel5_IRQHandler(void)
 {
@@ -267,7 +270,7 @@ void DMA1_Channel5_IRQHandler(void)
 }
 
 /**
-  * @brief DMA1 Channel6: I2C1 TX DMA ISR (OLED 写)
+  * @brief This function handles DMA1 channel6 global interrupt.
   */
 void DMA1_Channel6_IRQHandler(void)
 {
@@ -281,7 +284,7 @@ void DMA1_Channel6_IRQHandler(void)
 }
 
 /**
-  * @brief DMA1 Channel7: I2C1 RX DMA ISR (OLED 读)
+  * @brief This function handles DMA1 channel7 global interrupt.
   */
 void DMA1_Channel7_IRQHandler(void)
 {
@@ -295,7 +298,170 @@ void DMA1_Channel7_IRQHandler(void)
 }
 
 /**
-  * @brief USART2: HC-05 蓝牙模块中断 (9600bps, PA2=TX PA3=RX)
+  * @brief This function handles EXTI line[9:5] interrupts.
+  */
+void EXTI9_5_IRQHandler(void)
+{
+  /* USER CODE BEGIN EXTI9_5_IRQn 0 */
+
+  /* USER CODE END EXTI9_5_IRQn 0 */
+  HAL_GPIO_EXTI_IRQHandler(key3_Pin);
+  HAL_GPIO_EXTI_IRQHandler(key2_Pin);
+  HAL_GPIO_EXTI_IRQHandler(key1_Pin);
+  HAL_GPIO_EXTI_IRQHandler(key4_Pin);
+  /* USER CODE BEGIN EXTI9_5_IRQn 1 */
+
+  /* USER CODE END EXTI9_5_IRQn 1 */
+}
+
+/**
+  * @brief This function handles TIM1 break interrupt.
+  */
+void TIM1_BRK_IRQHandler(void)
+{
+  /* USER CODE BEGIN TIM1_BRK_IRQn 0 */
+
+  /* USER CODE END TIM1_BRK_IRQn 0 */
+  HAL_TIM_IRQHandler(&htim1);
+  /* USER CODE BEGIN TIM1_BRK_IRQn 1 */
+
+  /* USER CODE END TIM1_BRK_IRQn 1 */
+}
+
+/**
+  * @brief This function handles TIM1 update interrupt.
+  */
+void TIM1_UP_IRQHandler(void)
+{
+  /* USER CODE BEGIN TIM1_UP_IRQn 0 */
+
+  /* USER CODE END TIM1_UP_IRQn 0 */
+  HAL_TIM_IRQHandler(&htim1);
+  /* USER CODE BEGIN TIM1_UP_IRQn 1 */
+
+  /* USER CODE END TIM1_UP_IRQn 1 */
+}
+
+/**
+  * @brief This function handles TIM1 trigger and commutation interrupts.
+  */
+void TIM1_TRG_COM_IRQHandler(void)
+{
+  /* USER CODE BEGIN TIM1_TRG_COM_IRQn 0 */
+
+  /* USER CODE END TIM1_TRG_COM_IRQn 0 */
+  HAL_TIM_IRQHandler(&htim1);
+  /* USER CODE BEGIN TIM1_TRG_COM_IRQn 1 */
+
+  /* USER CODE END TIM1_TRG_COM_IRQn 1 */
+}
+
+/**
+  * @brief This function handles TIM1 capture compare interrupt.
+  */
+void TIM1_CC_IRQHandler(void)
+{
+  /* USER CODE BEGIN TIM1_CC_IRQn 0 */
+
+  /* USER CODE END TIM1_CC_IRQn 0 */
+  HAL_TIM_IRQHandler(&htim1);
+  /* USER CODE BEGIN TIM1_CC_IRQn 1 */
+
+  /* USER CODE END TIM1_CC_IRQn 1 */
+}
+
+/**
+  * @brief This function handles TIM2 global interrupt.
+  */
+void TIM2_IRQHandler(void)
+{
+  /* USER CODE BEGIN TIM2_IRQn 0 */
+  extern volatile int32_t overflow_count_TIM2;
+  /* USER CODE END TIM2_IRQn 0 */
+  HAL_TIM_IRQHandler(&htim2);
+  /* USER CODE BEGIN TIM2_IRQn 1 */
+  if (__HAL_TIM_GET_FLAG(&htim2, TIM_FLAG_UPDATE)) {
+      overflow_count_TIM2++;
+      __HAL_TIM_CLEAR_FLAG(&htim2, TIM_FLAG_UPDATE);
+  }
+  /* USER CODE END TIM2_IRQn 1 */
+}
+
+/**
+  * @brief This function handles TIM3 global interrupt.
+  */
+void TIM3_IRQHandler(void)
+{
+  /* USER CODE BEGIN TIM3_IRQn 0 */
+  extern volatile int32_t overflow_count_TIM3;
+  /* USER CODE END TIM3_IRQn 0 */
+  HAL_TIM_IRQHandler(&htim3);
+  /* USER CODE BEGIN TIM3_IRQn 1 */
+  if (__HAL_TIM_GET_FLAG(&htim3, TIM_FLAG_UPDATE)) {
+      overflow_count_TIM3++;
+      __HAL_TIM_CLEAR_FLAG(&htim3, TIM_FLAG_UPDATE);
+  }
+  /* USER CODE END TIM3_IRQn 1 */
+}
+
+/**
+  * @brief This function handles I2C1 event interrupt.
+  */
+void I2C1_EV_IRQHandler(void)
+{
+  /* USER CODE BEGIN I2C1_EV_IRQn 0 */
+
+  /* USER CODE END I2C1_EV_IRQn 0 */
+  HAL_I2C_EV_IRQHandler(&hi2c1);
+  /* USER CODE BEGIN I2C1_EV_IRQn 1 */
+
+  /* USER CODE END I2C1_EV_IRQn 1 */
+}
+
+/**
+  * @brief This function handles I2C1 error interrupt.
+  */
+void I2C1_ER_IRQHandler(void)
+{
+  /* USER CODE BEGIN I2C1_ER_IRQn 0 */
+
+  /* USER CODE END I2C1_ER_IRQn 0 */
+  HAL_I2C_ER_IRQHandler(&hi2c1);
+  /* USER CODE BEGIN I2C1_ER_IRQn 1 */
+
+  /* USER CODE END I2C1_ER_IRQn 1 */
+}
+
+/**
+  * @brief This function handles I2C2 event interrupt.
+  */
+void I2C2_EV_IRQHandler(void)
+{
+  /* USER CODE BEGIN I2C2_EV_IRQn 0 */
+
+  /* USER CODE END I2C2_EV_IRQn 0 */
+  HAL_I2C_EV_IRQHandler(&hi2c2);
+  /* USER CODE BEGIN I2C2_EV_IRQn 1 */
+
+  /* USER CODE END I2C2_EV_IRQn 1 */
+}
+
+/**
+  * @brief This function handles I2C2 error interrupt.
+  */
+void I2C2_ER_IRQHandler(void)
+{
+  /* USER CODE BEGIN I2C2_ER_IRQn 0 */
+
+  /* USER CODE END I2C2_ER_IRQn 0 */
+  HAL_I2C_ER_IRQHandler(&hi2c2);
+  /* USER CODE BEGIN I2C2_ER_IRQn 1 */
+
+  /* USER CODE END I2C2_ER_IRQn 1 */
+}
+
+/**
+  * @brief This function handles USART2 global interrupt.
   */
 void USART2_IRQHandler(void)
 {
@@ -309,8 +475,7 @@ void USART2_IRQHandler(void)
 }
 
 /**
-  * @brief USART3: VOFA+ 遥测 / PID 串口调参 (115200bps, PD8=TX PD9=RX)
-  *        TX 使用 DMA 非阻塞发送, 本 ISR 仅处理 RX
+  * @brief This function handles USART3 global interrupt.
   */
 void USART3_IRQHandler(void)
 {
@@ -324,7 +489,7 @@ void USART3_IRQHandler(void)
 }
 
 /**
-  * @brief TIM5: 1kHz 时基 → HAL_TIM_PeriodElapsedCallback → millis 自增
+  * @brief This function handles TIM5 global interrupt.
   */
 void TIM5_IRQHandler(void)
 {
@@ -338,7 +503,7 @@ void TIM5_IRQHandler(void)
 }
 
 /**
-  * @brief TIM6: 1kHz 时基 → flag_10ms / flag_50ms 周期标志 + Key_Tick
+  * @brief This function handles TIM6 global interrupt.
   */
 void TIM6_IRQHandler(void)
 {

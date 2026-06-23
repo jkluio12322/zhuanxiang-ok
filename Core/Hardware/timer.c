@@ -71,5 +71,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
             Task_Control_50ms();   /* 外环 PID: 硬实时 ISR 执行 */
             Task_VOFA_Send();      /* 串口遥测: 跟随外环输出 */
             flag_50ms = 1;         /* 保留标志, 供 OLED 等主循环任务 */
+        }
     }
 }

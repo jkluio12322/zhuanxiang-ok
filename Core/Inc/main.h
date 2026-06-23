@@ -115,27 +115,28 @@ extern uint8_t  VOFA_Enable;
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-/* ── TB6612 电机驱动引脚 ────────────────────────── */
-#define pwm1_1_Pin GPIO_PIN_1           /**< 左电机方向1 (PF1) */
+#define pwm1_1_Pin GPIO_PIN_1
 #define pwm1_1_GPIO_Port GPIOF
-#define pwm1_0_Pin GPIO_PIN_2           /**< 左电机方向2 (PF2) */
+#define pwm1_0_Pin GPIO_PIN_2
 #define pwm1_0_GPIO_Port GPIOF
-#define pwm2_1_Pin GPIO_PIN_3           /**< 右电机方向1 (PF3) */
+#define pwm2_1_Pin GPIO_PIN_3
 #define pwm2_1_GPIO_Port GPIOF
-#define pwm2_0_Pin GPIO_PIN_4           /**< 右电机方向2 (PF4) */
+#define pwm2_0_Pin GPIO_PIN_4
 #define pwm2_0_GPIO_Port GPIOF
-/* ── 蜂鸣器 ──────────────────────────────────────── */
-#define buzzer_Pin GPIO_PIN_6           /**< 有源蜂鸣器 (PG6, 低电平响) */
+#define buzzer_Pin GPIO_PIN_6
 #define buzzer_GPIO_Port GPIOG
-/* ── 按键 (上拉输入, 按下低电平) ──────────────────── */
-#define key3_Pin GPIO_PIN_6             /**< KEY3: PC6 (DEC/后退) */
+#define key3_Pin GPIO_PIN_6
 #define key3_GPIO_Port GPIOC
-#define key2_Pin GPIO_PIN_7             /**< KEY2: PC7 (ADD/前进) */
+#define key3_EXTI_IRQn EXTI9_5_IRQn
+#define key2_Pin GPIO_PIN_7
 #define key2_GPIO_Port GPIOC
-#define key1_Pin GPIO_PIN_8             /**< KEY1: PC8 (SET/确认) */
+#define key2_EXTI_IRQn EXTI9_5_IRQn
+#define key1_Pin GPIO_PIN_8
 #define key1_GPIO_Port GPIOC
-#define key4_Pin GPIO_PIN_9             /**< KEY4: PC9 (档位切换) */
+#define key1_EXTI_IRQn EXTI9_5_IRQn
+#define key4_Pin GPIO_PIN_9
 #define key4_GPIO_Port GPIOC
+#define key4_EXTI_IRQn EXTI9_5_IRQn
 
 /* USER CODE BEGIN Private defines */
 

@@ -62,10 +62,11 @@ typedef struct {
     float turn_target;   /* 手动转向 RPM */
     float rpm_diff;      /* 左右轮 RPM 差 */
     float yaw_angle;     /* 偏航角 ° */
-    int8_t bt_lv;        /* 蓝牙摇杆 LV */
-    int8_t bt_rh;        /* 蓝牙摇杆 RH */
-    uint8_t run_flag;    /* 0/1 */
-    uint8_t fresh;       /* 新数据标志 */
+    int16_t bt_lv;       /* 蓝牙摇杆 LV (int16 避免 int8→int 变参问题) */
+    int16_t bt_rh;       /* 蓝牙摇杆 RH */
+    int16_t run_flag;    /* 0/1 */
+    int16_t gear;        /* 速度档位 1~6 */
+    int16_t fresh;       /* 新数据标志 */
 } VofaMsg;
 
 /* ---- 命令消息队列 (SPSC: BT/Key/Serial → Control) ---- */
@@ -107,7 +108,7 @@ static const float SpeedTable[6] = {20, 60, 120, 180, 250, 350};
 
 float    TurnTarget = 0;
 float    YawTarget  = 0;
-int8_t   BT_LV = 0, BT_RH = 0;
+volatile int8_t BT_LV = 0, BT_RH = 0;  /* ISR 读取, 主循环写入, 必须 volatile */
 
 /* PID 控制器 ----------------------------------------------------------------*/
 PID_t SpeedPID = {
@@ -192,14 +193,14 @@ int main(void)
     initEncoder(&ecd_right, JGB37_520);
 
     PID_Init(&SpeedPID);
-    /* SpeedPID 对标平衡车：只做微调修正，主体由外部前馈负责 */
-    PID_SetParam(&SpeedPID, 0.15f, 0.05f, 0.3f);
+    /* SpeedPID: 提高增益让误差50%时有足够推力, 配合前馈+PulsePID一起发力 */
+    PID_SetParam(&SpeedPID, 0.5f, 0.1f, 0.3f);
     SpeedPID.Kf              = 0.0f;        /* 前馈移到 PID 外部 */
-    SpeedPID.OutMax          =  30;         /* 只修正 ±136 RPM，对标平衡车 ±20° */
-    SpeedPID.OutMin          = -30;
+    SpeedPID.OutMax          =  80;         /* 放大上限匹配更强积分 */
+    SpeedPID.OutMin          = -80;
     SpeedPID.OutOffset       = 0;
-    SpeedPID.IntegralLimit   = 20.0f;
-    SpeedPID.Deadband        = 3.0f;
+    SpeedPID.IntegralLimit   = 50.0f;
+    SpeedPID.Deadband        = 2.0f;
     SpeedPID.OutputRateLimit = 0.0f;
 
     PID_Init(&YawPID);
@@ -213,13 +214,13 @@ int main(void)
     /* 内环 PulsePID: 脉冲率 → PWM, 10ms 高频 */
     PID_Init(&PulsePID);
     PID_SetParam(&PulsePID, 2.0f, 0.1f, 0.3f);
-    PulsePID.Kf              = 2.5f;        /* 脉冲→PWM前馈 */
+    PulsePID.Kf              = 2.5f;        /* 脉冲→PWM前馈, OutputRateLimit 防阶跃 */
     PulsePID.OutMax          =  100;
     PulsePID.OutMin          = -100;
     PulsePID.OutOffset       = 15.0f;       /* TB6612 死区补偿 */
     PulsePID.IntegralLimit   = 15.0f;
     PulsePID.Deadband        = 1.0f;
-    PulsePID.OutputRateLimit = 0.0f;
+    PulsePID.OutputRateLimit = 20.0f;       /* 限变±20%/10ms, 0→100 约50ms */
 
     MPU6050_Calibrate();
     MPU6050_ReadAsync_Start();   /* 启动非阻塞 I2C 链路, 供 ISR 消费 */
@@ -248,9 +249,11 @@ int main(void)
      *====================================================================*/
     while (1)
     {
-        /* ---- 串口命令响应 (不受 VOFA 数据流影响) ---- */
+        /* ---- 串口命令响应 (关中断防 ISR 竞争 RingBuf) ---- */
         if (tune_rsp_pending) {
+            __disable_irq();
             Serial_SendString(tune_rsp_buf);
+            __enable_irq();
             tune_rsp_pending = 0;
         }
 
@@ -362,8 +365,7 @@ static void Cmd_ProcessBluetooth(void)
             msg.type = CMD_START; msg.val = 0;
             CmdQueue_Put(msg);
         } else {
-            msg.type = CMD_SPEED; msg.val = 0; CmdQueue_Put(msg);
-            msg.type = CMD_TURN;  msg.val = 0; CmdQueue_Put(msg);
+            msg.type = CMD_STOP; msg.val = 0; CmdQueue_Put(msg);
         }
     }
     else if (strcmp(BlueSerial_StringArray[0], "key") == 0) {
@@ -535,36 +537,86 @@ void Task_Control_50ms(void)
         }
     }
 
-    if (!RunFlag) return;
-
-    /*---- 外环 SpeedPID (50ms): RPM误差 → 脉冲率目标 ----*/
+    /* 读取编码器 (无论 RunFlag, 保持 RPM 数据新鲜) */
     float ave = (ecd_left.velocity.angular + ecd_right.velocity.angular) / 2.0f;
 
-    /* EMA 低通滤波 RPM */
+    /* 停车时: 刷新遥测但 PID 不运算, 清零编码器速度防残留 */
+    if (!RunFlag) {
+        ecd_left.velocity.angular  = 0;
+        ecd_right.velocity.angular = 0;
+        float spd_max = SpeedTable[SpeedLevel-1];
+        if (spd_max < 1.0f) spd_max = 1.0f;
+        vofa_data.target_pct  = 0;
+        vofa_data.rpm_r       = 0;
+        vofa_data.rpm_l       = 0;
+        vofa_data.speed_out   = 0;
+        vofa_data.yaw_out     = 0;
+        vofa_data.turn_target = 0;
+        vofa_data.rpm_diff    = 0;
+        vofa_data.yaw_angle   = YawAngle;
+        vofa_data.bt_lv       = BT_LV;
+        vofa_data.bt_rh       = BT_RH;
+        vofa_data.run_flag    = 0;
+        vofa_data.gear        = SpeedLevel;
+        vofa_data.fresh       = 1;
+        return;
+    }
+
+    /*---- 外环 SpeedPID (50ms): 百分比空间, 自适应各档位 ----*/
+
+    /* EMA 低通滤波 RPM (alpha=0.5) */
     static float rpm_filtered = 0;
-    float rpm_raw = -ave;
-    rpm_filtered = 0.3f * rpm_raw + 0.7f * rpm_filtered;
+    float rpm_raw = ave;
+    rpm_filtered = 0.5f * rpm_raw + 0.5f * rpm_filtered;
 
-    /* 目标斜坡: 每 50ms 最多变 8 RPM */
-    static float ramp_target = 0;
+    /* 档位基准 (提前取出, PID + VOFA 共用) */
+    float spd_max = SpeedTable[SpeedLevel-1];
+    if (spd_max < 1.0f) spd_max = 1.0f;
+
+    /* 斜坡/EMA/方向状态 (static 保持跨周期) */
+    static float ramp_target    = 0;
+    static float correction_ema = 0;
+    static float last_sign      = 0;
+    static uint8_t was_running  = 0;
+
+    /* 启动上升沿: 重置状态防上次残留 */
+    if (!was_running && RunFlag) {
+        ramp_target    = 0;
+        correction_ema = 0;
+        last_sign      = 0;
+        rpm_filtered   = 0;
+    }
+    was_running = RunFlag;
+
+    /* 方向反转检测: Target 与上次方向异号 → 立即过零, 清积分+EMA */
+    float cur_sign = (SpeedPID.Target > 1.0f) ? 1.0f : ((SpeedPID.Target < -1.0f) ? -1.0f : 0);
+    if (cur_sign != 0 && last_sign != 0 && cur_sign != last_sign) {
+        ramp_target    = 0;
+        correction_ema = 0;
+        SpeedPID.IOut  = 0;
+    }
+    if (cur_sign != 0) last_sign = cur_sign;
+
+    /* 目标斜坡: 每 50ms 最多变 16 RPM */
     float delta = SpeedPID.Target - ramp_target;
-    if      (delta >  8.0f) ramp_target += 8.0f;
-    else if (delta < -8.0f) ramp_target -= 8.0f;
-    else                    ramp_target = SpeedPID.Target;
+    if      (delta >  16.0f) ramp_target += 16.0f;
+    else if (delta < -16.0f) ramp_target -= 16.0f;
+    else                     ramp_target = SpeedPID.Target;
 
-    SpeedPID.Actual = rpm_filtered;
-    float save_tgt = SpeedPID.Target;
-    SpeedPID.Target = ramp_target;
+    /* SpeedPID 归一化到 % of spd_max: 误差同为50%时,
+       1档(20RPM)出 1.1脉冲, 6档(350RPM)出 19.3脉冲 — 自动适配 */
+    SpeedPID.Actual = rpm_filtered / spd_max * 100.0f;
+    float ramp_pct  = ramp_target / spd_max * 100.0f;
+    float save_tgt  = SpeedPID.Target;
+    SpeedPID.Target = ramp_pct;
     PID_Update(&SpeedPID);
     SpeedPID.Target = save_tgt;
 
-    /* 前馈基线 (对标平衡车：SpeedPID 只出微调，主体由外部前馈负责) */
-    float ff_pulse = SpeedPID.Target * 0.22f;   /* RPM → 脉冲/10ms */
-
-    /* SpeedPID.Out 是纯修正量，EMA 滤波后叠加到前馈基线上 */
-    static float correction_ema = 0;
-    if (ramp_target <= 8.0f) correction_ema = 0;       /* 起步时清零残留 */
-    correction_ema = 0.25f * SpeedPID.Out + 0.75f * correction_ema;
+    /* 前馈 (脉冲/10ms) + EMA 修正 (% → 脉冲) → PulsePID.Target */
+    float ff_pulse = ramp_target * 0.22f;
+    float corr_raw = SpeedPID.Out / 100.0f * spd_max * 0.22f;
+    if (fabsf(ramp_pct) <= 1.0f) correction_ema = 0;
+    correction_ema = 0.7f * corr_raw + 0.3f * correction_ema;
     PulsePID.Target = ff_pulse + correction_ema;
 
     /*---- 外环 YawPID (100ms) ----*/
@@ -579,26 +631,26 @@ void Task_Control_50ms(void)
     /* 差速 (内环 10ms 读取, 叠加到左右轮 PWM) */
     inner_diff = TurnTarget + diff_yaw;
 
-    /*---- 填充遥测快照 (供 VOFA 输出) ----*/
-    float spd_max = SpeedTable[SpeedLevel-1];
+    /*---- 填充遥测快照 (供 VOFA 输出) — 速度列统一为 % of spd_max ----*/
     vofa_data.target_pct  = SpeedPID.Target / spd_max * 100.0f;
-    vofa_data.rpm_r       = -ecd_right.velocity.angular / 2.0f;
-    vofa_data.rpm_l       = -ecd_left.velocity.angular / 2.0f;
-    vofa_data.speed_out   = PulsePID.Out;     /* 内环 PWM 输出 */
-    vofa_data.yaw_out     = YawPID.Out;
-    vofa_data.turn_target = TurnTarget;
-    vofa_data.rpm_diff    = ecd_left.velocity.angular - ecd_right.velocity.angular;
+    vofa_data.rpm_r       = (-ecd_right.velocity.angular / 2.0f) / spd_max * 100.0f;
+    vofa_data.rpm_l       = (-ecd_left.velocity.angular / 2.0f) / spd_max * 100.0f;
+    vofa_data.speed_out   = PulsePID.Out;     /* 内环 PWM 输出, ±100 */
+    vofa_data.yaw_out     = YawPID.Out;       /* 外环差速 RPM, ±20 */
+    vofa_data.turn_target = TurnTarget / spd_max * 100.0f;
+    vofa_data.rpm_diff    = (ecd_left.velocity.angular - ecd_right.velocity.angular) / spd_max * 100.0f;
     vofa_data.yaw_angle   = YawAngle;
     vofa_data.bt_lv       = BT_LV;
     vofa_data.bt_rh       = BT_RH;
     vofa_data.run_flag    = RunFlag;
+    vofa_data.gear        = SpeedLevel;
     vofa_data.fresh       = 1;
 }
 
 /*====================================================================
  * VOFA 输出任务 (50ms, 在 Control 之后)
  * @brief  遥测快照格式化为 CSV → DMA TX 非阻塞发送
-/*====================================================================
+ *====================================================================
  * 内环控制任务 (10ms): 脉冲率 → PWM, 高频兜底
  * @brief  读取 TIM2/TIM3 编码器原始 CNT, 差分得 10ms 脉冲增量
  *          PulsePID 把脉冲误差转为 PWM, 叠加外环差速
@@ -629,7 +681,8 @@ void Task_Pulse_10ms(void)
     last_cnt2 = now2;
     last_cnt3 = now3;
 
-    float pulse_actual = (d_r + d_l) / 2.0f;            /* 两轮平均脉冲/10ms */
+    /* d_r/d_l 前进时均为负, 取反使 pulse_actual 与 PulsePID.Target 同号 */
+    float pulse_actual = -(d_r + d_l) / 2.0f;
     PulsePID.Actual = pulse_actual;
     PID_Update(&PulsePID);
 
@@ -655,8 +708,19 @@ void Task_VOFA_Send(void)
     vofa_data.fresh = 0;
 
     char buf[128];
-    int n = snprintf(buf, sizeof(buf),
-        "%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,%d,%d,%d\r\n",
+    int n;
+
+    /* 防御: 钳位异常值 */
+    int _bt_lv = (int)vofa_data.bt_lv;
+    int _bt_rh = (int)vofa_data.bt_rh;
+    int _run   = (int)vofa_data.run_flag;
+    if (_bt_lv < -128 || _bt_lv > 127) _bt_lv = 0;
+    if (_bt_rh < -128 || _bt_rh > 127) _bt_rh = 0;
+
+    /* 拆成两次 snprintf, 避免软浮点 ABI 下 double(8B) 和 int(4B)
+       混用导致变参栈偏移错误 — 这是 newlib-nano 在 Cortex-M3 上的已知问题 */
+    n = snprintf(buf, sizeof(buf),
+        "%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,",
         vofa_data.target_pct,
         vofa_data.rpm_r,
         vofa_data.rpm_l,
@@ -664,10 +728,12 @@ void Task_VOFA_Send(void)
         vofa_data.yaw_out,
         vofa_data.turn_target,
         vofa_data.rpm_diff,
-        vofa_data.yaw_angle,
-        vofa_data.bt_lv,
-        vofa_data.bt_rh,
-        vofa_data.run_flag);
+        vofa_data.yaw_angle);
+
+    if (n > 0 && n < (int)sizeof(buf)) {
+        n += snprintf(buf + n, sizeof(buf) - n, "%d,%d,%d,%d\r\n",
+            _bt_lv, _bt_rh, _run, (int)vofa_data.gear);
+    }
 
     if (n > 0 && n < (int)sizeof(buf)) {
         Serial_Write((uint8_t *)buf, (uint16_t)n);
