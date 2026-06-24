@@ -563,15 +563,7 @@ void Task_Control_50ms(void)
         else { ave_f = ave_f * 0.4f + ave * 0.6f; }   /* α=0.6, τ≈35ms, D项响应快 */
         SpeedPID.Actual = ave_f;
     }
-    /* 方向反转: 清积分防震荡 (利用 Target 符号变化检测) */
-    {
-        static float last_target_sign = 0;
-        float cur_sign = (SpeedPID.Target > 0) ? 1.0f : ((SpeedPID.Target < 0) ? -1.0f : 0);
-        if (cur_sign != 0 && cur_sign != last_target_sign) {
-            SpeedPID.IOut = 0;
-        }
-        if (cur_sign != 0) last_target_sign = cur_sign;
-    }
+    /* 方向反转时积分清零已由 PID_SetTarget 内部自动处理 */
     PID_Update(&SpeedPID);
     float base = SpeedPID.Out;
 

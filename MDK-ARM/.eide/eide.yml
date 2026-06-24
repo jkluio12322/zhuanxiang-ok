@@ -13,7 +13,7 @@ virtualFolder:
       folders:
         - name: MDK-ARM
           files:
-            - path: startup_stm32f103xe.s
+            - path: startup_stm32f103xe_gcc.s
           folders: []
         - name: User
           files: []
@@ -228,7 +228,7 @@ targets:
           linker:
             $outputTaskExcludes:
               - .bin
-            LD_FLAGS: "-Wl,--no-warn-rwx-segments"
+            LD_FLAGS: "-Wl,--no-warn-rwx-segments -Wl,-u,_printf_float"
             LIB_FLAGS: -lm
             output-format: elf
             remove-unused-input-sections: true

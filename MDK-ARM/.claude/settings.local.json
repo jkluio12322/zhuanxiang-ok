@@ -8,7 +8,10 @@
       "Bash(\"c:/Users/Lenovo/.vscode/extensions/cl.eide-3.27.2/res/tools/win32/unify_builder/unify_builder.exe\" -p \"e:/32/32/STM32HAL/f103zet6/bluecar/MDK-ARM/build/bluecar/builder.params\" --rebuild)",
       "Bash(where STM32CubeMX)",
       "Read(//c/Program Files/STMicroelectronics/STM32Cube/STM32CubeMX/**)",
-      "Bash(dir \"C:\\\\Program Files\\\\STMicroelectronics\\\\\" 2>/dev/null)"
+      "Bash(dir \"C:\\\\Program Files\\\\STMicroelectronics\\\\\" 2>/dev/null)",
+      "Bash(where arm-none-eabi-gcc *)",
+      "Bash(arm-none-eabi-gcc -fsyntax-only -c -std=c11 -mcpu=cortex-m3 -DSTM32F103xE -DUSE_HAL_DRIVER -I Core/Inc -I Core/Hardware -I Drivers/STM32F1xx_HAL_Driver/Inc -I Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I Drivers/CMSIS/Device/ST/STM32F1xx/Include -I Drivers/CMSIS/Include -I MDK-ARM/.cmsis/include -I MDK-ARM/RTE/_bluecar Core/Src/main.c)",
+      "Bash(arm-none-eabi-gcc -fsyntax-only -c -std=c11 -mcpu=cortex-m3 -mfloat-abi=hard -DSTM32F103xE -DUSE_HAL_DRIVER -I ../Core/Inc -I ../Core/Hardware -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include -I .cmsis/include -I RTE/_bluecar ../Core/Src/main.c)"
     ]
   }
 }

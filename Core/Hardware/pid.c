@@ -59,7 +59,13 @@ void PID_SetParam(PID_t *p, float kp, float ki, float kd)
 
 void PID_SetTarget(PID_t *p, float target)
 {
+    /* 方向反转检测: 目标符号变化时清零积分, 防止反向响应迟钝 */
+    float old_sign = (p->Target > 0) ? 1.0f : ((p->Target < 0) ? -1.0f : 0);
+    float new_sign = (target > 0) ? 1.0f : ((target < 0) ? -1.0f : 0);
     p->Target = target;
+    if (new_sign != 0 && new_sign != old_sign) {
+        p->IOut = 0;
+    }
 }
 
 /**
