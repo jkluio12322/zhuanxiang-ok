@@ -68,6 +68,7 @@ virtualFolder:
         - name: CMSIS
           files:
             - path: ../Core/Src/system_stm32f1xx.c
+            - path: ../Core/Src/syscalls.c
           folders: []
     - name: ::CMSIS
       files: []
@@ -95,7 +96,7 @@ targets:
     excludeList: []
     settings:
       debugger: cortex-debug
-    toolchain: AC5
+    toolchain: GCC
     toolchainConfigMap:
       AC5:
         archExtensions: ""
@@ -192,13 +193,50 @@ targets:
                 startAddr: "0x8000000"
               tag: IROM
             - id: 2
-              isChecked: false
+              isChecked: true
               isStartup: false
               mem:
                 size: "0x0"
                 startAddr: "0x0"
               tag: IROM
         useCustomScatterFile: false
+      GCC:
+        archExtensions: ""
+        cpuType: Cortex-M3
+        floatingPointHardware: none
+        options:
+          version: 5
+          afterBuildTasks: []
+          asm-compiler:
+            ASM_FLAGS: ""
+          beforeBuildTasks: []
+          c/cpp-compiler:
+            CXX_FLAGS: ""
+            C_FLAGS: ""
+            language-c: c11
+            language-cpp: c++11
+            one-elf-section-per-data: true
+            one-elf-section-per-function: true
+            optimization: level-debug
+            warnings: all-warnings
+          global:
+            $float-abi-type: hard
+            misc-control: ""
+            not-use-syscalls: true
+            output-debug-info: enable
+            use-newlib-nano: true
+          linker:
+            $outputTaskExcludes:
+              - .bin
+            LD_FLAGS: "-Wl,--no-warn-rwx-segments"
+            LIB_FLAGS: -lm
+            output-format: elf
+            remove-unused-input-sections: true
+        scatterFilePath: STM32F103ZETx_FLASH.ld
+        storageLayout:
+          RAM: []
+          ROM: []
+        useCustomScatterFile: true
     uploadConfigMap:
       JLink:
         baseAddr: ""

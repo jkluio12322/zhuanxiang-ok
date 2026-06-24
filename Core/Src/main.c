@@ -54,12 +54,12 @@
 
 /* ---- 遥测数据快照 (Control → VOFA) ---- */
 typedef struct {
-    float target_pct;    /* 目标速度% */
-    float rpm_r;         /* 右轮 -RPM/2 */
-    float rpm_l;         /* 左轮 -RPM/2 */
-    float speed_out;     /* SpeedPID 输出 */
-    float yaw_out;       /* YawPID 输出 */
-    float turn_target;   /* 手动转向 RPM */
+    float target_pct;    /* 目标 RPM */
+    float rpm_r;         /* 右轮 RPM */
+    float rpm_l;         /* 左轮 RPM */
+    float speed_out;     /* SpeedPID PWM输出 % */
+    float yaw_out;       /* TrackPID 差速 RPM */
+    float turn_target;   /* 转向差速 RPM */
     float rpm_diff;      /* 左右轮 RPM 差 */
     float yaw_angle;     /* 偏航角 ° */
     int16_t bt_lv;       /* 蓝牙摇杆 LV (int16 避免 int8→int 变参问题) */
@@ -104,31 +104,16 @@ static uint8_t  SpeedLevel   = 3;        /* 蓝牙速度档位 1~6 */
 static uint8_t  SpeedPercent = 50;       /* 按键速度百分比 0~100 */
 uint32_t bt_last_rx = 0;               /* 上次收到蓝牙数据的时间戳 */
 uint8_t  VOFA_Enable = 1;
-static const float SpeedTable[6] = {20, 60, 120, 180, 250, 350};
+static const float SpeedTable[6] = {30, 55, 80, 100, 120, 140}; /* 提速: 原极速105→140 */
 
 float    TurnTarget = 0;
 float    YawTarget  = 0;
 volatile int8_t BT_LV = 0, BT_RH = 0;  /* ISR 读取, 主循环写入, 必须 volatile */
 
-/* PID 控制器 ----------------------------------------------------------------*/
-PID_t SpeedPID = {
-    .Kp = 0.8f, .Ki = 0.01f, .Kd = 0.6f, .Kf = 0.0f,
-    .OutMax =  100,  .OutMin = -100,
-    .OutOffset       = 15.0f,
-    .IntegralLimit   = 50.0f,
-    .Deadband        = 3.0f,
-    .OutputRateLimit = 0.0f,
-};
-PID_t YawPID = {
-    .Kp = 0.3f, .Ki = 0.02f, .Kd = 0.0f,
-    .OutMax =  20,   .OutMin = -20,
-    .OutOffset       = 0,
-    .IntegralLimit   = 40.0f,
-    .Deadband        = 1.0f,
-    .OutputRateLimit = 10.0f,
-};
-PID_t PulsePID;                             /* 内环: 脉冲率 → PWM (10ms) */
-static float inner_diff = 0;                /* 外环差速, 内环读取 */
+/* PID 控制器 (参数在 main() 中初始化) -----------------------------------------*/
+PID_t SpeedPID;
+PID_t YawPID;
+PID_t TrackPID;                             /* 转弯差速 PID */
 
 /* 编码器 --------------------------------------------------------------------*/
 static Encoder  ecd_left, ecd_right;
@@ -196,11 +181,11 @@ int main(void)
     initEncoder(&ecd_right, JGB37_520);
 
     PID_Init(&SpeedPID);
-    /* SpeedPID: 提高增益让误差50%时有足够推力, 配合前馈+PulsePID一起发力 */
-    PID_SetParam(&SpeedPID, 0.5f, 0.1f, 0.3f);
-    SpeedPID.Kf              = 0.0f;        /* 前馈移到 PID 外部 */
-    SpeedPID.OutMax          =  80;         /* 放大上限匹配更强积分 */
-    SpeedPID.OutMin          = -80;
+    /* SpeedPID: 直接控制速度 */
+    PID_SetParam(&SpeedPID, 0.8f, 0.08f, 0.3f);  /* Ki 消除稳态误差 */
+    SpeedPID.Kf              = 0.4f;       /* 前馈: 稳态PWM/目标RPM ≈ 0.65, 提供基线输出 */
+    SpeedPID.OutMax          = 100;         /* 满占空比, Kf提供基线 + I补齐余量 */
+    SpeedPID.OutMin          = -100;
     SpeedPID.OutOffset       = 0;
     SpeedPID.IntegralLimit   = 50.0f;
     SpeedPID.Deadband        = 2.0f;
@@ -214,16 +199,15 @@ int main(void)
     YawPID.Deadband        = 1.0f;
     YawPID.OutputRateLimit = 10.0f;
 
-    /* 内环 PulsePID: 脉冲率 → PWM, 10ms 高频 */
-    PID_Init(&PulsePID);
-    PID_SetParam(&PulsePID, 2.0f, 0.1f, 0.3f);
-    PulsePID.Kf              = 2.5f;        /* 脉冲→PWM前馈, OutputRateLimit 防阶跃 */
-    PulsePID.OutMax          =  100;
-    PulsePID.OutMin          = -100;
-    PulsePID.OutOffset       = 15.0f;       /* TB6612 死区补偿 */
-    PulsePID.IntegralLimit   = 15.0f;
-    PulsePID.Deadband        = 1.0f;
-    PulsePID.OutputRateLimit = 20.0f;       /* 限变±20%/10ms, 0→100 约50ms */
+    /* TrackPID: 差速转弯 */
+    PID_Init(&TrackPID);
+    PID_SetParam(&TrackPID, 0.5f, 0.05f, 0.1f);  /* Ki>0 消除左右轮稳态速差 */
+    TrackPID.OutMax          =  50;
+    TrackPID.OutMin          = -50;
+    TrackPID.OutOffset       = 0;
+    TrackPID.IntegralLimit   = 20.0f;
+    TrackPID.Deadband        = 3.0f;
+    TrackPID.OutputRateLimit = 15.0f;
 
     OLED_Clear();
     OLED_ShowString(1, 1, " [BlueCar V3.0] ");
@@ -512,20 +496,24 @@ void Task_Control_50ms(void)
             RunFlag = 0;
             PID_SetTarget(&SpeedPID, 0);
             TurnTarget = 0;
-            inner_diff = 0;
             SpeedPID.Out = 0; SpeedPID.IOut = 0;
             SpeedPID.POut = 0; SpeedPID.DOut = 0;
             SpeedPID.LastOutput = 0;
-            PulsePID.Out = 0; PulsePID.IOut = 0;
-            PulsePID.POut = 0; PulsePID.DOut = 0;
-            PulsePID.LastOutput = 0;
-            PulsePID.Target = 0;
+            TrackPID.Out = 0; TrackPID.IOut = 0;
+            TrackPID.POut = 0; TrackPID.DOut = 0;
+            TrackPID.LastOutput = 0;
             break;
         case CMD_GEAR_UP:
-            if (SpeedLevel < 6) SpeedLevel++;
+            if (SpeedLevel < 6) {
+                SpeedLevel++;
+                PID_SetTarget(&SpeedPID, SpeedTable[SpeedLevel-1]);
+            }
             break;
         case CMD_GEAR_DOWN:
-            if (SpeedLevel > 1) SpeedLevel--;
+            if (SpeedLevel > 1) {
+                SpeedLevel--;
+                PID_SetTarget(&SpeedPID, SpeedTable[SpeedLevel-1]);
+            }
             break;
         case CMD_SET_SPEED_KP: SpeedPID.Kp = msg.val; break;
         case CMD_SET_SPEED_KI: SpeedPID.Ki = msg.val; break;
@@ -543,13 +531,11 @@ void Task_Control_50ms(void)
         }
     }
 
-    /* 读取编码器 (无论 RunFlag, 保持 RPM 数据新鲜) */
+    /* 停车时: 刷新遥测但 PID 不运算 */
     float ave = (ecd_left.velocity.angular + ecd_right.velocity.angular) / 2.0f;
+    float dif = ecd_left.velocity.angular - ecd_right.velocity.angular;
 
-    /* 停车时: 刷新遥测但 PID 不运算, 清零编码器速度防残留 */
     if (!RunFlag) {
-        ecd_left.velocity.angular  = 0;
-        ecd_right.velocity.angular = 0;
         float spd_max = SpeedTable[SpeedLevel-1];
         if (spd_max < 1.0f) spd_max = 1.0f;
         vofa_data.target_pct  = 0;
@@ -568,83 +554,51 @@ void Task_Control_50ms(void)
         return;
     }
 
-    /*---- 外环 SpeedPID (50ms): 百分比空间, 自适应各档位 ----*/
-
-    /* EMA 低通滤波 RPM (alpha=0.5) */
-    static float rpm_filtered = 0;
-    float rpm_raw = ave;
-    rpm_filtered = 0.5f * rpm_raw + 0.5f * rpm_filtered;
-
-    /* 档位基准 (提前取出, PID + VOFA 共用) */
-    float spd_max = SpeedTable[SpeedLevel-1];
-    if (spd_max < 1.0f) spd_max = 1.0f;
-
-    /* 斜坡/EMA/方向状态 (static 保持跨周期) */
-    static float ramp_target    = 0;
-    static float correction_ema = 0;
-    static float last_sign      = 0;
-    static uint8_t was_running  = 0;
-
-    /* 启动上升沿: 重置状态防上次残留 */
-    if (!was_running && RunFlag) {
-        ramp_target    = 0;
-        correction_ema = 0;
-        last_sign      = 0;
-        rpm_filtered   = 0;
+    /*---- SpeedPID (50ms): 平均转速 → PWM ----*/
+    /* 低通滤波平滑编码器抖动, 减少 D 项误触发 */
+    {
+        static float ave_f = 0;
+        static uint8_t ave_init = 0;
+        if (!ave_init) { ave_f = ave; ave_init = 1; }
+        else { ave_f = ave_f * 0.4f + ave * 0.6f; }   /* α=0.6, τ≈35ms, D项响应快 */
+        SpeedPID.Actual = ave_f;
     }
-    was_running = RunFlag;
-
-    /* 方向反转检测: Target 与上次方向异号 → 立即过零, 清积分+EMA */
-    float cur_sign = (SpeedPID.Target > 1.0f) ? 1.0f : ((SpeedPID.Target < -1.0f) ? -1.0f : 0);
-    if (cur_sign != 0 && last_sign != 0 && cur_sign != last_sign) {
-        ramp_target    = 0;
-        correction_ema = 0;
-        SpeedPID.IOut  = 0;
+    /* 方向反转: 清积分防震荡 (利用 Target 符号变化检测) */
+    {
+        static float last_target_sign = 0;
+        float cur_sign = (SpeedPID.Target > 0) ? 1.0f : ((SpeedPID.Target < 0) ? -1.0f : 0);
+        if (cur_sign != 0 && cur_sign != last_target_sign) {
+            SpeedPID.IOut = 0;
+        }
+        if (cur_sign != 0) last_target_sign = cur_sign;
     }
-    if (cur_sign != 0) last_sign = cur_sign;
-
-    /* 目标斜坡: 每 50ms 最多变 16 RPM */
-    float delta = SpeedPID.Target - ramp_target;
-    if      (delta >  16.0f) ramp_target += 16.0f;
-    else if (delta < -16.0f) ramp_target -= 16.0f;
-    else                     ramp_target = SpeedPID.Target;
-
-    /* SpeedPID 归一化到 % of spd_max: 误差同为50%时,
-       1档(20RPM)出 1.1脉冲, 6档(350RPM)出 19.3脉冲 — 自动适配 */
-    SpeedPID.Actual = rpm_filtered / spd_max * 100.0f;
-    float ramp_pct  = ramp_target / spd_max * 100.0f;
-    float save_tgt  = SpeedPID.Target;
-    SpeedPID.Target = ramp_pct;
     PID_Update(&SpeedPID);
-    SpeedPID.Target = save_tgt;
+    float base = SpeedPID.Out;
 
-    /* 前馈 (脉冲/10ms) + EMA 修正 (% → 脉冲) → PulsePID.Target */
-    float ff_pulse = ramp_target * 0.22f;
-    float corr_raw = SpeedPID.Out / 100.0f * spd_max * 0.22f;
-    if (fabsf(ramp_pct) <= 1.0f) correction_ema = 0;
-    correction_ema = 0.7f * corr_raw + 0.3f * correction_ema;
-    PulsePID.Target = ff_pulse + correction_ema;
+    /*---- TrackPID (50ms): 位置/差速 → 转弯纠偏 ----*/
+    TrackPID.Actual = dif;
+    PID_SetTarget(&TrackPID, TurnTarget);
+    PID_Update(&TrackPID);
+    float tdiff = TrackPID.Out;
 
-    /*---- 外环 YawPID (100ms) ----*/
-    static uint8_t outer_cycle = 0;
-    if (++outer_cycle >= 2) {
-        outer_cycle = 0;
-        YawPID.Actual = YawAngle;
-        PID_Update(&YawPID);
-    }
-    float diff_yaw = 0;  // YawPID.Out (暂关)
+    /* 合成左右轮 PWM */
+    int16_t L = (int16_t)(base + tdiff);
+    int16_t R = (int16_t)(base - tdiff);
+    if (L >  100) L =  100;
+    if (L < -100) L = -100;
+    if (R >  100) R =  100;
+    if (R < -100) R = -100;
+    Motor_SetSpeedA(L);
+    Motor_SetSpeedB(R);
 
-    /* 差速 (内环 10ms 读取, 叠加到左右轮 PWM) */
-    inner_diff = TurnTarget + diff_yaw;
-
-    /*---- 填充遥测快照 (供 VOFA 输出) — 速度列统一为 % of spd_max ----*/
-    vofa_data.target_pct  = SpeedPID.Target / spd_max * 100.0f;
-    vofa_data.rpm_r       = (ecd_right.velocity.angular / 2.0f) / spd_max * 100.0f;
-    vofa_data.rpm_l       = (ecd_left.velocity.angular / 2.0f) / spd_max * 100.0f;
-    vofa_data.speed_out   = PulsePID.Out;     /* 内环 PWM 输出, ±100 */
-    vofa_data.yaw_out     = YawPID.Out;       /* 外环差速 RPM, ±20 */
-    vofa_data.turn_target = TurnTarget / spd_max * 100.0f;
-    vofa_data.rpm_diff    = (ecd_left.velocity.angular - ecd_right.velocity.angular) / spd_max * 100.0f;
+    /*---- 填充遥测 (速度用 RPM 实际值) ----*/
+    vofa_data.target_pct  = SpeedPID.Target;               /* 目标 RPM */
+    vofa_data.rpm_r       = ecd_right.velocity.angular;    /* 右轮 RPM */
+    vofa_data.rpm_l       = ecd_left.velocity.angular;     /* 左轮 RPM */
+    vofa_data.speed_out   = SpeedPID.Out;                  /* PWM % */
+    vofa_data.yaw_out     = TrackPID.Out;                  /* 差速 RPM */
+    vofa_data.turn_target = TurnTarget;                     /* 差速目标 RPM */
+    vofa_data.rpm_diff    = dif;                            /* 左右轮 RPM 差 */
     vofa_data.yaw_angle   = YawAngle;
     vofa_data.bt_lv       = BT_LV;
     vofa_data.bt_rh       = BT_RH;
@@ -657,55 +611,16 @@ void Task_Control_50ms(void)
  * VOFA 输出任务 (50ms, 在 Control 之后)
  * @brief  遥测快照格式化为 CSV → DMA TX 非阻塞发送
  *====================================================================
- * 内环控制任务 (10ms): 脉冲率 → PWM, 高频兜底
- * @brief  读取 TIM2/TIM3 编码器原始 CNT, 差分得 10ms 脉冲增量
- *          PulsePID 把脉冲误差转为 PWM, 叠加外环差速
- * @note   外环 50ms 更新 PulsePID.Target, 内环 10ms 消费
+ * 内环控制任务 (10ms): 已删除, 由 Task_Control_50ms 统一处理
  *====================================================================*/
-void Task_Pulse_10ms(void)
-{
-    static uint16_t last_cnt2 = 0, last_cnt3 = 0;
-    static uint8_t first = 1;
-
-    if (!RunFlag) {
-        PulsePID.Out = 0; PulsePID.IOut = 0; PulsePID.POut = 0;
-        PulsePID.DOut = 0; PulsePID.LastOutput = 0;
-        Motor_SetSpeedA(0);
-        Motor_SetSpeedB(0);
-        first = 1;
-        return;
-    }
-
-    uint16_t now2 = TIM2->CNT;
-    uint16_t now3 = TIM3->CNT;
-
-    if (first) { last_cnt2 = now2; last_cnt3 = now3; first = 0; return; }
-
-    int16_t d_r = (int16_t)(now2 - last_cnt2);         /* 右轮 (TIM2) */
-    int16_t d_l = -(int16_t)(now3 - last_cnt3);         /* 左轮 (TIM3) 取反 */
-
-    last_cnt2 = now2;
-    last_cnt3 = now3;
-
-    /* d_r/d_l 前进时均为负, 取反使 pulse_actual 与 PulsePID.Target 同号 */
-    float pulse_actual = -(d_r + d_l) / 2.0f;
-    PulsePID.Actual = pulse_actual;
-    PID_Update(&PulsePID);
-
-    int16_t L = (int16_t)(PulsePID.Out + inner_diff);
-    int16_t R = (int16_t)(PulsePID.Out - inner_diff);
-    if (L >  100) L =  100;  if (L < -100) L = -100;
-    if (R >  100) R =  100;  if (R < -100) R = -100;
-
-    Motor_SetSpeedA(L);
-    Motor_SetSpeedB(R);
-}
+void Task_Pulse_10ms(void) {}
 
 /*====================================================================
  * VOFA 输出任务 (50ms, 在 Control 之后)
  * @brief  遥测快照格式化为 CSV → DMA TX 非阻塞发送
- * @note   数据字段 (11列): Target%, RPM_R, RPM_L, SpeedOut, YawOut,
- *         TurnTarget, RPM_Diff, YawAngle, BT_LV, BT_RH, RunFlag
+ * @note   数据字段 (12列): TargetRPM, RPM_R, RPM_L, SpeedOut%, YawOutRPM,
+ *         TurnTargetRPM, RPM_Diff, YawAngle°, BT_LV, BT_RH, RunFlag, Gear
+ *         速度用 RPM 实际值, PWM 保持百分比
  *         使用 snprintf 防栈溢出, 通过 Serial_Write → RingBuf → DMA 发送
  *====================================================================*/
 void Task_VOFA_Send(void)
@@ -759,21 +674,27 @@ void Task_VOFA_Send(void)
  *====================================================================*/
 static void Task_OLED_Update(void)
 {
-    OLED_Clear();  /* 清帧缓冲, 准备重绘 */
-    char buf[21];
+    OLED_Clear();
+    char buf[24];
+
     if (Mode == MODE_PWM_SET) {
-        OLED_ShowString(1, 1, "[PWM SET MODE]  ");
-        snprintf(buf, sizeof(buf), "Duty: %+04d %%    ", PWMDuty);
+        OLED_ShowString(1, 1, "[PWM SET]       ");
+        snprintf(buf, sizeof(buf), "Duty: %+04d %%   ", PWMDuty);
     } else {
-        OLED_ShowString(1, 1, RunFlag ? "[RUN] V3.0     " : "[STOP]          ");
-        snprintf(buf, sizeof(buf), "T:%+05.0f D:%+05.0f ", SpeedPID.Target, TurnTarget);
+        snprintf(buf, sizeof(buf), "[%s] G%d       ",
+            RunFlag ? "RUN" : "STOP", SpeedLevel);
+        OLED_ShowString(1, 1, buf);
+        snprintf(buf, sizeof(buf), "T:%+04.0f P:%+04.0f",
+            SpeedPID.Target, SpeedPID.Out);
     }
     OLED_ShowString(2, 1, buf);
 
-    snprintf(buf, sizeof(buf), "L:%+05.0f R:%+05.0f ", ecd_left.velocity.angular, ecd_right.velocity.angular);
+    snprintf(buf, sizeof(buf), "L:%+04.0f R:%+04.0f",
+        ecd_left.velocity.angular, ecd_right.velocity.angular);
     OLED_ShowString(3, 1, buf);
 
-    snprintf(buf, sizeof(buf), "Yaw:%+06.1f Lv:%1d", YawAngle, SpeedLevel);
+    snprintf(buf, sizeof(buf), "Y:%+05.1f BT:%+04d ",
+        YawAngle, (int)BT_LV);
     OLED_ShowString(4, 1, buf);
 }
 

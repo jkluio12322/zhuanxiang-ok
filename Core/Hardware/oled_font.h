@@ -1,10 +1,8 @@
-/**
- * @file    oled_font.h
- * @brief   OLED 8×16 像素 ASCII 字模库 (ASCII 32~126)
- * @note    每个字符 16 字节: 前 8 字节为上半部分, 后 8 字节为下半部分
- */
 #ifndef __OLED_FONT_H
 #define __OLED_FONT_H
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmissing-braces"
 
 /*OLED字模库，宽8像素，高16像素*/
 const uint8_t OLED_F8x16[][16]=
@@ -294,5 +292,7 @@ const uint8_t OLED_F8x16[][16]=
 	0x00,0x06,0x01,0x01,0x02,0x02,0x04,0x04,
 	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,//~ 94
 };
+
+#pragma GCC diagnostic pop
 
 #endif

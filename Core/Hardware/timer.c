@@ -12,7 +12,6 @@
 extern TIM_HandleTypeDef htim6;
 extern TIM_HandleTypeDef htim5;
 
-extern void Task_Pulse_10ms(void);    /* 内环 PID (10ms) */
 extern void Task_Sensor_10ms(void);    /* MPU6050 传感器 (10ms) */
 extern void Task_Control_50ms(void);   /* 外环 PID (50ms) */
 extern void Task_VOFA_Send(void);      /* 串口遥测输出 */
@@ -62,9 +61,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         if (++tick_10ms >= 10) {
             tick_10ms = 0;
             if (++tick_20ms >= 2) { tick_20ms = 0; Key_Tick(); }  /* 20ms 计时状态机 */
-            flag_10ms = 1;          /* 保留标志, 供低优先级任务 */
-            Task_Sensor_10ms();     /* MPU6050 传感器, 非阻塞 I2C */
-            Task_Pulse_10ms();      /* 内环 PID: 编码器 → PWM */
+            flag_10ms = 1;
+            Task_Sensor_10ms();
         }
         if (++tick_50ms >= 50) {
             tick_50ms = 0;

@@ -61,6 +61,11 @@ typedef enum {
     CMD_YAW_TARGET,            /**< 设置 YawPID 目标角度 (°) */
     CMD_QUIET,                 /**< 静默模式: 关闭 VOFA 数据流 */
     CMD_LOG,                   /**< 恢复 VOFA 数据流输出 */
+    CMD_IMU_CALIB,             /**< 触发陀螺仪零偏重校准 */
+    CMD_IMU_ZERO,              /**< 触发姿态零点标定 */
+    CMD_MODE_TRACK,            /**< 切换到循迹模式 */
+    CMD_MODE_RUN,              /**< 切换到手动控制模式 */
+    CMD_MODE_PWM,              /**< 切换到 PWM 调试模式 */
 } CmdType;
 
 /**
@@ -77,7 +82,7 @@ typedef struct {
  * @note  MODE_RUN:      级联 PID 速度/转向控制 (正常模式)
  *        MODE_PWM_SET:  直接 PWM 占空比输出 (调试模式, 按键切换)
  */
-typedef enum { MODE_RUN, MODE_PWM_SET } Mode_t;
+typedef enum { MODE_RUN, MODE_PWM_SET, MODE_TRACK } Mode_t;
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
