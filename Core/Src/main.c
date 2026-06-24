@@ -174,10 +174,12 @@ int main(void)
     MX_TIM3_Init();
     MX_TIM5_Init();
     MX_TIM6_Init();
+    MX_USART1_UART_Init();
     MX_USART2_UART_Init();
     MX_USART3_UART_Init();
 
     OLED_Init();
+    HAL_Delay(100);  /* OLED 上电稳定延时 */
     Motor_Init();
     MPU6050_Init();
     Encoder_Init_TIM_All();
@@ -185,6 +187,7 @@ int main(void)
     TIM5_Init();
     Key_Init();
     Serial_Init();
+    Serial_Printf("BOOT OK\r\n");   /* 启动诊断 */
     PIDTune_Init();
     Buzzer_Init();
     BlueSerial_Init();
@@ -222,18 +225,21 @@ int main(void)
     PulsePID.Deadband        = 1.0f;
     PulsePID.OutputRateLimit = 20.0f;       /* 限变±20%/10ms, 0→100 约50ms */
 
-    MPU6050_Calibrate();
-    MPU6050_ReadAsync_Start();   /* 启动非阻塞 I2C 链路, 供 ISR 消费 */
-
     OLED_Clear();
     OLED_ShowString(1, 1, " [BlueCar V3.0] ");
     OLED_ShowString(2, 1, " Co-op Tasks   ");
     OLED_ShowString(3, 1, " DMA TX + RB   ");
     OLED_ShowString(4, 1, " Press C8 start ");
+    OLED_Flush();
     Buzzer_ON();  HAL_Delay(200);  Buzzer_OFF();
 
     while (Key_GetNum() != 3);
     OLED_Clear();
+    OLED_ShowString(2, 1, " Calibrating... ");
+    OLED_Flush();
+
+    MPU6050_Calibrate();
+    MPU6050_ReadAsync_Start();
 
     /*====================================================================
      * 主循环 — 协程式任务调度
@@ -633,8 +639,8 @@ void Task_Control_50ms(void)
 
     /*---- 填充遥测快照 (供 VOFA 输出) — 速度列统一为 % of spd_max ----*/
     vofa_data.target_pct  = SpeedPID.Target / spd_max * 100.0f;
-    vofa_data.rpm_r       = (-ecd_right.velocity.angular / 2.0f) / spd_max * 100.0f;
-    vofa_data.rpm_l       = (-ecd_left.velocity.angular / 2.0f) / spd_max * 100.0f;
+    vofa_data.rpm_r       = (ecd_right.velocity.angular / 2.0f) / spd_max * 100.0f;
+    vofa_data.rpm_l       = (ecd_left.velocity.angular / 2.0f) / spd_max * 100.0f;
     vofa_data.speed_out   = PulsePID.Out;     /* 内环 PWM 输出, ±100 */
     vofa_data.yaw_out     = YawPID.Out;       /* 外环差速 RPM, ±20 */
     vofa_data.turn_target = TurnTarget / spd_max * 100.0f;
@@ -704,7 +710,10 @@ void Task_Pulse_10ms(void)
  *====================================================================*/
 void Task_VOFA_Send(void)
 {
+    static uint8_t stop_cnt = 0;
+    if (!RunFlag) stop_cnt++; else stop_cnt = 0;
     if (!VOFA_Enable || !vofa_data.fresh) return;
+    if (!RunFlag && stop_cnt > 20) return;  /* 停车 1 秒后静默 */
     vofa_data.fresh = 0;
 
     char buf[128];

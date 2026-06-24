@@ -23,7 +23,7 @@
 
 extern PID_t      SpeedPID;
 extern PID_t      YawPID;
-extern UART_HandleTypeDef huart3;
+extern UART_HandleTypeDef huart1;
 extern uint8_t    RunFlag;
 extern int16_t    PWMDuty;
 extern Mode_t     Mode;
@@ -208,5 +208,5 @@ void PIDTune_Init(void)
     rx_idx = 0;
     tune_rsp_pending = 0;
     tune_line_ready = 0;
-    HAL_UART_Receive_IT(&huart3, (uint8_t *)&pid_tune_rx_byte, 1);
+    HAL_UART_Receive_IT(&huart1, (uint8_t *)&pid_tune_rx_byte, 1);
 }

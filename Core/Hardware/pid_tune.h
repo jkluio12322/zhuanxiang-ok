@@ -1,6 +1,6 @@
 /**
  * @file    pid_tune.h
- * @brief   PID 串口在线调参 — 串级 PID (USART3 RX, 115200bps)
+ * @brief   PID 串口在线调参 — 串级 PID (USART1 RX, 115200bps)
  * @note    PIDTune_RxCallback 仅在 ISR 中缓冲字节,
  *          PIDTune_Process 在主循环中解析命令 (避免 ISR 竞争)
  */

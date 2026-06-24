@@ -14,9 +14,10 @@
 
 #include "blueserial.h"
 #include "pid_tune.h"
+#include "serial.h"
 
 extern UART_HandleTypeDef huart2;
-extern UART_HandleTypeDef huart3;
+extern UART_HandleTypeDef huart1;
 
 #define BLUE_SERIAL_BUFFER_SIZE  100  /**< 环形缓冲区大小 */
 
@@ -229,8 +230,19 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
         BlueSerial_Put(bt_rx_byte);
         HAL_UART_Receive_IT(&huart2, (uint8_t *)&bt_rx_byte, 1);
     }
-    else if (huart->Instance == USART3) {
+    else if (huart->Instance == USART1) {
         PIDTune_RxCallback(pid_tune_rx_byte);
-        HAL_UART_Receive_IT(&huart3, (uint8_t *)&pid_tune_rx_byte, 1);
+        HAL_UART_Receive_IT(&huart1, (uint8_t *)&pid_tune_rx_byte, 1);
+    }
+}
+
+/**
+ * @brief  UART 发送完成回调 (中断上下文)
+ * @note   USART1 TX 完成后接力发送下一块数据
+ */
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
+{
+    if (huart->Instance == USART1) {
+        Serial_TX_Done();
     }
 }

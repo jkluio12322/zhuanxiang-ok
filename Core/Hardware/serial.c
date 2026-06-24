@@ -1,14 +1,14 @@
 /**
  * @file    serial.c
- * @brief   UART3 串口调试/VOFA+ 通信模块 (DMA TX, 非阻塞)
- * @note    USART3: PD8=TX, PD9=RX, 115200bps
+ * @brief   USART1 串口调试/VOFA+ 通信模块 (中断 TX, 非阻塞)
+ * @note    USART1: PA9=TX, PA10=RX, 115200bps
  *
  *          ┌──────────┐     ┌──────────┐     ┌────────────┐
- *          │ fputc /   │────→│ TX Ring  │────→│ DMA buffer │──→ USART3 TX
+ *          │ fputc /   │────→│ TX Ring  │────→│ IT buffer  │──→ USART1 TX
  *          │ Printf    │     │ (1024B)  │     │ (256B)     │
  *          └──────────┘     └──────────┘     └────────────┘
  *                               ↑                  ↑
- *                          非阻塞写入        DMA Complete ISR
+ *                          非阻塞写入        IT Complete ISR
  *                          (满则丢弃)        自动接力下一块
  *
  *          优先级: 速度 > 完整 — 若TX环满则静默丢弃, 保证控制循环不阻塞
@@ -19,8 +19,7 @@
 #include <stdarg.h>
 #include <string.h>
 
-extern UART_HandleTypeDef huart3;
-extern DMA_HandleTypeDef hdma_usart3_tx;
+extern UART_HandleTypeDef huart1;
 
 /* TX 环形缓冲区 (生产者: 主循环/任务, 消费者: DMA Complete ISR) */
 #define TX_RING_SIZE  1024
@@ -46,7 +45,7 @@ static void Serial_StartDMA(void)
     }
 
     dma_tx_busy = 1;
-    HAL_UART_Transmit_DMA(&huart3, dma_buf, n);
+    HAL_UART_Transmit_IT(&huart1, dma_buf, n);
 }
 
 /**
@@ -144,10 +143,10 @@ void Serial_Printf(char *format, ...)
 }
 
 /**
- * @brief  DMA TX 完成回调 (从 USART3 DMA TX ISR 调用)
- * @note   检查 ring buf 中是否有待发数据, 有则接力启动下一次 DMA
+ * @brief  TX 完成回调 (USART1 TX Complete ISR → HAL_UART_TxCpltCallback 调用)
+ * @note   检查 ring buf 中是否有待发数据, 有则接力启动下一次发送
  */
-void Serial_DMA_TX_Complete(void)
+void Serial_TX_Done(void)
 {
     dma_tx_busy = 0;
     Serial_StartDMA();
