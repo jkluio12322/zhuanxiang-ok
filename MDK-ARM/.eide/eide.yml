@@ -43,6 +43,24 @@ virtualFolder:
                     - path: ../Core/Hardware/timer.c
                     - path: ../Core/Hardware/blueserial.c
                     - path: ../Core/Hardware/ringbuf.c
+                    - path: ../Core/Hardware/blueserial.h
+                    - path: ../Core/Hardware/buzzer.h
+                    - path: ../Core/Hardware/encoder.h
+                    - path: ../Core/Hardware/imu_mahony.c
+                    - path: ../Core/Hardware/imu_mahony.h
+                    - path: ../Core/Hardware/irtrack.c
+                    - path: ../Core/Hardware/irtrack.h
+                    - path: ../Core/Hardware/key.h
+                    - path: ../Core/Hardware/motor.h
+                    - path: ../Core/Hardware/mpu6050.h
+                    - path: ../Core/Hardware/mpu6050_reg.h
+                    - path: ../Core/Hardware/oled.h
+                    - path: ../Core/Hardware/oled_font.h
+                    - path: ../Core/Hardware/pid.h
+                    - path: ../Core/Hardware/pid_tune.h
+                    - path: ../Core/Hardware/ringbuf.h
+                    - path: ../Core/Hardware/serial.h
+                    - path: ../Core/Hardware/timer.h
                   folders: []
     - name: Drivers
       files: []
@@ -228,7 +246,7 @@ targets:
           linker:
             $outputTaskExcludes:
               - .bin
-            LD_FLAGS: "-Wl,--no-warn-rwx-segments -Wl,-u,_printf_float"
+            LD_FLAGS: -Wl,--no-warn-rwx-segments -Wl,-u,_printf_float
             LIB_FLAGS: -lm
             output-format: elf
             remove-unused-input-sections: true

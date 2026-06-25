@@ -182,7 +182,7 @@ int main(void)
 
     PID_Init(&SpeedPID);
     /* SpeedPID: 直接控制速度 */
-    PID_SetParam(&SpeedPID, 0.8f, 0.08f, 0.3f);  /* Ki 消除稳态误差 */
+    PID_SetParam(&SpeedPID, 0.65f, 0.1f, 0.3f);  /* Ki 消除稳态误差 */
     SpeedPID.Kf              = 0.4f;       /* 前馈: 稳态PWM/目标RPM ≈ 0.65, 提供基线输出 */
     SpeedPID.OutMax          = 100;         /* 满占空比, Kf提供基线 + I补齐余量 */
     SpeedPID.OutMin          = -100;
