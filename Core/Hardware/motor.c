@@ -40,13 +40,14 @@ void Motor_SetSpeedA(int16_t Speed)
 
 void Motor_SetSpeedB(int16_t Speed)
 {
+    /* B轮接线反了: PF3↔PF4 对调 */
     if (Speed >= 0) {
-        HAL_GPIO_WritePin(GPIOF, GPIO_PIN_4, GPIO_PIN_RESET);
-        HAL_GPIO_WritePin(GPIOF, GPIO_PIN_3, GPIO_PIN_SET);
+        HAL_GPIO_WritePin(GPIOF, GPIO_PIN_3, GPIO_PIN_RESET);
+        HAL_GPIO_WritePin(GPIOF, GPIO_PIN_4, GPIO_PIN_SET);
         __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, motor_ccr(Speed));
     } else {
-        HAL_GPIO_WritePin(GPIOF, GPIO_PIN_4, GPIO_PIN_SET);
-        HAL_GPIO_WritePin(GPIOF, GPIO_PIN_3, GPIO_PIN_RESET);
+        HAL_GPIO_WritePin(GPIOF, GPIO_PIN_3, GPIO_PIN_SET);
+        HAL_GPIO_WritePin(GPIOF, GPIO_PIN_4, GPIO_PIN_RESET);
         __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, motor_ccr(-Speed));
     }
 }

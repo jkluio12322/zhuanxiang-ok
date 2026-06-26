@@ -4,9 +4,6 @@
             "path": "."
         }
     ],
-    "settings": {
-        "workbench.editor.closeEmptyGroups": false,
-        "workbench.editor.closeOnFileDelete": true
-    },
+    "settings": {},
     "extensions": {}
 }

@@ -44,7 +44,9 @@ extern "C" {
  */
 typedef enum {
     CMD_NONE = 0,              /**< 空命令 (占位/无操作) */
-    CMD_SPEED,                 /**< 设置 SpeedPID 目标 RPM */
+    CMD_SPEED,                 /**< 设置双轮 SpeedPID 目标 RPM */
+    CMD_SPEED_L,               /**< 设置左轮 SpeedPID 目标 RPM */
+    CMD_SPEED_R,               /**< 设置右轮 SpeedPID 目标 RPM */
     CMD_TURN,                  /**< 设置手动转向差速 RPM (TurnTarget) */
     CMD_STOP,                  /**< 停车: RunFlag=0, 清空 PID 状态 */
     CMD_START,                 /**< 启动: RunFlag=1 */

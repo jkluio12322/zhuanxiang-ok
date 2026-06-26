@@ -13,7 +13,7 @@ virtualFolder:
       folders:
         - name: MDK-ARM
           files:
-            - path: startup_stm32f103xe_gcc.s
+            - path: startup_stm32f103xe.s
           folders: []
         - name: User
           files: []
@@ -46,14 +46,11 @@ virtualFolder:
                     - path: ../Core/Hardware/blueserial.h
                     - path: ../Core/Hardware/buzzer.h
                     - path: ../Core/Hardware/encoder.h
-                    - path: ../Core/Hardware/imu_mahony.c
-                    - path: ../Core/Hardware/imu_mahony.h
                     - path: ../Core/Hardware/irtrack.c
                     - path: ../Core/Hardware/irtrack.h
                     - path: ../Core/Hardware/key.h
                     - path: ../Core/Hardware/motor.h
                     - path: ../Core/Hardware/mpu6050.h
-                    - path: ../Core/Hardware/mpu6050_reg.h
                     - path: ../Core/Hardware/oled.h
                     - path: ../Core/Hardware/oled_font.h
                     - path: ../Core/Hardware/pid.h
@@ -61,6 +58,8 @@ virtualFolder:
                     - path: ../Core/Hardware/ringbuf.h
                     - path: ../Core/Hardware/serial.h
                     - path: ../Core/Hardware/timer.h
+                    - path: ../Core/Hardware/filter.c
+                    - path: ../Core/Hardware/filter.h
                   folders: []
     - name: Drivers
       files: []
@@ -86,7 +85,6 @@ virtualFolder:
         - name: CMSIS
           files:
             - path: ../Core/Src/system_stm32f1xx.c
-            - path: ../Core/Src/syscalls.c
           folders: []
     - name: ::CMSIS
       files: []
@@ -111,10 +109,11 @@ targets:
         - .cmsis/include
         - RTE/_bluecar
       libList: []
-    excludeList: []
+    excludeList:
+      - <virtual_root>/Application/User/Core/Hardware/imu_mahony.c
     settings:
       debugger: cortex-debug
-    toolchain: GCC
+    toolchain: AC5
     toolchainConfigMap:
       AC5:
         archExtensions: ""
@@ -211,7 +210,7 @@ targets:
                 startAddr: "0x8000000"
               tag: IROM
             - id: 2
-              isChecked: true
+              isChecked: false
               isStartup: false
               mem:
                 size: "0x0"
@@ -222,34 +221,7 @@ targets:
         archExtensions: ""
         cpuType: Cortex-M3
         floatingPointHardware: none
-        options:
-          version: 5
-          afterBuildTasks: []
-          asm-compiler:
-            ASM_FLAGS: ""
-          beforeBuildTasks: []
-          c/cpp-compiler:
-            CXX_FLAGS: ""
-            C_FLAGS: ""
-            language-c: c11
-            language-cpp: c++11
-            one-elf-section-per-data: true
-            one-elf-section-per-function: true
-            optimization: level-debug
-            warnings: all-warnings
-          global:
-            $float-abi-type: hard
-            misc-control: ""
-            not-use-syscalls: true
-            output-debug-info: enable
-            use-newlib-nano: true
-          linker:
-            $outputTaskExcludes:
-              - .bin
-            LD_FLAGS: -Wl,--no-warn-rwx-segments -Wl,-u,_printf_float
-            LIB_FLAGS: -lm
-            output-format: elf
-            remove-unused-input-sections: true
+        options: ""
         scatterFilePath: STM32F103ZETx_FLASH.ld
         storageLayout:
           RAM: []

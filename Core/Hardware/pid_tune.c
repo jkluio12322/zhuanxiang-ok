@@ -21,7 +21,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-extern PID_t      SpeedPID;
+extern PID_t      SpeedPID_L, SpeedPID_R;
 extern PID_t      YawPID;
 extern UART_HandleTypeDef huart1;
 extern uint8_t    RunFlag;
@@ -71,24 +71,34 @@ void PIDTune_Process(void)
 
     /* ---- 内环 SpeedPID (直接修改, 即时生效) ---- */
     if (strcmp(tok, "skp") == 0 && n >= 2) {
-        SpeedPID.Kp = val;
+        SpeedPID_L.Kp = SpeedPID_R.Kp = val;
         tune_rsp("[SpeedPID] Kp=%.2f Ki=%.2f Kd=%.2f Kf=%.2f\r\n",
-                 SpeedPID.Kp, SpeedPID.Ki, SpeedPID.Kd, SpeedPID.Kf);
+                 SpeedPID_L.Kp, SpeedPID_L.Ki, SpeedPID_L.Kd, SpeedPID_L.Kf);
     }
     else if (strcmp(tok, "ski") == 0 && n >= 2) {
-        SpeedPID.Ki = val;
+        SpeedPID_L.Ki = SpeedPID_R.Ki = val;
         tune_rsp("[SpeedPID] Kp=%.2f Ki=%.2f Kd=%.2f Kf=%.2f\r\n",
-                 SpeedPID.Kp, SpeedPID.Ki, SpeedPID.Kd, SpeedPID.Kf);
+                 SpeedPID_L.Kp, SpeedPID_L.Ki, SpeedPID_L.Kd, SpeedPID_L.Kf);
     }
     else if (strcmp(tok, "skd") == 0 && n >= 2) {
-        SpeedPID.Kd = val;
+        SpeedPID_L.Kd = SpeedPID_R.Kd = val;
         tune_rsp("[SpeedPID] Kp=%.2f Ki=%.2f Kd=%.2f Kf=%.2f\r\n",
-                 SpeedPID.Kp, SpeedPID.Ki, SpeedPID.Kd, SpeedPID.Kf);
+                 SpeedPID_L.Kp, SpeedPID_L.Ki, SpeedPID_L.Kd, SpeedPID_L.Kf);
     }
     else if (strcmp(tok, "skf") == 0 && n >= 2) {
-        SpeedPID.Kf = val;
+        SpeedPID_L.Kf = SpeedPID_R.Kf = val;
         tune_rsp("[SpeedPID] Kp=%.2f Ki=%.2f Kd=%.2f Kf=%.2f\r\n",
-                 SpeedPID.Kp, SpeedPID.Ki, SpeedPID.Kd, SpeedPID.Kf);
+                 SpeedPID_L.Kp, SpeedPID_L.Ki, SpeedPID_L.Kd, SpeedPID_L.Kf);
+    }
+    else if (strcmp(tok, "skfl") == 0 && n >= 2) {
+        SpeedPID_L.Kf = val;
+        tune_rsp("[SpeedPID] Kf_L=%.2f Kf_R=%.2f\r\n",
+                 SpeedPID_L.Kf, SpeedPID_R.Kf);
+    }
+    else if (strcmp(tok, "skfr") == 0 && n >= 2) {
+        SpeedPID_R.Kf = val;
+        tune_rsp("[SpeedPID] Kf_L=%.2f Kf_R=%.2f\r\n",
+                 SpeedPID_L.Kf, SpeedPID_R.Kf);
     }
 
     /* ---- 外环 YawPID (直接修改, 即时生效) ---- */
@@ -119,6 +129,18 @@ void PIDTune_Process(void)
         msg.type = CMD_START; msg.val = 0;   CmdQueue_Put(msg);
         bt_last_rx = millis;
         tune_rsp("[Motor] SpeedTarget=%.1f RPM\r\n", val);
+    }
+    else if (strcmp(tok, "tl") == 0 && n >= 2) {
+        msg.type = CMD_SPEED_L; msg.val = val; CmdQueue_Put(msg);
+        msg.type = CMD_START; msg.val = 0;    CmdQueue_Put(msg);
+        bt_last_rx = millis;
+        tune_rsp("[Motor] LeftTarget=%.1f RPM\r\n", val);
+    }
+    else if (strcmp(tok, "tr") == 0 && n >= 2) {
+        msg.type = CMD_SPEED_R; msg.val = val; CmdQueue_Put(msg);
+        msg.type = CMD_START; msg.val = 0;    CmdQueue_Put(msg);
+        bt_last_rx = millis;
+        tune_rsp("[Motor] RightTarget=%.1f RPM\r\n", val);
     }
     else if (strcmp(tok, "yaw") == 0 && n >= 2) {
         msg.type = CMD_YAW_TARGET; msg.val = val; CmdQueue_Put(msg);
@@ -159,13 +181,18 @@ void PIDTune_Process(void)
     }
 
     /* ---- 查询 ---- */
+    else if (strcmp(tok, "yaw0") == 0) {
+        msg.type = CMD_IMU_CALIB; msg.val = 0;
+        CmdQueue_Put(msg);
+        tune_rsp("[IMU] Yaw reset to 0\r\n");
+    }
     else if (strcmp(tok, "show") == 0) {
         tune_rsp("=== Cascade PID ===\r\n"
                  "[SpeedPID] Kp=%.2f Ki=%.2f Kd=%.2f Kf=%.2f  Tgt=%.1f Out=%.1f\r\n"
                  "[YawPID]   Kp=%.2f Ki=%.2f Kd=%.2f Kf=%.2f  Tgt=%.1f Out=%.1f\r\n"
                  "TurnDiff=%.1f  Run=%d Mode=%d\r\n",
-                 SpeedPID.Kp, SpeedPID.Ki, SpeedPID.Kd, SpeedPID.Kf,
-                 SpeedPID.Target, SpeedPID.Out,
+                 SpeedPID_L.Kp, SpeedPID_L.Ki, SpeedPID_L.Kd, SpeedPID_L.Kf,
+                 SpeedPID_L.Target, SpeedPID_L.Out,
                  YawPID.Kp, YawPID.Ki, YawPID.Kd, YawPID.Kf,
                  YawPID.Target, YawPID.Out,
                  TurnTarget, RunFlag, Mode);
