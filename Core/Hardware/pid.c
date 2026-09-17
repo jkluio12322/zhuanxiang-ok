@@ -1,8 +1,14 @@
 /**
  * @file    pid.c
- * @brief   位置式 PID 控制器 (参考平衡车测试程序-V1.0)
+ * @brief   位置式和增量式 PID 控制器。
  *
- *          公式: Out = Kp*e(k) + Ki*Σe + Kd*[Actual(k-1)-Actual(k)] + Kf*Target
+ *          位置式公式:
+ *            Out = Kp*e(k) + Ki*Σe
+ *                + Kd*[Actual(k-1)-Actual(k)] + Kf*Target
+ *
+ *          增量式公式:
+ *            ΔOut = Kp*(e0-e1) + Ki*e0 + Kd*(e0-2*e1+e2)
+ *            Out(k) = Out(k-1) + ΔOut
  *
  *          处理流程 (每控制周期):
  *            误差传递 → P 项 → I 项(含死区+限幅) → D 项(微分先行)
@@ -26,6 +32,10 @@
 #include "pid.h"
 #include <math.h>
 
+/**
+ * @brief  初始化 PID 对象的所有状态和参数。
+ * @param  p PID 对象指针。
+ */
 void PID_Init(PID_t *p)
 {
     p->Target    = 0;
@@ -38,6 +48,7 @@ void PID_Init(PID_t *p)
     p->Kf        = 0;
     p->Error0    = 0;
     p->Error1    = 0;
+    p->Error2    = 0;
     p->POut      = 0;
     p->IOut      = 0;
     p->DOut      = 0;
@@ -47,9 +58,17 @@ void PID_Init(PID_t *p)
     p->IntegralLimit   = 0;
     p->Deadband        = 0;
     p->OutputRateLimit = 0;
+    p->LastIncrement   = 0;
     p->LastOutput      = 0;
 }
 
+/**
+ * @brief  设置 PID 比例、积分和微分增益。
+ * @param  p PID 对象指针。
+ * @param  kp 比例增益。
+ * @param  ki 积分增益。
+ * @param  kd 微分增益。
+ */
 void PID_SetParam(PID_t *p, float kp, float ki, float kd)
 {
     p->Kp = kp;
@@ -57,6 +76,12 @@ void PID_SetParam(PID_t *p, float kp, float ki, float kd)
     p->Kd = kd;
 }
 
+/**
+ * @brief  设置 PID 目标值并处理方向反转。
+ * @param  p PID 对象指针。
+ * @param  target 新目标值。
+ * @note   当目标值符号变化时清零积分项，避免反向调节延迟。
+ */
 void PID_SetTarget(PID_t *p, float target)
 {
     /* 方向反转检测: 目标符号变化时清零积分, 防止反向响应迟钝 */
@@ -214,5 +239,60 @@ void PID_Update(PID_t *p)
     if (p->Out < p->OutMin) { p->Out = p->OutMin; }
 
     /* 保存本次实际值, 供下周期 D 项计算 */
+    p->Actual1 = p->Actual;
+}
+
+/**
+ * @brief  执行一次增量式 PID 更新。
+ * @param  p PID 对象指针。
+ * @note   计算公式:
+ *         ΔOut = Kp*(e0-e1) + Ki*e0 + Kd*(e0-2*e1+e2)
+ *         误差进入死区时本周期增量为零；OutputRateLimit 用于限制单周期
+ *         增量；最终输出继续受 OutMax/OutMin 限制。增量式不使用 Kf、
+ *         IntegralLimit 和 OutOffset。
+ */
+void PID_IncrementalUpdate(PID_t *p)
+{
+    float deltaOut;
+
+    /* 依次保存 e2、e1，再计算本周期误差 e0。 */
+    p->Error2 = p->Error1;
+    p->Error1 = p->Error0;
+    p->Error0 = p->Target - p->Actual;
+
+    /* 保存各分量，便于串口 show 和 VOFA 调参时观察。 */
+    p->POut = p->Kp * (p->Error0 - p->Error1);
+    p->IOut = p->Ki * p->Error0;
+    p->DOut = p->Kd * (p->Error0 - 2.0f * p->Error1 + p->Error2);
+    deltaOut = p->POut + p->IOut + p->DOut;
+
+    /* 误差在死区内时保持当前 PWM，不继续产生增量。 */
+    if (p->Deadband > 0.0f
+        && fabsf(p->Error0) <= p->Deadband) {
+        deltaOut = 0.0f;
+    }
+
+    /* OutputRateLimit 在增量式中限制单周期最大 PWM 变化量。 */
+    if (p->OutputRateLimit > 0.0f) {
+        if (deltaOut > p->OutputRateLimit) {
+            deltaOut = p->OutputRateLimit;
+        }
+        if (deltaOut < -p->OutputRateLimit) {
+            deltaOut = -p->OutputRateLimit;
+        }
+    }
+
+    p->LastIncrement = deltaOut;
+    p->Out += deltaOut;
+
+    /* 输出限幅后保存状态，防止状态量超出实际 PWM 边界。 */
+    if (p->Out > p->OutMax) {
+        p->Out = p->OutMax;
+    }
+    if (p->Out < p->OutMin) {
+        p->Out = p->OutMin;
+    }
+
+    p->LastOutput = p->Out;
     p->Actual1 = p->Actual;
 }

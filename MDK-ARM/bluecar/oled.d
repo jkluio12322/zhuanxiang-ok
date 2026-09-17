@@ -30,5 +30,8 @@ bluecar\oled.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h
 bluecar\oled.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h
 bluecar\oled.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h
 bluecar\oled.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h
+bluecar\oled.o: ../Core/Application/yingYongLeiXing.h
 bluecar\oled.o: ../Core/Hardware/oled_font.h
+bluecar\oled.o: ../Core/Hardware/oled_font_small.h
 bluecar\oled.o: ../Core/Inc/i2c.h
+bluecar\oled.o: F:\kilv5\ARM\ARMCC\Bin\..\include\string.h

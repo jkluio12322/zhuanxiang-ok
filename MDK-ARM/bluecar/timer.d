@@ -30,4 +30,9 @@ bluecar\timer.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h
 bluecar\timer.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h
 bluecar\timer.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h
 bluecar\timer.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h
+bluecar\timer.o: ../Core/Application/yingYongLeiXing.h
+bluecar\timer.o: ../Core/Application/yingYongKongZhi.h
+bluecar\timer.o: ../Core/Application/yingYongPeiZhi.h
+bluecar\timer.o: ../Core/Application/yingYongChuanGanQi.h
+bluecar\timer.o: ../Core/Application/yingYongYaoCe.h
 bluecar\timer.o: ../Core/Hardware/key.h

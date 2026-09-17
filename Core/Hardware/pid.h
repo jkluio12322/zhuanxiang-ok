@@ -1,17 +1,20 @@
 /**
  * @file    pid.h
- * @brief   位置式 PID 控制器 (参考平衡车测试程序-V1.0)
- * @note    公式: Out = Kp*e(k) + Ki*∑e + Kd*[Actual(k-1)-Actual(k)] + Kf*Target
+ * @brief   位置式和增量式 PID 控制器。
+ * @note    位置式公式:
+ *          Out = Kp*e(k) + Ki*Σe + Kd*[Actual(k-1)-Actual(k)] + Kf*Target
+ *          增量式公式:
+ *          ΔOut = Kp*(e0-e1) + Ki*e0 + Kd*(e0-2*e1+e2)
  */
 
 #ifndef __BSP_PID_H
-#define __BSP_PID_H
+#define __BSP_PID_H  /* 头文件保护宏，防止 PID 接口重复声明。 */
 
 /**
- * @brief 位置式 PID 控制器结构体
- * @note  公式: Out = Kp*e(k) + Ki*Σe + Kd*[Actual(k-1)-Actual(k)] + Kf*Target
- *        Out > 0 时 +OutOffset, Out < 0 时 -OutOffset (死区补偿)
- *        最后经 OutputRateLimit 限变化率, 再经 OutMax/OutMin 限幅输出
+ * @brief 位置式和增量式 PID 共用控制器结构体。
+ * @note  位置式更新会按完整公式计算绝对输出；增量式更新只计算本周期增量，
+ *        再累加到 Out。Deadband、OutputRateLimit 和 OutMax/OutMin 对两种
+ *        更新方式都有效。
  */
 typedef struct {
     /* ── 输入/输出 ───────────────────────────────────── */
@@ -27,8 +30,9 @@ typedef struct {
     float Kf;           /* 前馈增益: Target*Kf 直接叠加到输出         */
 
     /* ── 误差 (内部状态) ─────────────────────────────── */
-    float Error0;       /* 当前误差: Target - Actual                  */
-    float Error1;       /* 上一次误差 (当前代码未直接使用)            */
+    float Error0;       /* 当前误差: e0 = Target - Actual             */
+    float Error1;       /* 上一周期误差: e1                           */
+    float Error2;       /* 上上周期误差: e2，供增量式 D 项使用        */
 
     /* ── 各分量输出 (调试/观察用) ─────────────────────── */
     float POut;         /* 比例项输出 */
@@ -42,12 +46,44 @@ typedef struct {
     float IntegralLimit;/* 积分限幅: I 项绝对值上限, 防止积分饱和导致超调/迟钝 */
     float Deadband;     /* 积分死区: |误差|≤Deadband 时停积积分, 防止编码器噪声引起稳态震荡 */
     float OutputRateLimit; /* 输出变化率限制: 单次 update 输出最大变化量, 防止急加速/急刹车 */
-    float LastOutput;   /* 上一次输出值, 用于计算输出变化量 */
+    float LastIncrement;/* 增量式 PID 本周期实际输出增量                */
+    float LastOutput;   /* 上一次输出值, 用于计算输出变化量             */
 } PID_t;
 
+/**
+ * @brief  初始化 PID 控制器。
+ * @param  p PID 对象指针。
+ */
 void PID_Init(PID_t *p);
+
+/**
+ * @brief  设置 PID 的 P、I、D 三个基础增益。
+ * @param  p PID 对象指针。
+ * @param  kp 比例增益。
+ * @param  ki 积分增益。
+ * @param  kd 微分增益。
+ */
 void PID_SetParam(PID_t *p, float kp, float ki, float kd);
+
+/**
+ * @brief  设置 PID 目标值。
+ * @param  p PID 对象指针。
+ * @param  target 新目标值。
+ * @note   目标方向反转时清除积分项，防止反向响应迟钝。
+ */
 void PID_SetTarget(PID_t *p, float target);
+
+/**
+ * @brief  执行一次 PID 更新。
+ * @param  p PID 对象指针。
+ */
 void PID_Update(PID_t *p);
+
+/**
+ * @brief  执行一次增量式 PID 更新。
+ * @param  p PID 对象指针。
+ * @note   本周期误差历史依次传递，计算结果累加到 p->Out。
+ */
+void PID_IncrementalUpdate(PID_t *p);
 
 #endif

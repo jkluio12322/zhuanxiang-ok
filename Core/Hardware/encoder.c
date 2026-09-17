@@ -15,6 +15,7 @@
 
 #include "encoder.h"
 
+/* 圆周率常量，用于把轮子圈数换算为线速度和距离。 */
 #define PI  3.14159265358979323846f
 
 extern TIM_HandleTypeDef htim2;
@@ -31,14 +32,18 @@ void Encoder_Init_TIM_All(void)
 {
     HAL_TIM_Encoder_Start(&htim2, TIM_CHANNEL_ALL);
     HAL_TIM_Encoder_Start(&htim3, TIM_CHANNEL_ALL);
-    __HAL_TIM_ENABLE_IT(&htim2, TIM_IT_UPDATE);
-    __HAL_TIM_ENABLE_IT(&htim3, TIM_IT_UPDATE);
 }
 
 /**
  * @brief  读取本周期编码器脉冲增量 (差分, 不修改硬件计数器)
  * @param  TIMx 编码器定时器 (TIM2 或 TIM3)
  * @return 自上次调用以来的 16 位有符号脉冲增量 (带方向)
+ */
+/**
+ * @brief  读取编码器计数器相对上一次调用的有符号增量。
+ * @param  TIMx 编码器定时器 TIM2 或 TIM3。
+ * @return 16 位有符号脉冲增量，正值和负值分别表示两个旋转方向。
+ * @note   函数内部为两个定时器分别保存上次 CNT 值。
  */
 int16_t Encoder_Get(TIM_TypeDef *TIMx)
 {

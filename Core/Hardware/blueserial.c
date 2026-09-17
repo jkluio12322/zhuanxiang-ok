@@ -19,7 +19,8 @@
 extern UART_HandleTypeDef huart2;
 extern UART_HandleTypeDef huart1;
 
-#define BLUE_SERIAL_BUFFER_SIZE  100  /**< 环形缓冲区大小 */
+/* 蓝牙接收环形缓冲区容量，单位字节。 */
+#define BLUE_SERIAL_BUFFER_SIZE  100
 
 /** 环形缓冲区 (ISR 写入, 主循环读取 → volatile 防止编译器缓存) */
 static uint8_t BlueSerial_Buffer[BLUE_SERIAL_BUFFER_SIZE];
@@ -96,6 +97,11 @@ void BlueSerial_ClearBuffer(void)
  * @param  Byte 待写入字节
  * @note   缓冲区满时静默丢弃
  */
+/**
+ * @brief  向蓝牙接收环形缓冲区写入一个字节。
+ * @param  Byte 待写入字节。
+ * @note   缓冲区满时静默丢弃新字节，避免在中断中等待。
+ */
 static void BlueSerial_Put(uint8_t Byte)
 {
     /* 缓冲区满则丢弃 */
@@ -112,6 +118,11 @@ static void BlueSerial_Put(uint8_t Byte)
  * @brief  从环形缓冲区读取一个字节 (消费者)
  * @param  Byte 输出参数: 读取的字节
  * @return 0=成功, 1=缓冲区空
+ */
+/**
+ * @brief  从蓝牙接收环形缓冲区取出一个字节。
+ * @param  Byte 输出字节指针。
+ * @return 0 表示成功，1 表示缓冲区为空。
  */
 static uint8_t BlueSerial_Get(uint8_t *Byte)
 {
@@ -131,6 +142,10 @@ static uint8_t BlueSerial_Get(uint8_t *Byte)
  * @brief  获取环形缓冲区中有效数据长度
  * @return 缓冲区中未读取的字节数
  */
+/**
+ * @brief  获取蓝牙接收缓冲区中未读取的数据长度。
+ * @return 有效数据字节数。
+ */
 static uint16_t BlueSerial_Length(void)
 {
     return (BlueSerial_PutIndex + BLUE_SERIAL_BUFFER_SIZE - BlueSerial_GetIndex)
@@ -141,6 +156,11 @@ static uint16_t BlueSerial_Length(void)
  * @brief  按索引读取缓冲区数据 (不移除)
  * @param  Index 从读取位置开始的偏移
  * @return 缓冲区中指定位置的字节
+ */
+/**
+ * @brief  读取缓冲区中指定偏移位置的数据但不移动读索引。
+ * @param  Index 相对当前读索引的偏移。
+ * @return 对应位置的数据字节。
  */
 static uint8_t BlueSerial_Read(uint16_t Index)
 {
@@ -231,8 +251,8 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
         HAL_UART_Receive_IT(&huart2, (uint8_t *)&bt_rx_byte, 1);
     }
     else if (huart->Instance == USART1) {
-        PIDTune_RxCallback(pid_tune_rx_byte);
-        HAL_UART_Receive_IT(&huart1, (uint8_t *)&pid_tune_rx_byte, 1);
+        pidTuneRxCallback(pidTuneRxByte);
+        HAL_UART_Receive_IT(&huart1, (uint8_t *)&pidTuneRxByte, 1);
     }
 }
 

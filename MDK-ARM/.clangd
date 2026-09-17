@@ -1,0 +1,30 @@
+CompileFlags:
+  Add:
+    - -isystemnull\include
+    - -ferror-limit=0
+    - -isystemE:\32\STM32CubeCLT_1.20.0\GNU-tools-for-STM32\arm-none-eabi\include\c++\13.3.1
+    - -isystemE:\32\STM32CubeCLT_1.20.0\GNU-tools-for-STM32\arm-none-eabi\include\c++\13.3.1\arm-none-eabi\thumb\v7-m\nofp
+    - -isystemE:\32\STM32CubeCLT_1.20.0\GNU-tools-for-STM32\arm-none-eabi\include\c++\13.3.1\backward
+    - -isystemE:\32\STM32CubeCLT_1.20.0\GNU-tools-for-STM32\lib\gcc\arm-none-eabi\13.3.1\include
+    - -isystemE:\32\STM32CubeCLT_1.20.0\GNU-tools-for-STM32\lib\gcc\arm-none-eabi\13.3.1\include-fixed
+    - -isystemE:\32\STM32CubeCLT_1.20.0\GNU-tools-for-STM32\arm-none-eabi\include
+  Remove:
+    - --cpu
+    - --li
+    - --c99
+    - --split_sections
+    - --diag_suppress=*
+    - --no_depend_system_headers
+    - --depend
+    - --strict
+    - --enum_is_int
+    - --gnu
+    - --apcs=*
+    - --signed_chars
+    - --split_ldm
+    - --execute_only
+    - -Otime
+  CompilationDatabase: ./build/bluecar
+  Compiler: E:\32\STM32CubeCLT_1.20.0\GNU-tools-for-STM32\bin\arm-none-eabi-gcc.exe
+Diagnostics:
+  Suppress: "*"

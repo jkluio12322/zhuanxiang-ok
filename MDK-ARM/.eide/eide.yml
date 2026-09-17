@@ -36,6 +36,7 @@ virtualFolder:
                     - path: ../Core/Hardware/pid.c
                     - path: ../Core/Hardware/pid_tune.c
                     - path: ../Core/Hardware/mpu6050.c
+                    - path: ../Core/Hardware/filter.c
                     - path: ../Core/Hardware/oled.c
                     - path: ../Core/Hardware/key.c
                     - path: ../Core/Hardware/buzzer.c
@@ -43,23 +44,17 @@ virtualFolder:
                     - path: ../Core/Hardware/timer.c
                     - path: ../Core/Hardware/blueserial.c
                     - path: ../Core/Hardware/ringbuf.c
-                    - path: ../Core/Hardware/blueserial.h
-                    - path: ../Core/Hardware/buzzer.h
-                    - path: ../Core/Hardware/encoder.h
                     - path: ../Core/Hardware/irtrack.c
-                    - path: ../Core/Hardware/irtrack.h
-                    - path: ../Core/Hardware/key.h
-                    - path: ../Core/Hardware/motor.h
-                    - path: ../Core/Hardware/mpu6050.h
-                    - path: ../Core/Hardware/oled.h
-                    - path: ../Core/Hardware/oled_font.h
-                    - path: ../Core/Hardware/pid.h
-                    - path: ../Core/Hardware/pid_tune.h
-                    - path: ../Core/Hardware/ringbuf.h
-                    - path: ../Core/Hardware/serial.h
-                    - path: ../Core/Hardware/timer.h
-                    - path: ../Core/Hardware/filter.c
-                    - path: ../Core/Hardware/filter.h
+                  folders: []
+                - name: Application
+                  files:
+                    - path: ../Core/Application/yingYongMingLing.c
+                    - path: ../Core/Application/yingYongKongZhi.c
+                    - path: ../Core/Application/yingYongXunJi.c
+                    - path: ../Core/Application/yingYongXianShi.c
+                    - path: ../Core/Application/yingYongChuanGanQi.c
+                    - path: ../Core/Application/yingYongZhuangTai.c
+                    - path: ../Core/Application/yingYongYaoCe.c
                   folders: []
     - name: Drivers
       files: []
@@ -101,6 +96,7 @@ targets:
         - STM32F103xE
       incList:
         - ../Core/Inc
+        - ../Core/Application
         - ../Core/Hardware
         - ../Drivers/STM32F1xx_HAL_Driver/Inc
         - ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy
@@ -109,8 +105,7 @@ targets:
         - .cmsis/include
         - RTE/_bluecar
       libList: []
-    excludeList:
-      - <virtual_root>/Application/User/Core/Hardware/imu_mahony.c
+    excludeList: []
     settings:
       debugger: cortex-debug
     toolchain: AC5

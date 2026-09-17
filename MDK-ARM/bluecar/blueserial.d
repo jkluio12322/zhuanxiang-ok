@@ -30,8 +30,10 @@ bluecar\blueserial.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h
 bluecar\blueserial.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h
 bluecar\blueserial.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h
 bluecar\blueserial.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h
+bluecar\blueserial.o: ../Core/Application/yingYongLeiXing.h
 bluecar\blueserial.o: F:\kilv5\ARM\ARMCC\Bin\..\include\string.h
 bluecar\blueserial.o: F:\kilv5\ARM\ARMCC\Bin\..\include\stdlib.h
 bluecar\blueserial.o: F:\kilv5\ARM\ARMCC\Bin\..\include\stdio.h
 bluecar\blueserial.o: F:\kilv5\ARM\ARMCC\Bin\..\include\stdarg.h
 bluecar\blueserial.o: ../Core/Hardware/pid_tune.h
+bluecar\blueserial.o: ../Core/Hardware/serial.h

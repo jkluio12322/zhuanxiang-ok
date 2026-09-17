@@ -30,10 +30,16 @@ bluecar\pid_tune.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h
 bluecar\pid_tune.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h
 bluecar\pid_tune.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h
 bluecar\pid_tune.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h
+bluecar\pid_tune.o: ../Core/Application/yingYongLeiXing.h
+bluecar\pid_tune.o: ../Core/Application/yingYongMingLing.h
+bluecar\pid_tune.o: ../Core/Application/yingYongPeiZhi.h
+bluecar\pid_tune.o: ../Core/Application/yingYongZhuangTai.h
+bluecar\pid_tune.o: ../Core/Hardware/encoder.h
+bluecar\pid_tune.o: ../Core/Hardware/mpu6050.h
 bluecar\pid_tune.o: ../Core/Hardware/pid.h
 bluecar\pid_tune.o: ../Core/Hardware/motor.h
 bluecar\pid_tune.o: ../Core/Hardware/serial.h
 bluecar\pid_tune.o: F:\kilv5\ARM\ARMCC\Bin\..\include\stdio.h
 bluecar\pid_tune.o: F:\kilv5\ARM\ARMCC\Bin\..\include\stdarg.h
-bluecar\pid_tune.o: F:\kilv5\ARM\ARMCC\Bin\..\include\string.h
 bluecar\pid_tune.o: F:\kilv5\ARM\ARMCC\Bin\..\include\stdlib.h
+bluecar\pid_tune.o: F:\kilv5\ARM\ARMCC\Bin\..\include\string.h

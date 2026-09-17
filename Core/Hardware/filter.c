@@ -1,7 +1,8 @@
-#include "filter.h"
+   #include "filter.h"
 #include "math.h"
 
 #ifndef M_PI
+/* 圆周率常量，用于按截止频率计算滤波器时间常数。 */
 #define M_PI	3.1415926535f
 #endif
 

@@ -1,117 +1,193 @@
 /**
  * @file    mpu6050.c
- * @brief   MPU6050 驱动 — I2C + Madgwick AHRS (移植自 bilibili 小努班 V1.7)
+ * @brief   MPU6050 驱动 — 卡尔曼滤波 + Madgwick AHRS (移植自 bilibili 小努班 V1.7)
  * @note    阻塞 I2C: MPU6050_init / MPU6050_Get_Angle_Plus (不可进 ISR)
  *          异步 I2C: MPU6050_ReadAsync_Start/Done/Get (ISR 安全)
  *          AHRS 纯数学: MPU6050_AHRS_Update (ISR 安全, 配合异步 I2C)
+ *          滤波器: 卡尔曼 (Acc: q=1,r=10; Gyro: q=1,r=0.1)
+ *          I2C 总线死锁自动恢复 (STM32F1 errata)
  */
 
 #include "mpu6050.h"
-#include <math.h>
-#include <stdlib.h>
+#include "math.h"
+#include "stdlib.h"
+#include "string.h"
 
-extern I2C_HandleTypeDef hi2c2;
-
-/* ── 滤波器 (可选) ────────────────────────────────── */
-#if MPU6050_USE_Filter
-#include "filter.h"
-static PT1Filter_t pt1_filter_x, pt1_filter_y, pt1_filter_z;
-static PT1Filter_t pt1_filter_gx, pt1_filter_gy, pt1_filter_gz;
-#endif
+#ifdef HAL_I2C_MODULE_ENABLED
 
 /* ═══════════════════════════════════════════════════════
- * 第1层: I2C 底层 (适配 hi2c2)
+ * 第0层: I2C 总线死锁恢复 (STM32F1 errata)
  * ═══════════════════════════════════════════════════════ */
 
-static I2C_HandleTypeDef *mpu_i2c = NULL;
+I2C_HandleTypeDef *MPU6050_I2C = NULL;
 
-static void mpu_write_reg(uint8_t reg, uint8_t data)
+static void MPU6050_I2C_BusRecover(void)
 {
-    uint8_t d = data;
-    HAL_I2C_Mem_Write(mpu_i2c, MPU6050_ADDRESS << 1, reg,
-                      I2C_MEMADD_SIZE_8BIT, &d, 1, 200);
+    GPIO_InitTypeDef GPIO_InitStruct = {0};
+
+    /* 1. HAL 反初始化 I2C (关闭时钟 + 释放 GPIO + 关 NVIC) */
+    HAL_I2C_DeInit(MPU6050_I2C);
+
+    /* 2. 引脚改为 GPIO 开漏输出, 模拟时钟释放总线 */
+    GPIO_InitStruct.Pin   = MPU6050_I2C_SCL_PIN | MPU6050_I2C_SDA_PIN;
+    GPIO_InitStruct.Mode  = GPIO_MODE_OUTPUT_OD;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    HAL_GPIO_Init(MPU6050_I2C_SCL_PORT, &GPIO_InitStruct);
+
+    HAL_GPIO_WritePin(MPU6050_I2C_SDA_PORT, MPU6050_I2C_SDA_PIN, GPIO_PIN_SET);
+    for (uint8_t i = 0; i < 10; i++) {
+        HAL_GPIO_WritePin(MPU6050_I2C_SCL_PORT, MPU6050_I2C_SCL_PIN, GPIO_PIN_SET);
+        HAL_Delay(1);
+        HAL_GPIO_WritePin(MPU6050_I2C_SCL_PORT, MPU6050_I2C_SCL_PIN, GPIO_PIN_RESET);
+        HAL_Delay(1);
+    }
+
+    /* 3. STOP 条件 */
+    HAL_GPIO_WritePin(MPU6050_I2C_SDA_PORT, MPU6050_I2C_SDA_PIN, GPIO_PIN_RESET);
+    HAL_Delay(1);
+    HAL_GPIO_WritePin(MPU6050_I2C_SCL_PORT, MPU6050_I2C_SCL_PIN, GPIO_PIN_SET);
+    HAL_Delay(1);
+    HAL_GPIO_WritePin(MPU6050_I2C_SDA_PORT, MPU6050_I2C_SDA_PIN, GPIO_PIN_SET);
+    HAL_Delay(1);
+
+    /* 4. HAL 重新初始化 I2C (开时钟 + 配 GPIO AF_OD + 开 NVIC) */
+    HAL_I2C_Init(MPU6050_I2C);
 }
 
-static uint8_t mpu_read_reg(uint8_t reg)
+/* ═══════════════════════════════════════════════════════
+ * 第1层: I2C 底层 (含重试 + 死锁恢复)
+ * ═══════════════════════════════════════════════════════ */
+
+static void mpu6050_write_reg(uint8_t reg, uint8_t data)
 {
-    uint8_t d = 0;
-    HAL_I2C_Mem_Read(mpu_i2c, MPU6050_ADDRESS << 1, reg,
-                     I2C_MEMADD_SIZE_8BIT, &d, 1, 200);
-    return d;
+    uint8_t tmpdata = data;
+    HAL_StatusTypeDef status;
+    uint8_t retry = 3;
+    do {
+        status = HAL_I2C_Mem_Write(MPU6050_I2C, MPU6050_ADDRESS << 1, reg,
+                                   I2C_MEMADD_SIZE_8BIT, &tmpdata, 1, 200);
+        if (status == HAL_OK) return;
+        if (status == HAL_BUSY) MPU6050_I2C_BusRecover();
+    } while (--retry > 0);
 }
 
-static void mpu_read_buf(uint8_t reg, uint8_t len, uint8_t *buf)
+static uint8_t mpu6050_read_reg(uint8_t reg)
 {
-    HAL_I2C_Mem_Read(mpu_i2c, MPU6050_ADDRESS << 1, reg,
-                     I2C_MEMADD_SIZE_8BIT, buf, len, 100);
+    uint8_t tmpdata = 0;
+    HAL_StatusTypeDef status;
+    uint8_t retry = 3;
+    do {
+        status = HAL_I2C_Mem_Read(MPU6050_I2C, MPU6050_ADDRESS << 1, reg,
+                                 I2C_MEMADD_SIZE_8BIT, &tmpdata, 1, 200);
+        if (status == HAL_OK) return tmpdata;
+        if (status == HAL_BUSY) MPU6050_I2C_BusRecover();
+    } while (--retry > 0);
+    return 0;
 }
 
-/* 便捷宏 (参考项目风格) */
-#define MPU_DELAY(ms)               HAL_Delay(ms)
-#define MPU_WRITE(reg, data)        mpu_write_reg(reg, data)
-#define MPU_READ(reg)               mpu_read_reg(reg)
-#define MPU_READ_BUF(reg, len, buf) mpu_read_buf(reg, len, buf)
+static void mpu6050_read_reg_continue(uint8_t reg, uint8_t len, uint8_t *Data)
+{
+    HAL_StatusTypeDef status;
+    uint8_t retry = 3;
+    do {
+        status = HAL_I2C_Mem_Read(MPU6050_I2C, MPU6050_ADDRESS << 1, reg,
+                                  I2C_MEMADD_SIZE_8BIT, Data, len, 100);
+        if (status == HAL_OK) return;
+        if (status == HAL_BUSY) MPU6050_I2C_BusRecover();
+    } while (--retry > 0);
+    memset(Data, 0, len);
+}
+
+/* 便捷宏 */
+#define MPU6050_DELAY_MS(ms)                        HAL_Delay(ms)
+#define MPU6050WRITE_REG(reg, data)                 mpu6050_write_reg(reg, data)
+#define MPU6050READ_REG(reg)                        mpu6050_read_reg(reg)
+#define MPU6050_READ_REG_CONTINUE(reg, len, P_data) mpu6050_read_reg_continue(reg, len, P_data)
 
 /* ═══════════════════════════════════════════════════════
  * 第2层: 寄存器地址
  * ═══════════════════════════════════════════════════════ */
-#define REG_SMPLRT_DIV    0x19
-#define REG_CONFIG        0x1A
-#define REG_GYRO_CONFIG   0x1B
-#define REG_ACCEL_CONFIG  0x1C
-#define REG_FIFO_EN       0x23
-#define REG_INT_PIN_CFG   0x37
-#define REG_INT_ENABLE    0x38
-#define REG_ACCEL_XOUT_H  0x3B
-#define REG_TEMP_OUT_H    0x41
-#define REG_GYRO_XOUT_H   0x43
-#define REG_USER_CTRL     0x6A
-#define REG_PWR_MGMT_1    0x6B
-#define REG_PWR_MGMT_2    0x6C
-#define REG_WHO_AM_I      0x75
+
+#define MPU6050_SMPLRT_DIV        0x19
+#define MPU6050_CONFIG            0x1A
+#define MPU6050_GYRO_CONFIG       0x1B
+#define MPU6050_ACCEL_CONFIG      0x1C
+#define MPU6050_FIFO_EN           0x23
+#define MPU6050_INTBP_CFG_REG     0x37
+#define MPU6050_INT_ENABLE        0x38
+#define MPU6050_ACCEL_XOUT_H      0x3B
+#define MPU6050_TEMP_OUT_H        0x41
+#define MPU6050_GYRO_XOUT_H       0x43
+#define MPU6050_SIGNAL_PATH_RESET 0x68
+#define MPU6050_USER_CTRL         0x6A
+#define MPU6050_PWR_MGMT_1        0x6B
+#define MPU6050_WHO_AM_I          0x75
 
 /* ═══════════════════════════════════════════════════════
- * 第3层: 初始化 + 校准
+ * 第3层: 静态变量 (量程 / 零偏 / 滤波器 / AHRS 状态)
  * ═══════════════════════════════════════════════════════ */
 
-static float   gyroScale;   /* °/s / LSB → rad/s / LSB */
+static float   mpu6050_dt;
+static float   gyroScale;   /* rad/s / LSB */
 static float   accelScale;  /* g / LSB */
-static float   mpu_dt;      /* 采样周期 (s) */
-static int16_t gyro_bias_x, gyro_bias_y, gyro_bias_z;
+static int16_t gyro_zero_x, gyro_zero_y, gyro_zero_z;
 
-/**
- * @brief  陀螺零偏校准 (阻塞, 上电时调用)
- * @return 0=成功, -1=失败
- */
-static int8_t MPU6050_SoftCalibrate_Z(uint16_t samples)
+static float angle_yaw   = 0;
+static float angle_roll  = 0;
+static float angle_pitch = 0;
+
+/* 卡尔曼滤波器 */
+#if MPU6050_USE_Filter
+#include "filter.h"
+static KalmanFilter Kal_filter_x, Kal_filter_y, Kal_filter_z;
+static KalmanFilter Kal_filter_gx, Kal_filter_gy, Kal_filter_gz;
+#endif
+
+/* AHRS 内部状态 */
+static float ahrs_q0 = 1.0f, ahrs_q1 = 0.0f, ahrs_q2 = 0.0f, ahrs_q3 = 0.0f;
+static float integralX = 0, integralY = 0, integralZ = 0;
+static uint16_t ahrs_init_cnt = 0;
+static float unwrapped_yaw = 0.0f;
+static uint8_t ahrs_first_yaw = 1;
+
+/* ═══════════════════════════════════════════════════════
+ * 第4层: 初始化 + 校准
+ * ═══════════════════════════════════════════════════════ */
+
+static int8_t MPU6050_SoftCalibrate_Z(uint16_t calibration_samples)
 {
     int32_t gx_sum = 0, gy_sum = 0, gz_sum = 0;
-    uint8_t buf[6];
+    int16_t GyroX, GyroY, GyroZ;
+    uint8_t temp_buffer[6];
 
-    for (uint16_t i = 0; i < samples; i++) {
-        MPU_READ_BUF(REG_GYRO_XOUT_H, 6, buf);
-        int16_t gx = ((int16_t)buf[0] << 8) | buf[1];
-        int16_t gy = ((int16_t)buf[2] << 8) | buf[3];
-        int16_t gz = ((int16_t)buf[4] << 8) | buf[5];
-        gx_sum += gx; gy_sum += gy; gz_sum += gz;
-        MPU_DELAY((uint32_t)(mpu_dt * 1000));
+    for (uint16_t i = 0; i < calibration_samples; i++) {
+        MPU6050_READ_REG_CONTINUE(MPU6050_GYRO_XOUT_H, 6, temp_buffer);
+        GyroX = ((int16_t)(temp_buffer[0] << 8) | temp_buffer[1]);
+        GyroY = ((int16_t)(temp_buffer[2] << 8) | temp_buffer[3]);
+        GyroZ = ((int16_t)(temp_buffer[4] << 8) | temp_buffer[5]);
+        gx_sum += GyroX;
+        gy_sum += GyroY;
+        gz_sum += GyroZ;
+        MPU6050_DELAY_MS((uint32_t)(mpu6050_dt * 1000));
     }
-    gyro_bias_x = (int16_t)(gx_sum / samples);
-    gyro_bias_y = (int16_t)(gy_sum / samples);
-    gyro_bias_z = (int16_t)(gz_sum / samples);
+    gyro_zero_x = (int16_t)(gx_sum / calibration_samples);
+    gyro_zero_y = (int16_t)(gy_sum / calibration_samples);
+    gyro_zero_z = (int16_t)(gz_sum / calibration_samples);
 
-    /* 验证 */
+    /* 验证校准 */
     gx_sum = gy_sum = gz_sum = 0;
     for (uint16_t i = 0; i < 100; i++) {
-        MPU_READ_BUF(REG_GYRO_XOUT_H, 6, buf);
-        int16_t gx = ((int16_t)buf[0] << 8) | buf[1] - gyro_bias_x;
-        int16_t gy = ((int16_t)buf[2] << 8) | buf[3] - gyro_bias_y;
-        int16_t gz = ((int16_t)buf[4] << 8) | buf[5] - gyro_bias_z;
-        gx_sum += gx; gy_sum += gy; gz_sum += gz;
-        MPU_DELAY((uint32_t)(mpu_dt * 1000));
+        MPU6050_READ_REG_CONTINUE(MPU6050_GYRO_XOUT_H, 6, temp_buffer);
+        GyroX = ((int16_t)(temp_buffer[0] << 8) | temp_buffer[1]) - gyro_zero_x;
+        GyroY = ((int16_t)(temp_buffer[2] << 8) | temp_buffer[3]) - gyro_zero_y;
+        GyroZ = ((int16_t)(temp_buffer[4] << 8) | temp_buffer[5]) - gyro_zero_z;
+        gx_sum += GyroX;
+        gy_sum += GyroY;
+        gz_sum += GyroZ;
+        MPU6050_DELAY_MS((uint32_t)(mpu6050_dt * 1000));
     }
-    if (abs((int)(gx_sum / 100)) >= 2 &&
-        abs((int)(gy_sum / 100)) >= 2 &&
+    if (abs((int)(gx_sum / 100)) >= 2 ||
+        abs((int)(gy_sum / 100)) >= 2 ||
         abs((int)(gz_sum / 100)) >= 2)
         return -1;
     return 0;
@@ -119,99 +195,101 @@ static int8_t MPU6050_SoftCalibrate_Z(uint16_t samples)
 
 static void MPU6050_Register_init(MPU6050_InitTypeDef *cfg)
 {
-    float acc_s, gyro_s;
+    float temp_acc_scale, temp_gyro_scale;
     switch (cfg->acc_range) {
-        case acc_2g:  acc_s = 16384.f; break;
-        case acc_4g:  acc_s = 8192.f;  break;
-        case acc_8g:  acc_s = 4096.f;  break;
-        default:      acc_s = 2048.f;  break;
+        case acc_2g:  temp_acc_scale = 16384.f; break;
+        case acc_4g:  temp_acc_scale = 8192.f;  break;
+        case acc_8g:  temp_acc_scale = 4096.f;  break;
+        default:      temp_acc_scale = 2048.f;  break;
     }
     switch (cfg->gyro_range) {
-        case gyro_250:  gyro_s = 131.f;   break;
-        case gyro_500:  gyro_s = 65.5f;   break;
-        case gyro_1000: gyro_s = 32.8f;   break;
-        default:        gyro_s = 16.4f;   break;
+        case gyro_250:  temp_gyro_scale = 131.f;   break;
+        case gyro_500:  temp_gyro_scale = 65.5f;   break;
+        case gyro_1000: temp_gyro_scale = 32.8f;   break;
+        default:        temp_gyro_scale = 16.4f;   break;
     }
-    accelScale = 1.f / acc_s;
-    gyroScale  = 0.0174533f / gyro_s;  /* deg→rad 转换内置 */
+    accelScale = 1.f / temp_acc_scale;
+    gyroScale  = 0.0174533f / temp_gyro_scale;  /* deg→rad 内置 */
 
-    MPU_WRITE(REG_PWR_MGMT_1, 0x80); MPU_DELAY(100);
-    MPU_WRITE(REG_PWR_MGMT_1, 0x00);
+    MPU6050WRITE_REG(MPU6050_PWR_MGMT_1, 0x80);
+    MPU6050_DELAY_MS(100);
+    MPU6050WRITE_REG(MPU6050_PWR_MGMT_1, 0x00);
 
     uint16_t rate = cfg->SMPLRT_Rate;
     if (rate > 1000) rate = 1000;
     if (rate < 4)    rate = 4;
-    uint8_t div = (uint8_t)(1000.f / rate - 1);
-    MPU_WRITE(REG_SMPLRT_DIV, div);
-    MPU_WRITE(REG_INT_PIN_CFG, 0x00);
-    MPU_WRITE(REG_INT_ENABLE,  cfg->INT);
-    MPU_WRITE(REG_CONFIG,      cfg->Filter);
-    MPU_WRITE(REG_GYRO_CONFIG, cfg->gyro_range);
-    MPU_WRITE(REG_ACCEL_CONFIG,cfg->acc_range);
-    MPU_WRITE(REG_FIFO_EN,     cfg->FIFO_EN);
+    uint8_t SMPLRT_DIV = (uint8_t)(1000.f / rate - 1);
+    MPU6050WRITE_REG(MPU6050_SMPLRT_DIV, SMPLRT_DIV);
+    MPU6050WRITE_REG(MPU6050_INTBP_CFG_REG, 0x00);
+    MPU6050WRITE_REG(MPU6050_INT_ENABLE, cfg->INT);
+    MPU6050WRITE_REG(MPU6050_CONFIG,     cfg->Filter);
+    MPU6050WRITE_REG(MPU6050_GYRO_CONFIG,cfg->gyro_range);
+    MPU6050WRITE_REG(MPU6050_ACCEL_CONFIG,cfg->acc_range);
+    MPU6050WRITE_REG(MPU6050_FIFO_EN,    cfg->FIFO_EN);
 
-    uint8_t user = 0x00;
-    if (cfg->FIFO_EN != 0x00) user |= 0x40;
-    if ((cfg->INT & 0x01) == 0) user |= 0x08;
-    MPU_WRITE(REG_USER_CTRL, user);
-    MPU_WRITE(REG_PWR_MGMT_1, 0x01);  /* X轴陀螺为时钟源 */
+    uint8_t temp = 0x00;
+    if (cfg->FIFO_EN != 0x00)
+        temp = 0x40;
+    if ((cfg->INT & 0x01) == 0)
+        temp |= 0x08;
+    MPU6050WRITE_REG(MPU6050_USER_CTRL, temp);
+    MPU6050WRITE_REG(MPU6050_PWR_MGMT_1, 0x01);  /* X轴陀螺时钟源 */
 }
 
 void MPU6050_init(I2C_HandleTypeDef *hi2c)
 {
-    mpu_i2c = hi2c;
+    MPU6050_I2C = hi2c;
 
     MPU6050_InitTypeDef cfg;
-    cfg.SMPLRT_Rate = 200;
+    cfg.SMPLRT_Rate = 100;
     cfg.Filter      = Band_21Hz;
     cfg.gyro_range  = gyro_2000;
-    cfg.acc_range   = acc_16g;
-    cfg.FIFO_EN     = 0x00;
+    cfg.acc_range   = acc_4g;
+    cfg.FIFO_EN     = FIFO_Disable;
     cfg.INT         = Data_Ready_EN;
     MPU6050_Register_init(&cfg);
-    mpu_dt = 1.f / (float)cfg.SMPLRT_Rate;
+    mpu6050_dt = 1.f / (float)cfg.SMPLRT_Rate;
 
-    MPU_DELAY(300);
+    MPU6050_DELAY_MS(300);
     for (int i = 0; i < 3; i++)
         if (MPU6050_SoftCalibrate_Z(64) == 0)
             break;
 
 #if MPU6050_USE_Filter
-    PT1Filter_InitWithFreq(&pt1_filter_x,  48, cfg.SMPLRT_Rate);
-    PT1Filter_InitWithFreq(&pt1_filter_y,  48, cfg.SMPLRT_Rate);
-    PT1Filter_InitWithFreq(&pt1_filter_z,  48, cfg.SMPLRT_Rate);
-    PT1Filter_InitWithFreq(&pt1_filter_gx, 88, cfg.SMPLRT_Rate);
-    PT1Filter_InitWithFreq(&pt1_filter_gy, 88, cfg.SMPLRT_Rate);
-    PT1Filter_InitWithFreq(&pt1_filter_gz, 88, cfg.SMPLRT_Rate);
+    KalmanFilter_Init(&Kal_filter_x,  1, 10,  0, 0);   /* Accel: 平滑优先 */
+    KalmanFilter_Init(&Kal_filter_y,  1, 10,  0, 0);
+    KalmanFilter_Init(&Kal_filter_z,  1, 10,  0, 0);
+    KalmanFilter_Init(&Kal_filter_gx, 1, 0.1, 0, 0);   /* Gyro:  响应优先 */
+    KalmanFilter_Init(&Kal_filter_gy, 1, 0.1, 0, 0);
+    KalmanFilter_Init(&Kal_filter_gz, 1, 0.1, 0, 0);
 #endif
 }
 
 /* ═══════════════════════════════════════════════════════
- * 第4层: 原始数据读取
+ * 第5层: 原始数据读取 (仅读寄存器 + 减零偏, 不含滤波)
  * ═══════════════════════════════════════════════════════ */
 
 static void MPU6050_Get_Raw(MPU6050 *mpu)
 {
-    uint8_t buf[14];
-    MPU_READ_BUF(REG_ACCEL_XOUT_H, 14, buf);
-    mpu->AccX    = ((int16_t)buf[0]  << 8) | buf[1];
-    mpu->AccY    = ((int16_t)buf[2]  << 8) | buf[3];
-    mpu->AccZ    = ((int16_t)buf[4]  << 8) | buf[5];
-    mpu->rawTemp = ((int16_t)buf[6]  << 8) | buf[7];
-    mpu->GyroX   = ((int16_t)buf[8]  << 8) | buf[9];
-    mpu->GyroY   = ((int16_t)buf[10] << 8) | buf[11];
-    mpu->GyroZ   = ((int16_t)buf[12] << 8) | buf[13];
+    static uint8_t temp_buffer[14];
+    MPU6050_READ_REG_CONTINUE(MPU6050_ACCEL_XOUT_H, 14, temp_buffer);
+    mpu->AccX    = ((int16_t)temp_buffer[0]  << 8) | temp_buffer[1];
+    mpu->AccY    = ((int16_t)temp_buffer[2]  << 8) | temp_buffer[3];
+    mpu->AccZ    = ((int16_t)temp_buffer[4]  << 8) | temp_buffer[5];
+    mpu->rawTemp = ((int16_t)temp_buffer[6]  << 8) | temp_buffer[7];
+    mpu->GyroX   = ((int16_t)temp_buffer[8]  << 8) | temp_buffer[9];
+    mpu->GyroY   = ((int16_t)temp_buffer[10] << 8) | temp_buffer[11];
+    mpu->GyroZ   = ((int16_t)temp_buffer[12] << 8) | temp_buffer[13];
 
-    mpu->GyroX -= gyro_bias_x;
-    mpu->GyroY -= gyro_bias_y;
-    mpu->GyroZ -= gyro_bias_z;
+    mpu->GyroX -= gyro_zero_x;
+    mpu->GyroY -= gyro_zero_y;
+    mpu->GyroZ -= gyro_zero_z;
 }
 
 /* ═══════════════════════════════════════════════════════
- * 第5层: Madgwick 自适应 AHRS (参考项目 MPU6050_Get_Angle_Plus)
+ * 第6层: 快速平方根倒数 + Madgwick AHRS (含卡尔曼, ISR 安全)
  * ═══════════════════════════════════════════════════════ */
 
-/* ── 快速平方根倒数 ───────────────────────────────── */
 static inline float invSqrt(float x)
 {
     float halfx = 0.5f * x;
@@ -223,38 +301,25 @@ static inline float invSqrt(float x)
     return y;
 }
 
-/* AHRS 内部状态 */
-static float ahrs_q0 = 1.0f, ahrs_q1 = 0.0f, ahrs_q2 = 0.0f, ahrs_q3 = 0.0f;
-static float integralX = 0, integralY = 0, integralZ = 0;
-static uint16_t ahrs_init_cnt = 0;
-static float unwrapped_yaw = 0.0f;
-static uint8_t ahrs_first_yaw = 1;
-static float zero_yaw = 0, zero_roll = 0, zero_pitch = 0;
-
-/**
- * @brief  Madgwick AHRS 纯数学解算 (无 I2C, ISR 安全)
- * @note   mpu 中已有的 AccX/Y/Z, GyroX/Y/Z 转换为物理量后完成四元数更新
- *         dt = 采样周期 (s)
- */
 void MPU6050_AHRS_Update(MPU6050 *mpu, float dt)
 {
 #if MPU6050_USE_Filter
-    /* PT1 低通滤波器: 对原始 ADC 值滤波后再转换 */
-    mpu->AccX  = (int16_t)PT1Filter_Apply(&pt1_filter_x,  (float)mpu->AccX);
-    mpu->AccY  = (int16_t)PT1Filter_Apply(&pt1_filter_y,  (float)mpu->AccY);
-    mpu->AccZ  = (int16_t)PT1Filter_Apply(&pt1_filter_z,  (float)mpu->AccZ);
-    mpu->GyroX = (int16_t)PT1Filter_Apply(&pt1_filter_gx, (float)mpu->GyroX);
-    mpu->GyroY = (int16_t)PT1Filter_Apply(&pt1_filter_gy, (float)mpu->GyroY);
-    mpu->GyroZ = (int16_t)PT1Filter_Apply(&pt1_filter_gz, (float)mpu->GyroZ);
+    /* 卡尔曼滤波: 6 通道独立滤波 */
+    mpu->AccX  = (int16_t)KalmanFilter_Update(&Kal_filter_x,  (float)mpu->AccX);
+    mpu->AccY  = (int16_t)KalmanFilter_Update(&Kal_filter_y,  (float)mpu->AccY);
+    mpu->AccZ  = (int16_t)KalmanFilter_Update(&Kal_filter_z,  (float)mpu->AccZ);
+    mpu->GyroX = (int16_t)KalmanFilter_Update(&Kal_filter_gx, (float)mpu->GyroX);
+    mpu->GyroY = (int16_t)KalmanFilter_Update(&Kal_filter_gy, (float)mpu->GyroY);
+    mpu->GyroZ = (int16_t)KalmanFilter_Update(&Kal_filter_gz, (float)mpu->GyroZ);
 #endif
 
-    /* 原始 ADC → 物理量 */
-    float gx = (float)mpu->GyroX * gyroScale;   /* rad/s */
+    /* ADC → 物理量 */
+    float gx = (float)mpu->GyroX * gyroScale;
     float gy = (float)mpu->GyroY * gyroScale;
     float gz = (float)mpu->GyroZ * gyroScale;
-    float ax = (float)mpu->AccX * accelScale;    /* g */
-    float ay = (float)mpu->AccY * accelScale;
-    float az = (float)mpu->AccZ * accelScale;
+    float ax = (float)mpu->AccX  * accelScale;
+    float ay = (float)mpu->AccY  * accelScale;
+    float az = (float)mpu->AccZ  * accelScale;
 
     /* 加速度幅值 → 自适应增益 */
     float accMag = ax * ax + ay * ay + az * az;
@@ -269,7 +334,7 @@ void MPU6050_AHRS_Update(MPU6050 *mpu, float dt)
             { Kp = 4.8f; Ki = 0.0015f; }
     }
 
-    /* 加速度归一化 + 重力矢量 PI 修正陀螺 */
+    /* 加速度归一化 + 重力矢量 PI 修正 */
     if (accMag > 0.01f) {
         float recip = invSqrt(accMag);
         ax *= recip; ay *= recip; az *= recip;
@@ -305,97 +370,143 @@ void MPU6050_AHRS_Update(MPU6050 *mpu, float dt)
     ahrs_q0 += qDot0; ahrs_q1 += qDot1;
     ahrs_q2 += qDot2; ahrs_q3 += qDot3;
 
-    /* 归一化 */
+    /* 四元数归一化 */
     float norm = invSqrt(ahrs_q0 * ahrs_q0 + ahrs_q1 * ahrs_q1
                        + ahrs_q2 * ahrs_q2 + ahrs_q3 * ahrs_q3);
     ahrs_q0 *= norm; ahrs_q1 *= norm;
     ahrs_q2 *= norm; ahrs_q3 *= norm;
 
-    /* 四元数 → 欧拉角 */
     mpu->q0 = ahrs_q0; mpu->q1 = ahrs_q1;
     mpu->q2 = ahrs_q2; mpu->q3 = ahrs_q3;
 
+    /* 四元数 → 欧拉角 */
     mpu->roll  = atan2f(2.0f * (ahrs_q0 * ahrs_q1 + ahrs_q2 * ahrs_q3),
                         1.0f - 2.0f * (ahrs_q1 * ahrs_q1 + ahrs_q2 * ahrs_q2)) * 57.29578f;
     mpu->pitch = asinf(2.0f * (ahrs_q0 * ahrs_q2 - ahrs_q3 * ahrs_q1)) * 57.29578f;
-    float cy   = atan2f(2.0f * (ahrs_q0 * ahrs_q3 + ahrs_q1 * ahrs_q2),
-                        1.0f - 2.0f * (ahrs_q2 * ahrs_q2 + ahrs_q3 * ahrs_q3)) * 57.29578f;
+    float current_yaw = atan2f(2.0f * (ahrs_q0 * ahrs_q3 + ahrs_q1 * ahrs_q2),
+                               1.0f - 2.0f * (ahrs_q2 * ahrs_q2 + ahrs_q3 * ahrs_q3)) * 57.29578f;
 
     /* Yaw 解包裹 */
     if (ahrs_first_yaw) {
-        unwrapped_yaw = cy;
+        unwrapped_yaw = current_yaw;
         ahrs_first_yaw = 0;
     } else {
-        float diff = cy - unwrapped_yaw;
+        float diff = current_yaw - unwrapped_yaw;
         if      (diff >  180.0f) unwrapped_yaw += diff - 360.0f;
         else if (diff < -180.0f) unwrapped_yaw += diff + 360.0f;
-        else                     unwrapped_yaw  = cy;
+        else                     unwrapped_yaw  = current_yaw;
     }
 
-    mpu->roll  -= zero_roll;
-    mpu->pitch -= zero_pitch;
-    mpu->yaw    = unwrapped_yaw - zero_yaw;
-}
-
-/**
- * @brief  Madgwick 自适应 AHRS (含阻塞 I2C 读取, 不进 ISR)
- */
-void MPU6050_Get_Angle_Plus(MPU6050 *mpu)
-{
-    MPU6050_Get_Raw(mpu);
-    MPU6050_AHRS_Update(mpu, mpu_dt);
+    mpu->roll  -= angle_roll;
+    mpu->pitch -= angle_pitch;
+    mpu->yaw    = unwrapped_yaw - angle_yaw;
 }
 
 /* ═══════════════════════════════════════════════════════
- * 第6层: 互补滤波 (参考项目 MPU6050_Get_Angle)
+ * 第7层: 顶层 API (阻塞 I2C)
  * ═══════════════════════════════════════════════════════ */
+
+void MPU6050_Get_Angle_Plus(MPU6050 *mpu)
+{
+    MPU6050_Get_Raw(mpu);
+    MPU6050_AHRS_Update(mpu, mpu6050_dt);
+}
 
 void MPU6050_Get_Angle(MPU6050 *mpu)
 {
     MPU6050_Get_Raw(mpu);
 
-    float ax = (float)mpu->AccX * accelScale;
-    float ay = (float)mpu->AccY * accelScale;
-    float az = (float)mpu->AccZ * accelScale;
-    float gx = (float)mpu->GyroX * gyroScale * mpu_dt;
-    float gy = (float)mpu->GyroY * gyroScale * mpu_dt;
-    float gz = (float)mpu->GyroZ * gyroScale * mpu_dt;
+    float ax = (float)mpu->AccX  * accelScale;
+    float ay = (float)mpu->AccY  * accelScale;
+    float az = (float)mpu->AccZ  * accelScale;
+    float gx = (float)mpu->GyroX * gyroScale * mpu6050_dt;
+    float gy = (float)mpu->GyroY * gyroScale * mpu6050_dt;
+    float gz = (float)mpu->GyroZ * gyroScale * mpu6050_dt;
+
+#if MPU6050_USE_Filter
+    /* 互补滤波前先卡尔曼平滑 */
+    ax = KalmanFilter_Update(&Kal_filter_x,  ax);
+    ay = KalmanFilter_Update(&Kal_filter_y,  ay);
+    az = KalmanFilter_Update(&Kal_filter_z,  az);
+    gx = KalmanFilter_Update(&Kal_filter_gx, gx);
+    gy = KalmanFilter_Update(&Kal_filter_gy, gy);
+    gz = KalmanFilter_Update(&Kal_filter_gz, gz);
+#endif
 
     float absAcc = sqrtf(ax * ax + ay * ay + az * az);
     float weight = (absAcc > 1.2f) ? 0.8f : 0.98f;
 
-    static float gyro_roll = 0, gyro_pitch = 0;
-    gyro_roll  += gy;
-    gyro_pitch += gx;
-    mpu->roll   = weight * atan2f(ay, az) * 57.29578f + (1.f - weight) * gyro_roll;
-    mpu->pitch  = -(weight * atan2f(ax, az) * 57.29578f + (1.f - weight) * gyro_pitch);
-    mpu->yaw   += gz * 57.29578f;
+    static float Gyroscope_roll  = 0.0f;
+    static float Gyroscope_pitch = 0.0f;
+    Gyroscope_roll  += gy;
+    Gyroscope_pitch += gx;
+    mpu->roll  = weight * atan2f(ay, az) * 57.29578f + (1.f - weight) * Gyroscope_roll;
+    mpu->pitch = -(weight * atan2f(ax, az) * 57.29578f + (1.f - weight) * Gyroscope_pitch);
+    mpu->yaw  += gz * 57.29578f;
 
-    mpu->roll  -= zero_roll;
-    mpu->pitch -= zero_pitch;
-    mpu->yaw   -= zero_yaw;
+    mpu->roll  -= angle_roll;
+    mpu->pitch -= angle_pitch;
+    mpu->yaw   -= angle_yaw;
 }
-
-/* ═══════════════════════════════════════════════════════
- * 第7层: 角度归零 + ID + 温度
- * ═══════════════════════════════════════════════════════ */
 
 void MPU6050_Set_Angle0(MPU6050 *mpu)
 {
-    for (volatile uint32_t i = 0; i < 1000000; i++);
-    zero_yaw   = unwrapped_yaw;
-    zero_roll  = mpu->roll  + zero_roll;
-    zero_pitch = mpu->pitch + zero_pitch;
+    for (uint32_t i = 0; i < 1000000; i++);
+    angle_yaw   = mpu->yaw;
+    angle_roll  = mpu->roll;
+    angle_pitch = mpu->pitch;
     ahrs_first_yaw = 1;  /* 强制下一帧重设解包裹基点 */
 }
 
 uint8_t MPU6050_ID(void)
 {
-    return MPU_READ(REG_WHO_AM_I);
+    return MPU6050READ_REG(MPU6050_WHO_AM_I);
+}
+
+float MPU6050_GetTemp(MPU6050 *mpu)
+{
+    mpu->temp = (float)mpu->rawTemp / 340.f + 36.53f;
+    return mpu->temp;
+}
+
+void MPU6050_SelfTest(float accel_g[3], float gyro_dps[3])
+{
+    int32_t ax_sum = 0, ay_sum = 0, az_sum = 0;
+    int32_t gx_sum = 0, gy_sum = 0, gz_sum = 0;
+    uint8_t buf[14];
+    int16_t raw;
+
+    for (uint8_t n = 0; n < 50; n++) {
+        mpu6050_read_reg_continue(MPU6050_ACCEL_XOUT_H, 14, buf);
+
+        raw = ((int16_t)buf[0] << 8) | buf[1];
+        ax_sum += raw;
+        raw = ((int16_t)buf[2] << 8) | buf[3];
+        ay_sum += raw;
+        raw = ((int16_t)buf[4] << 8) | buf[5];
+        az_sum += raw;
+
+        raw = ((int16_t)buf[8] << 8) | buf[9];
+        gx_sum += raw;
+        raw = ((int16_t)buf[10] << 8) | buf[11];
+        gy_sum += raw;
+        raw = ((int16_t)buf[12] << 8) | buf[13];
+        gz_sum += raw;
+
+        HAL_Delay(5);
+    }
+
+    accel_g[0] = (ax_sum / 50) * accelScale;
+    accel_g[1] = (ay_sum / 50) * accelScale;
+    accel_g[2] = (az_sum / 50) * accelScale;
+
+    gyro_dps[0] = (gx_sum / 50) * gyroScale * 57.29578f;  /* rad/s → °/s */
+    gyro_dps[1] = (gy_sum / 50) * gyroScale * 57.29578f;
+    gyro_dps[2] = (gz_sum / 50) * gyroScale * 57.29578f;
 }
 
 /* ═══════════════════════════════════════════════════════
- * 第8层: 异步 I2C (ISR 安全, 保留 bluecar 原有实现)
+ * 第8层: 异步 I2C (ISR 安全)
  * ═══════════════════════════════════════════════════════ */
 
 static uint8_t  mpu_async_buf[14];
@@ -408,7 +519,7 @@ void MPU6050_ReadAsync_Start(void)
 {
     if (mpu_async_busy) return;
     mpu_async_busy = 1;
-    HAL_I2C_Mem_Read_IT(mpu_i2c, MPU6050_ADDRESS << 1, REG_ACCEL_XOUT_H,
+    HAL_I2C_Mem_Read_IT(MPU6050_I2C, MPU6050_ADDRESS << 1, MPU6050_ACCEL_XOUT_H,
                         I2C_MEMADD_SIZE_8BIT, mpu_async_buf, 14);
 }
 
@@ -420,14 +531,19 @@ uint8_t MPU6050_ReadAsync_Done(void)
 void MPU6050_ReadAsync_Get(int16_t *AX, int16_t *AY, int16_t *AZ,
                            int16_t *GX, int16_t *GY, int16_t *GZ)
 {
-    *AX = mpu_async_ax;  *AY = mpu_async_ay;  *AZ = mpu_async_az;
-    *GX = mpu_async_gx;  *GY = mpu_async_gy;  *GZ = mpu_async_gz;
+    *AX = mpu_async_ax;
+    *AY = mpu_async_ay;
+    *AZ = mpu_async_az;
+    *GX = mpu_async_gx - gyro_zero_x;  /* 异步路径: 应用零偏 */
+    *GY = mpu_async_gy - gyro_zero_y;
+    *GZ = mpu_async_gz - gyro_zero_z;
     mpu_async_ready = 0;
 }
 
-void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c)
+/* ── I2C 回调转发 (用户从 HAL_I2C_MemRxCpltCallback 中调用) ── */
+void MPU6050_I2C_RxCplt(I2C_HandleTypeDef *hi2c)
 {
-    if (hi2c->Instance == I2C2) {
+    if (hi2c == MPU6050_I2C) {
         mpu_async_ax = (mpu_async_buf[0]  << 8) | mpu_async_buf[1];
         mpu_async_ay = (mpu_async_buf[2]  << 8) | mpu_async_buf[3];
         mpu_async_az = (mpu_async_buf[4]  << 8) | mpu_async_buf[5];
@@ -439,9 +555,17 @@ void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c)
     }
 }
 
-void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c)
+void MPU6050_I2C_Error(I2C_HandleTypeDef *hi2c)
 {
-    if (hi2c->Instance == I2C2) {
+    if (hi2c == MPU6050_I2C) {
         mpu_async_busy = 0;
     }
 }
+
+#if MPU6050_DEFINE_I2C_CALLBACKS
+/* 单设备便捷模式: 直接覆盖 HAL 弱回调 */
+void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c) { MPU6050_I2C_RxCplt(hi2c); }
+void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c)     { MPU6050_I2C_Error(hi2c); }
+#endif
+
+#endif /* HAL_I2C_MODULE_ENABLED */

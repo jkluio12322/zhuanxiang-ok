@@ -1,8 +1,10 @@
 #ifndef __OLED_FONT_H
 #define __OLED_FONT_H
 
+#if defined(__GNUC__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-braces"
+#endif
 
 /*OLED字模库，宽8像素，高16像素*/
 const uint8_t OLED_F8x16[][16]=
@@ -293,6 +295,8 @@ const uint8_t OLED_F8x16[][16]=
 	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,//~ 94
 };
 
+#if defined(__GNUC__)
 #pragma GCC diagnostic pop
+#endif
 
 #endif

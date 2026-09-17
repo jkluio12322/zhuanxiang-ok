@@ -19,19 +19,25 @@
 #include <stdarg.h>
 #include <string.h>
 
-extern UART_HandleTypeDef huart1;
+static UART_HandleTypeDef *serial_uart = NULL;
 
 /* TX 环形缓冲区 (生产者: 主循环/任务, 消费者: DMA Complete ISR) */
+/* 串口发送环形缓冲区容量，单位字节。 */
 #define TX_RING_SIZE  1024
 static uint8_t tx_ring_buf[TX_RING_SIZE];
 static RingBuf  tx_ring;
 
 /* DMA 线性发送缓冲 */
+/* 单次 HAL 中断发送使用的线性缓冲区容量，单位字节。 */
 #define DMA_BUF_SIZE  256
 static uint8_t  dma_buf[DMA_BUF_SIZE];
 static volatile uint8_t dma_tx_busy = 0;
 
 /* ---- 内部: 从 ring buf 取数据启动 DMA ---- */
+/**
+ * @brief  从发送环形缓冲区取出一批数据并启动下一次中断发送。
+ * @note   如果当前已有发送任务，则直接返回，不重复启动。
+ */
 static void Serial_StartDMA(void)
 {
     if (dma_tx_busy) return;
@@ -45,14 +51,15 @@ static void Serial_StartDMA(void)
     }
 
     dma_tx_busy = 1;
-    HAL_UART_Transmit_IT(&huart1, dma_buf, n);
+    HAL_UART_Transmit_IT(serial_uart, dma_buf, n);
 }
 
 /**
  * @brief  串口初始化: 初始化 TX 环形缓冲区
  */
-void Serial_Init(void)
+void Serial_Init(UART_HandleTypeDef *huart)
 {
+    serial_uart = huart;
     RingBuf_Init(&tx_ring, tx_ring_buf, TX_RING_SIZE);
     dma_tx_busy = 0;
 }

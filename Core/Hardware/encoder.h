@@ -13,7 +13,7 @@
  */
 
 #ifndef __BSP_ENCODER_H
-#define __BSP_ENCODER_H
+#define __BSP_ENCODER_H  /* 头文件保护宏，防止编码器接口重复声明。 */
 #include "main.h"
 
 /** 编码器物理参数 */
@@ -53,8 +53,25 @@ typedef struct {
     Counter  counter;
 } Encoder;
 
+/**
+ * @brief  启动左右轮编码器定时器。
+ * @note   TIM2 对应右轮编码器，TIM3 对应左轮编码器。
+ */
 void Encoder_Init_TIM_All(void);
+
+/**
+ * @brief  初始化编码器对象。
+ * @param  ecd 编码器对象指针。
+ * @param  param 编码器物理参数，包括倍频、减速比、线数和轮径。
+ */
 void initEncoder(Encoder *ecd, const Parameter param);
+
+/**
+ * @brief  更新编码器速度、位置和累计计数。
+ * @param  ecd 编码器对象指针。
+ * @param  loop_period 采样周期，单位毫秒。
+ * @param  TIMx 编码器定时器，TIM3 为左轮，TIM2 为右轮。
+ */
 void updateEncoderLoopSimpleVersion(Encoder *ecd, uint16_t loop_period, TIM_TypeDef *TIMx);
 
 #endif
