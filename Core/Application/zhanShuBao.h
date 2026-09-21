@@ -22,7 +22,7 @@ void zhanShuBaoChongZhiZhuan90Du(void);
  * @return 0 表示仍在转向，1 表示已经完成九十度转向并停止输出。
  * @note   第一次调用时自动锁存左右编码器累计计数，并输出外轮正转、
  *         内轮反转的目标转速；每个循迹周期调用一次，达到目标计数差后
- *         自动清零左右目标并返回 1。
+ *         自动清零左右目标并返回 1，表示编码器转弯计数已达到硬上限。
  */
 uint8_t zhanShuBaoZhuan90Du(int8_t zhuanXiang);
 

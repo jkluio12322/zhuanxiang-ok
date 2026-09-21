@@ -30,7 +30,7 @@
 /* 下一个弯需要连续确认的次数，避免单帧噪声触发连续转向。 */
 #define TRACK_CORNER_PENDING_CONFIRM_TICKS 2U
 
-/* 转弯后等待中间四路确认时使用的前进速度，单位 RPM。 */
+/* 转弯后等待最中间两路确认时使用的前进速度，单位 RPM。 */
 #define TRACK_CORNER_REACQUIRE_BASE_RPM 15.0f
 
 /* Minimum forward target used by the direct tracking lookup table. */
@@ -40,8 +40,8 @@
 #define TRACK_SWEEP_OUTER_RPM 35.0f
 #define TRACK_SWEEP_INNER_RPM 10.0f
 
-/* 中间四路图案掩码，只检查 bit2~bit5。 */
-#define TRACK_CORNER_COMPLETE_MASK 0x3CU
+/* 最中间两路图案掩码，只检查 bit3~bit4。 */
+#define TRACK_CORNER_COMPLETE_MASK 0x18U
 
 /* 转弯后低速找线的最长时间，50 个 20 ms 周期约为 1 s。 */
 #define TRACK_CORNER_REACQUIRE_TIMEOUT_TICKS 50U
@@ -423,8 +423,8 @@ static uint8_t appTrackingStartCornerTurn(void)
 }
 
 /**
- * @brief  判断中间四路中是否至少有一路压线。
- * @return 1 表示有效线路中存在中间压线，0 表示尚未达到居中条件。
+ * @brief  判断最中间两路中是否至少有一路压线。
+ * @return 1 表示有效线路中存在正中间压线，0 表示尚未达到居中条件。
  * @note   调用方仍要求连续多个周期确认，避免单帧噪声结束转弯。
  */
 static uint8_t appTrackingCornerCenterSeen(void)
@@ -438,7 +438,7 @@ static uint8_t appTrackingCornerCenterSeen(void)
 /**
  * @brief  结束一次急弯动作并恢复普通查表循迹。
  * @param  baseSpeed 当前普通循迹基准速度，单位 RPM。
- * @note   编码器先达到九十度或循迹模块先连续确认中间任意一路压线，
+ * @note   编码器先达到九十度或循迹模块先连续确认最中间任意一路压线，
  *         都可以调用该函数。
  */
 static void appTrackingFinishCornerTurn(float baseSpeed)
@@ -467,8 +467,8 @@ static void appTrackingFinishCornerTurn(float baseSpeed)
 /**
  * @brief  保持急弯锁存并等待新线路重新居中。
  * @param  baseSpeed 当前普通循迹基准速度，单位 RPM。
- * @note   线条短暂消失时不会立即停止转弯；只有重新居中或超过超时时间
- *         才会退出急弯状态。
+ * @note   最中间两路在编码器上限前连续确认即可提前完成；达到编码器上限
+ *         仍未确认时立即判定找线失败，不再进入低速重捕等待。
  */
 static void appTrackingUpdateCornerTurn(float baseSpeed)
 {
@@ -477,17 +477,18 @@ static void appTrackingUpdateCornerTurn(float baseSpeed)
         trackTurnTicks++;
 
         if (zhanShuBaoZhuan90Du(trackTurnDirection)) {
-            trackControlState = TRACK_CONTROL_REACQUIRE;
-            trackCornerCompleteTicks = 0U;
-            trackCornerReacquireTicks = 0U;
-            appTrackingSetTargets(TRACK_CORNER_REACQUIRE_BASE_RPM,
-                                  TRACK_CORNER_REACQUIRE_BASE_RPM);
+            /*
+             * 编码器已经到达硬上限，但最中间两路仍未连续确认三次。
+             * 本次九十度转弯视为找线失败，立即交给现有丢线搜索处理。
+             */
+            appTrackingBeginLineSearch(trackTurnDirection);
+            appTrackingUpdateLineSearch(baseSpeed);
             return;
         }
 
         /*
          * 编码器还没到目标值时，如果循迹模块已经连续三次检测到
-         * 中间任意一路压线，就按循迹模块的结果提前完成九十度转弯。
+         * 最中间任意一路压线，就按循迹模块的结果提前完成九十度转弯。
          */
         if ((trackTurnTicks >= TRACK_CORNER_MIN_TICKS)
             && appTrackingCornerCenterSeen()) {
@@ -658,7 +659,7 @@ static void appTrackingUpdateLineSearch(float baseSpeed)
         trackLostSweepPhase = 0U;
 
         /*
-         * 第一次转弯可能由编码器先完成，但中间四路没有连续确认三次，
+         * 第一次转弯可能由编码器先完成，但最中间两路没有连续确认三次，
          * 随后会进入丢线搜索。搜索重新找到线时必须重新布防急弯检测，
          * 否则 trackCornerArmed 会一直为 0，后续所有弯都不会再触发。
          */

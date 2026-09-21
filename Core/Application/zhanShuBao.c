@@ -15,10 +15,10 @@
 /* 编码器累计计数差达到该值，认为车体已经转过约 90 度。
  * 1016 为理论值，当前使用 2500，补偿实车轮距、打滑和安装误差。
  * 转不够就增大，转过头就减小。 */
-#define TRACK_CORNER_TURN_90_DIFF_COUNTS 2500
+#define TRACK_CORNER_TURN_90_DIFF_COUNTS 4000
 
 /* 九十度转向时外侧轮目标转速，单位 RPM，正值表示前进。 */
-#define TRACK_CORNER_PIVOT_OUTER_RPM 70.0f
+#define TRACK_CORNER_PIVOT_OUTER_RPM 110.0f
 
 /* 九十度转向时内侧轮目标转速，单位 RPM；当前为 0，表示内侧轮停止。 */
 #define TRACK_CORNER_PIVOT_INNER_RPM (00.0f)
