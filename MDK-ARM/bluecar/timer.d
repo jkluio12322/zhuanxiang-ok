@@ -34,5 +34,6 @@ bluecar\timer.o: ../Core/Application/yingYongLeiXing.h
 bluecar\timer.o: ../Core/Application/yingYongKongZhi.h
 bluecar\timer.o: ../Core/Application/yingYongPeiZhi.h
 bluecar\timer.o: ../Core/Application/yingYongChuanGanQi.h
+bluecar\timer.o: ../Core/Application/yingYongXunJi.h
 bluecar\timer.o: ../Core/Application/yingYongYaoCe.h
 bluecar\timer.o: ../Core/Hardware/key.h

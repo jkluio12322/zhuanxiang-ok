@@ -88,6 +88,9 @@ int main(void)
   appCommandInit();
   appTelemetryInit();
 
+  /* Start IMU sampling before the boot mode screen so yaw is live there too. */
+  MPU6050_ReadAsync_Start();
+
   appDisplayShowBootScreen();
   Buzzer_ON();
   HAL_Delay(APP_BOOT_BEEP_MS);
@@ -99,8 +102,6 @@ int main(void)
   OLED_ShowString(2, 1, " Calibrating... ");
   OLED_Flush();
 
-  /* 启动 MPU6050 异步采样，后续由 10 ms 传感器任务处理。 */
-  MPU6050_ReadAsync_Start();
   /* USER CODE END 2 */
 
   while (1)

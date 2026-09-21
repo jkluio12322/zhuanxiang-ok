@@ -2,6 +2,47 @@
 #include "yingYongPeiZhi.h"
 #include "motor.h"
 
+/* ------------------------------------------------------------------------- */
+/* 速度档位和 PID 常调参数                                                  */
+/* ------------------------------------------------------------------------- */
+
+/* 上电默认速度档位，2 对应 G2。 */
+#define SPEED_LEVEL_DEFAULT 2U
+
+/* G1~G6 档位对应的中心速度，单位 RPM。 */
+#define SPEED_TABLE_G1_RPM 30.0f
+#define SPEED_TABLE_G2_RPM 55.0f
+#define SPEED_TABLE_G3_RPM 80.0f
+#define SPEED_TABLE_G4_RPM 105.0f
+#define SPEED_TABLE_G5_RPM 130.0f
+#define SPEED_TABLE_G6_RPM 170.0f
+
+/* 左轮增量式速度环参数。 */
+#define SPEED_PID_LEFT_KP 0.25f
+#define SPEED_PID_LEFT_KI 0.020f
+#define SPEED_PID_LEFT_KD 0.0f
+
+/* 右轮增量式速度环参数。 */
+#define SPEED_PID_RIGHT_KP 0.25f
+#define SPEED_PID_RIGHT_KI 0.020f
+#define SPEED_PID_RIGHT_KD 0.0f
+
+/* 左右速度环公共输出限制、死区和单周期变化限制。 */
+#define SPEED_PID_OUT_MAX 100.0f
+#define SPEED_PID_OUT_MIN (-100.0f)
+#define SPEED_PID_DEADBAND 1.8f
+#define SPEED_PID_RATE_LIMIT 35.0f
+
+/* 航向角环常调参数。 */
+#define YAW_PID_KP 2.0f
+#define YAW_PID_KI 0.02f
+#define YAW_PID_KD 0.5f
+#define YAW_PID_OUT_MAX 10.0f
+#define YAW_PID_OUT_MIN (-10.0f)
+#define YAW_PID_INTEGRAL_LIMIT 10.0f
+#define YAW_PID_DEADBAND 0.5f
+#define YAW_PID_RATE_LIMIT 2.0f
+
 /* 默认进入蓝牙/手动模式，上电后不会自动驱动电机。 */
 workMode_t workMode = modeRun;
 uint8_t runFlag = 0;

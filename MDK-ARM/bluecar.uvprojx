@@ -482,6 +482,11 @@
               <FilePath>../Core/Application/yingYongXunJi.c</FilePath>
             </File>
             <File>
+              <FileName>zhanShuBao.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>../Core/Application/zhanShuBao.c</FilePath>
+            </File>
+            <File>
               <FileName>yingYongXianShi.c</FileName>
               <FileType>1</FileType>
               <FilePath>../Core/Application/yingYongXianShi.c</FilePath>

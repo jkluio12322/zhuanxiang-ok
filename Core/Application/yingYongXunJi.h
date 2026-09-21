@@ -16,6 +16,19 @@ typedef enum {
     TRACK_CONTROL_LOST
 } TrackControlState_t;
 
+typedef struct {
+    TrackControlState_t state;
+    uint8_t pattern;
+    uint8_t blackCount;
+    int8_t candidateDirection;
+    uint8_t candidateTicks;
+    int8_t pendingCornerDirection;
+    uint8_t pendingCornerTicks;
+    uint8_t invalidLineTicks;
+    uint16_t turnTicks;
+    uint16_t reacquireTicks;
+} TrackDiagnostics_t;
+
 void appTrackingResetState(void);
 void appTrackingStart(void);
 void appTrackingTask20ms(void);
@@ -23,5 +36,6 @@ void appTrackingTask20ms(void);
 TrackControlState_t appTrackingGetState(void);
 float appTrackingGetPosition(void);
 float appTrackingGetSteer(void);
+void appTrackingGetDiagnostics(TrackDiagnostics_t *output);
 
 #endif

@@ -51,6 +51,7 @@ virtualFolder:
                     - path: ../Core/Application/yingYongMingLing.c
                     - path: ../Core/Application/yingYongKongZhi.c
                     - path: ../Core/Application/yingYongXunJi.c
+                    - path: ../Core/Application/zhanShuBao.c
                     - path: ../Core/Application/yingYongXianShi.c
                     - path: ../Core/Application/yingYongChuanGanQi.c
                     - path: ../Core/Application/yingYongZhuangTai.c

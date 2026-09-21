@@ -51,17 +51,7 @@
 /* 每 1% 占空比对应的 CCR 增量，4500 / 100 = 45。 */
 #define MOTOR_PWM_CCR_PER_PERCENT     45U
 
-/* 电机输出最大百分比，正值表示允许的最大正向输出。 */
-#define MOTOR_OUTPUT_MAX_PERCENT      100
-
-/* 电机输出最小百分比，负值表示允许的最大反向输出。 */
-#define MOTOR_OUTPUT_MIN_PERCENT      (-100)
-
-/* 低速补偿判定阈值，目标转速低于该值时可增加最小 PWM。 */
-#define MOTOR_LOW_SPEED_THRESHOLD_RPM 20.0f
-
-/* 低速运行时使用的最小 PWM 百分比，防止电机因静摩擦无法启动。 */
-#define MOTOR_LOW_SPEED_MIN_PWM       12
+/* 电机输出限制和低速补偿参数已移到 yingYongKongZhi.c 顶部。 */
 
 /* PWM 测试模式每次按键增加的占空比百分比。 */
 #define PWM_TEST_STEP_PERCENT         10
@@ -107,7 +97,7 @@
 /* 正交编码器四倍频系数，用于将计数值换算为完整脉冲数。 */
 #define ENCODER_MULTIPLE              4U
 
-/* 电机减速箱减速比，用于把编码器转速换算为车轮转速。 */
+/* JGB37-520 12V 178 RPM 版本对应 30:1 减速箱。 */
 #define ENCODER_REDUCTION_RATIO       30.0f
 
 /* 编码器每转脉冲数，用于计算轮速。 */
@@ -179,14 +169,10 @@
 /* 编码器滤波与速度限制                                                      */
 /* ------------------------------------------------------------------------- */
 
-/* 一阶低通滤波中上一周期速度的权重。 */
-#define ENCODER_FILTER_PREVIOUS       0.75f
-
-/* 一阶低通滤波中当前周期编码器速度的权重。 */
-#define ENCODER_FILTER_CURRENT        0.25f
+/* 编码器滤波参数已移到 yingYongKongZhi.c 顶部。 */
 
 /* 左右轮目标速度绝对上限，单位 RPM。 */
-#define SPEED_TARGET_LIMIT_RPM        150.0f
+#define SPEED_TARGET_LIMIT_RPM        190.0f
 
 /* ------------------------------------------------------------------------- */
 /* 速度档位                                                                  */
@@ -195,88 +181,19 @@
 /* 可用速度档位数量，当前为 G1~G6 共 6 档。 */
 #define SPEED_LEVEL_COUNT             6U
 
-/* 上电默认速度档位，2 对应 G2，默认蓝牙速度 55 RPM。 */
-#define SPEED_LEVEL_DEFAULT           2U
-
-/* G1 档中心速度，单位 RPM。 */
-#define SPEED_TABLE_G1_RPM            30.0f
-
-/* G2 档中心速度，单位 RPM。 */
-#define SPEED_TABLE_G2_RPM            55.0f
-
-/* G3 档中心速度，单位 RPM。 */
-#define SPEED_TABLE_G3_RPM            80.0f
-
-/* G4 档中心速度，单位 RPM。 */
-#define SPEED_TABLE_G4_RPM            100.0f
-
-/* G5 档中心速度，单位 RPM。 */
-#define SPEED_TABLE_G5_RPM            120.0f
-
-/* G6 档中心速度，单位 RPM。 */
-#define SPEED_TABLE_G6_RPM            140.0f
+/* 默认档位和 G1~G6 速度表已移到 yingYongZhuangTai.c 顶部。 */
 
 /* ------------------------------------------------------------------------- */
 /* 左右轮增量式速度 PID                                                      */
 /* ------------------------------------------------------------------------- */
 
-/* 左轮增量式速度环比例系数默认值。 */
-#define SPEED_PID_LEFT_KP             0.25f
-
-/* 左轮增量式速度环积分系数默认值。 */
-#define SPEED_PID_LEFT_KI             0.020f
-
-/* 左轮增量式速度环微分系数默认值。 */
-#define SPEED_PID_LEFT_KD             0.0f
-
-/* 右轮增量式速度环比例系数默认值。 */
-#define SPEED_PID_RIGHT_KP            0.25f
-
-/* 右轮增量式速度环积分系数默认值。 */
-#define SPEED_PID_RIGHT_KI            0.020f
-
-/* 右轮增量式速度环微分系数默认值。 */
-#define SPEED_PID_RIGHT_KD            0.0f
-
-/* 左右速度环最终 PWM 输出上限，单位百分比。 */
-#define SPEED_PID_OUT_MAX             100.0f
-
-/* 左右速度环最终 PWM 输出下限，单位百分比。 */
-#define SPEED_PID_OUT_MIN             (-100.0f)
-
-/* 增量环误差死区，误差小于该值时本周期增量为零。 */
-#define SPEED_PID_DEADBAND            1.0f
-
-/* 增量环单周期最大 PWM 变化量，防止输出突变。 */
-#define SPEED_PID_RATE_LIMIT          35.0f
+/* 左右速度环 PID 参数已移到 yingYongZhuangTai.c 顶部。 */
 
 /* ------------------------------------------------------------------------- */
 /* 航向角环 PID                                                              */
 /* ------------------------------------------------------------------------- */
 
-/* 航向角环比例系数默认值。 */
-#define YAW_PID_KP                    2.0f
-
-/* 航向角环积分系数默认值。 */
-#define YAW_PID_KI                    0.02f
-
-/* 航向角环微分系数默认值。 */
-#define YAW_PID_KD                    0.5f
-
-/* 航向角环输出上限，单位为等效左右差速 RPM。 */
-#define YAW_PID_OUT_MAX               10.0f
-
-/* 航向角环输出下限，单位为等效左右差速 RPM。 */
-#define YAW_PID_OUT_MIN               (-10.0f)
-
-/* 航向角环积分项限幅。 */
-#define YAW_PID_INTEGRAL_LIMIT        10.0f
-
-/* 航向角环误差死区，单位度。 */
-#define YAW_PID_DEADBAND              0.5f
-
-/* 航向角环单次输出最大变化量，防止刚进入直行时方向突变。 */
-#define YAW_PID_RATE_LIMIT            2.0f
+/* 航向角环 PID 增益和输出限制已移到 yingYongZhuangTai.c 顶部。 */
 
 /* 航向角环分频数；2 表示每两个 50 ms 控制周期更新一次，即 100 ms。 */
 #define YAW_PID_PERIOD_DIVIDER        2U
@@ -327,44 +244,39 @@
 /* ------------------------------------------------------------------------- */
 
 /* 循迹模式允许使用的最高档位。 */
-#define TRACK_MAX_SPEED_LEVEL         4U
+#define TRACK_MAX_SPEED_LEVEL         6U
 
-/* Tracking-only speed scale. Manual and PWM modes keep the original table. */
-#define TRACK_DRIVE_SPEED_SCALE       0.80f
+/* 1.0 means tracking uses the full selected-speed-table RPM. */
+#define TRACK_DRIVE_SPEED_SCALE       1.00f
 
 /* +1 keeps the logical right direction; -1 reverses sensor/steering direction. */
-#define TRACK_STEERING_SIGN           (-1.0f)
+#define TRACK_STEERING_SIGN           1.0f
 
 /* A normal line pattern must contain 1..6 black channels. */
 #define TRACK_LINE_VALID_MAX_BLACK    6U
 
-/* Minimum forward target used by the direct tracking lookup table. */
-#define TRACK_MIN_FORWARD_RPM         15.0f
+/* Invalid line must be confirmed for 3 x 20 ms before entering LOST. */
+#define TRACK_LINE_INVALID_CONFIRM_TICKS 3U
 
-/* Lost-line search uses a positive differential, never a reverse wheel. */
-#define TRACK_SWEEP_OUTER_RPM         55.0f
-#define TRACK_SWEEP_INNER_RPM         15.0f
+/* 急弯锁存后的最短持续时间，6 个 20 ms 周期约为 120 ms。 */
+#define TRACK_CORNER_MIN_TICKS        6U
 
-/* 急弯检测与原地转参数。 */
-#define TRACK_CORNER_CONFIRM_TICKS    2U
-#define TRACK_TURN_MIN_RPM            35.0f
-#define TRACK_TURN_RPM                45.0f
-#define TRACK_TURN_MAX_RPM            55.0f
-#define TRACK_TURN_TIMEOUT_TICKS      30U
+/* 新线路重新居中所需连续周期数，3 次约为 60 ms。 */
+#define TRACK_CORNER_REACQUIRE_CENTER_TICKS 3U
 
-/* 急弯后重新捕获线路参数。 */
-#define TRACK_REACQUIRE_RPM           25.0f
-#define TRACK_REACQUIRE_CENTER_TICKS  2U
-#define TRACK_REACQUIRE_POSITION_MAX  2.0f
+/* 判定新线路已经居中的最大归一化位置绝对值。 */
+#define TRACK_CORNER_REACQUIRE_POSITION_MAX 2.0f
+
+/* 急弯检测、转弯速度、九十度计数和重新找线参数已分别移到
+ * yingYongXunJi.c 与 zhanShuBao.c 顶部。 */
 
 /* 全灭计圈、全亮丢线及左右摆头找线参数。 */
 #define TRACK_FINISH_PATTERN          0xFFU
 #define TRACK_LOST_PATTERN            0x00U
 #define TRACK_FINISH_CONFIRM_TICKS    3U
 #define TRACK_FINISH_CLEAR_TICKS      10U
-#define TRACK_SWEEP_HALF_TICKS        25U
+#define TRACK_SWEEP_HALF_TICKS        50U
 #define TRACK_SWEEP_ROUNDS            3U
-#define TRACK_SWEEP_RPM               12.0f
 #define TRACK_START_FORWARD_TICKS     50U
 #define TRACK_LAP_TARGET_DEFAULT      1U
 #define TRACK_LAP_TARGET_MAX          5U

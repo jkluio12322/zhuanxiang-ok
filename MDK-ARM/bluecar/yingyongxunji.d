@@ -37,4 +37,5 @@ bluecar\yingyongxunji.o: ../Core/Hardware/encoder.h
 bluecar\yingyongxunji.o: ../Core/Hardware/mpu6050.h
 bluecar\yingyongxunji.o: ../Core/Hardware/pid.h
 bluecar\yingyongxunji.o: ../Core/Hardware/irtrack.h
+bluecar\yingyongxunji.o: ../Core/Application/zhanShuBao.h
 bluecar\yingyongxunji.o: F:\kilv5\ARM\ARMCC\Bin\..\include\math.h

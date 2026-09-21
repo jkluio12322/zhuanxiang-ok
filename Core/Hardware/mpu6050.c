@@ -517,10 +517,19 @@ static volatile uint8_t mpu_async_busy  = 0;
 
 void MPU6050_ReadAsync_Start(void)
 {
+    HAL_StatusTypeDef status;
+
     if (mpu_async_busy) return;
     mpu_async_busy = 1;
-    HAL_I2C_Mem_Read_IT(MPU6050_I2C, MPU6050_ADDRESS << 1, MPU6050_ACCEL_XOUT_H,
-                        I2C_MEMADD_SIZE_8BIT, mpu_async_buf, 14);
+    status = HAL_I2C_Mem_Read_IT(MPU6050_I2C,
+                                 MPU6050_ADDRESS << 1,
+                                 MPU6050_ACCEL_XOUT_H,
+                                 I2C_MEMADD_SIZE_8BIT,
+                                 mpu_async_buf,
+                                 14);
+    if (status != HAL_OK) {
+        mpu_async_busy = 0;
+    }
 }
 
 uint8_t MPU6050_ReadAsync_Done(void)
@@ -558,6 +567,7 @@ void MPU6050_I2C_RxCplt(I2C_HandleTypeDef *hi2c)
 void MPU6050_I2C_Error(I2C_HandleTypeDef *hi2c)
 {
     if (hi2c == MPU6050_I2C) {
+        mpu_async_ready = 0;
         mpu_async_busy = 0;
     }
 }

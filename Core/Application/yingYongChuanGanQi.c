@@ -33,9 +33,10 @@ void appSensorTask10ms(void)
     /* 使用固定 10 ms 周期作为姿态解算的采样时间。 */
     MPU6050_AHRS_Update(&imu, (float)APP_SENSOR_PERIOD_MS / 1000.0f);
 
-    /* INT 置位后立即发起下一次异步读取。 */
-    if (mpu_int_ready) {
-        mpu_int_ready = 0;
-        MPU6050_ReadAsync_Start();
-    }
+    /*
+     * The 100 Hz sensor task owns the transfer chain. PA12 INT remains
+     * diagnostic only; a missing edge must not stop future samples.
+     */
+    mpu_int_ready = 0;
+    MPU6050_ReadAsync_Start();
 }

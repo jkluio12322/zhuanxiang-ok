@@ -321,6 +321,12 @@ void IRTrack_Init(IR_Mode_t mode)
 {
     IRTrack_GPIO_Init();
     memset(&ir_data, 0, sizeof(ir_data));
+
+    /* The module output is active-high for black: OLED raw 0=black, 1=white. */
+    for (uint8_t i = 0U; i < IRTRACK_CHANNELS; i++) {
+        ir_data.raw[i] = 1U;
+    }
+
     (void)mode;
 }
 
@@ -341,7 +347,8 @@ void IRTrack_Compute(void)
     const IRTrack_LutEntry_t *entry;
 
     for (uint8_t i = 0; i < IRTRACK_CHANNELS; i++) {
-        if (ir_data.raw[i]) {
+        /* Build a logical black mask from the active-high physical input. */
+        if (ir_data.raw[i] == 0U) {
             sum = (int16_t)(sum + ir_weight[i]);
             count++;
             pattern |= (uint8_t)(1U << i);

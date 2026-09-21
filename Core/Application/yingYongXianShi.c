@@ -23,7 +23,7 @@ void appDisplayShowBootScreen(void)
 
     /* 开机页显示固件名称、通信方案和启动按键提示。 */
     OLED_Clear();
-    OLED_ShowString(1, 1, "[BlueCar Init]");
+    OLED_ShowStringSmall(1, 1, "[BlueCar Init]");
     switch (workMode) {
     case modeTrack:
         modeName = "TRACK";
@@ -39,9 +39,12 @@ void appDisplayShowBootScreen(void)
 
     snprintf(buffer, sizeof(buffer), "Mode:%s G:%d",
              modeName, appStateGetSpeedLevel());
-    OLED_ShowString(2, 1, buffer);
-    OLED_ShowString(3, 1, "C8 Mode C9 Speed");
-    OLED_ShowString(4, 1, "C6/C7 EXIT");
+    OLED_ShowStringSmall(2, 1, buffer);
+
+    snprintf(buffer, sizeof(buffer), "Y:%+05.1f", imu.yaw);
+    OLED_ShowStringSmall(3, 1, buffer);
+    OLED_ShowStringSmall(4, 1, "C8 Mode C9 Speed");
+    OLED_ShowStringSmall(5, 1, "C6/C7 EXIT");
     OLED_Flush();
 }
 
@@ -198,8 +201,8 @@ void appDisplayUpdate(void)
                  telemetryData.targetLeft, telemetryData.targetRight);
         OLED_ShowStringSmall(4, 1, buffer);
 
-        snprintf(buffer, sizeof(buffer), "POS:%+04.1f STR:%+05.1f",
-                 appTrackingGetPosition(),
+        snprintf(buffer, sizeof(buffer), "Y:%+05.1f STR:%+05.1f",
+                 imu.yaw,
                  appTrackingGetSteer());
         OLED_ShowStringSmall(5, 1, buffer);
 
@@ -225,6 +228,10 @@ void appDisplayUpdate(void)
         snprintf(buffer, sizeof(buffer), "L:%+04.0f R:%+04.0f",
                  telemetryData.pwmLeft, telemetryData.pwmRight);
         OLED_ShowString(3, 1, buffer);
+
+        snprintf(buffer, sizeof(buffer), "Y:%+05.1f", imu.yaw);
+        OLED_ShowString(4, 1, buffer);
+        return;
     } else {
         snprintf(buffer, sizeof(buffer), "[BT] %s G%d",
                  runFlag ? "RUN" : "STOP", appStateGetSpeedLevel());
@@ -244,7 +251,4 @@ void appDisplayUpdate(void)
         return;
     }
 
-    snprintf(buffer, sizeof(buffer), "P:%+04.0f/%+04.0f",
-             telemetryData.pwmLeft, telemetryData.pwmRight);
-    OLED_ShowString(4, 1, buffer);
 }

@@ -9,6 +9,22 @@
 
 #include <math.h>
 
+/* ------------------------------------------------------------------------- */
+/* 速度滤波、低速补偿和电机输出常调参数                                      */
+/* ------------------------------------------------------------------------- */
+
+/* 编码器一阶低通滤波权重。 */
+#define ENCODER_FILTER_PREVIOUS 0.75f
+#define ENCODER_FILTER_CURRENT 0.25f
+
+/* 电机 PWM 输出上下限，单位百分比。 */
+#define MOTOR_OUTPUT_MAX_PERCENT 100
+#define MOTOR_OUTPUT_MIN_PERCENT (-100)
+
+/* 低速目标下的最小 PWM 补偿。 */
+#define MOTOR_LOW_SPEED_THRESHOLD_RPM 20.0f
+#define MOTOR_LOW_SPEED_MIN_PWM 12
+
 /* 左右轮一阶低通滤波后的转速，作为两个独立增量式速度环的反馈。 */
 static float filteredSpeedLeft = 0.0f;
 static float filteredSpeedRight = 0.0f;
@@ -420,18 +436,17 @@ void appControlTask50ms(void)
         telemetryData.pwmLeft = 0.0f;
         telemetryData.pwmRight = 0.0f;
         telemetryData.yawOutput = 0.0f;
-        telemetryData.rpmDiff = 0.0f;
+        telemetryData.rpmDiff = rpmDifference;
         telemetryData.yawAngle = imu.yaw;
         telemetryData.bluetoothLv = bluetoothLv;
         telemetryData.bluetoothRh = bluetoothRh;
         telemetryData.runFlag = 0;
         telemetryData.gear = (int16_t)appStateGetSpeedLevel();
-        telemetryData.rpmFilteredRight = 0.0f;
-        telemetryData.rpmFilteredLeft = 0.0f;
+        telemetryData.rpmFilteredRight = encoderRight.velocity.angular;
+        telemetryData.rpmFilteredLeft = encoderLeft.velocity.angular;
         telemetryData.fresh = 1;
 
         appControlResetSpeedFilter();
-        appTrackingResetState();
         Motor_SetSpeedA(0);
         Motor_SetSpeedB(0);
         return;
