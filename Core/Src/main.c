@@ -78,7 +78,7 @@ int main(void)
   Key_Init();
   Serial_Init(&huart1);
   Serial_Printf("BOOT OK\r\n");
-  Serial_Printf("#tgtR,rpmR,pwmR,tgtL,rpmL,pwmL,yaw,diff,yawA,lv,rh,run,gear,rpmFR,rpmFL\r\n");
+  Serial_Printf("#tgtRpmR,rpmFR,rpmR,tgtRpmL,rpmFL,rpmL,steerRpm,diffRpm,yawDeg,mode,run,gear\r\n");
   pidTuneInit();
   Buzzer_Init();
   BlueSerial_Init();

@@ -429,21 +429,18 @@ void appControlTask50ms(void)
     /* 停车状态下刷新遥测数据并强制关闭电机输出。 */
     if (!runFlag) {
         appControlExitStraightYawControl();
-        telemetryData.targetLeft = 0.0f;
-        telemetryData.targetRight = 0.0f;
-        telemetryData.rpmRight = encoderRight.velocity.angular;
-        telemetryData.rpmLeft = encoderLeft.velocity.angular;
-        telemetryData.pwmLeft = 0.0f;
-        telemetryData.pwmRight = 0.0f;
-        telemetryData.yawOutput = 0.0f;
-        telemetryData.rpmDiff = rpmDifference;
-        telemetryData.yawAngle = imu.yaw;
-        telemetryData.bluetoothLv = bluetoothLv;
-        telemetryData.bluetoothRh = bluetoothRh;
+        telemetryData.targetLeftRpm = 0.0f;
+        telemetryData.targetRightRpm = 0.0f;
+        telemetryData.actualLeftRpm = encoderLeft.velocity.angular;
+        telemetryData.actualRightRpm = encoderRight.velocity.angular;
+        telemetryData.filteredLeftRpm = encoderLeft.velocity.angular;
+        telemetryData.filteredRightRpm = encoderRight.velocity.angular;
+        telemetryData.steerRpm = 0.0f;
+        telemetryData.actualDiffRpm = rpmDifference;
+        telemetryData.yawAngleDeg = imu.yaw;
+        telemetryData.mode = (int16_t)workMode;
         telemetryData.runFlag = 0;
         telemetryData.gear = (int16_t)appStateGetSpeedLevel();
-        telemetryData.rpmFilteredRight = encoderRight.velocity.angular;
-        telemetryData.rpmFilteredLeft = encoderLeft.velocity.angular;
         telemetryData.fresh = 1;
 
         appControlResetSpeedFilter();
@@ -477,21 +474,18 @@ void appControlTask50ms(void)
         Motor_SetSpeedA(pwmOpenLoop);
         Motor_SetSpeedB(pwmOpenLoop);
 
-        telemetryData.targetLeft = (float)pwmOpenLoop;
-        telemetryData.targetRight = (float)pwmOpenLoop;
-        telemetryData.rpmRight = encoderRight.velocity.angular;
-        telemetryData.rpmLeft = encoderLeft.velocity.angular;
-        telemetryData.pwmLeft = (float)pwmOpenLoop;
-        telemetryData.pwmRight = (float)pwmOpenLoop;
-        telemetryData.yawOutput = 0.0f;
-        telemetryData.rpmDiff = rpmDifference;
-        telemetryData.yawAngle = imu.yaw;
-        telemetryData.bluetoothLv = bluetoothLv;
-        telemetryData.bluetoothRh = bluetoothRh;
+        telemetryData.targetLeftRpm = 0.0f;
+        telemetryData.targetRightRpm = 0.0f;
+        telemetryData.actualLeftRpm = encoderLeft.velocity.angular;
+        telemetryData.actualRightRpm = encoderRight.velocity.angular;
+        telemetryData.filteredLeftRpm = encoderLeft.velocity.angular;
+        telemetryData.filteredRightRpm = encoderRight.velocity.angular;
+        telemetryData.steerRpm = 0.0f;
+        telemetryData.actualDiffRpm = rpmDifference;
+        telemetryData.yawAngleDeg = imu.yaw;
+        telemetryData.mode = (int16_t)workMode;
         telemetryData.runFlag = runFlag;
         telemetryData.gear = (int16_t)appStateGetSpeedLevel();
-        telemetryData.rpmFilteredRight = 0.0f;
-        telemetryData.rpmFilteredLeft = 0.0f;
         telemetryData.fresh = 1;
         return;
     }
@@ -637,22 +631,19 @@ void appControlTask50ms(void)
     Motor_SetSpeedA(leftPwm);
     Motor_SetSpeedB(rightPwm);
 
-    telemetryData.targetLeft = targetLeft;
-    telemetryData.targetRight = targetRight;
-    telemetryData.rpmRight = encoderRight.velocity.angular;
-    telemetryData.rpmLeft = encoderLeft.velocity.angular;
-    telemetryData.pwmLeft = (float)leftPwm;
-    telemetryData.pwmRight = (float)rightPwm;
-    telemetryData.yawOutput = (workMode == modeTrack)
-                              ? appTrackingGetSteer()
-                              : (straightYawControlActive ? yawPid.Out : 0.0f);
-    telemetryData.rpmDiff = rpmDifference;
-    telemetryData.yawAngle = imu.yaw;
-    telemetryData.bluetoothLv = bluetoothLv;
-    telemetryData.bluetoothRh = bluetoothRh;
+    telemetryData.targetLeftRpm = targetLeft;
+    telemetryData.targetRightRpm = targetRight;
+    telemetryData.actualLeftRpm = encoderLeft.velocity.angular;
+    telemetryData.actualRightRpm = encoderRight.velocity.angular;
+    telemetryData.filteredLeftRpm = filteredSpeedLeft;
+    telemetryData.filteredRightRpm = filteredSpeedRight;
+    telemetryData.steerRpm = (workMode == modeTrack)
+                             ? appTrackingGetSteer()
+                             : (straightYawControlActive ? yawPid.Out : 0.0f);
+    telemetryData.actualDiffRpm = rpmDifference;
+    telemetryData.yawAngleDeg = imu.yaw;
+    telemetryData.mode = (int16_t)workMode;
     telemetryData.runFlag = runFlag;
     telemetryData.gear = (int16_t)appStateGetSpeedLevel();
-    telemetryData.rpmFilteredRight = filteredSpeedRight;
-    telemetryData.rpmFilteredLeft = filteredSpeedLeft;
     telemetryData.fresh = 1;
 }

@@ -18,10 +18,10 @@
 #define TRACK_CORNER_TURN_90_DIFF_COUNTS 4000
 
 /* 九十度转向时外侧轮目标转速，单位 RPM，正值表示前进。 */
-#define TRACK_CORNER_PIVOT_OUTER_RPM 110.0f
+#define TRACK_CORNER_PIVOT_OUTER_RPM 50.0f
 
 /* 九十度转向时内侧轮目标转速，单位 RPM；当前为 0，表示内侧轮停止。 */
-#define TRACK_CORNER_PIVOT_INNER_RPM (00.0f)
+#define TRACK_CORNER_PIVOT_INNER_RPM (-50.0f)
 
 /* 八路红外全部压到黑线时，每一路 raw 的物理状态都为 0。 */
 #define ZHAN_SHU_BAO_HEI_XIAN_RAW_MIE 0U

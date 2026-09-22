@@ -28,8 +28,8 @@ void appTelemetrySend(void)
     /* 无新数据、VOFA 已关闭或停车且转速接近 0 时不发送。 */
     if (!vofaEnabled || !telemetryData.fresh) return;
     if (!runFlag
-        && fabsf(telemetryData.rpmRight) < TELEMETRY_STOP_RPM_EPSILON
-        && fabsf(telemetryData.rpmLeft) < TELEMETRY_STOP_RPM_EPSILON) {
+        && fabsf(telemetryData.actualRightRpm) < TELEMETRY_STOP_RPM_EPSILON
+        && fabsf(telemetryData.actualLeftRpm) < TELEMETRY_STOP_RPM_EPSILON) {
         return;
     }
 
@@ -38,32 +38,26 @@ void appTelemetrySend(void)
     char buffer[TELEMETRY_BUFFER_SIZE];
     int length;
 
-    int bluetoothLv = (int)telemetryData.bluetoothLv;
-    int bluetoothRh = (int)telemetryData.bluetoothRh;
-    if (bluetoothLv < -128 || bluetoothLv > 127) bluetoothLv = 0;
-    if (bluetoothRh < -128 || bluetoothRh > 127) bluetoothRh = 0;
-
-    float voltageRight = telemetryData.pwmRight * TELEMETRY_PWM_TO_VOLT;
-    float voltageLeft = telemetryData.pwmLeft * TELEMETRY_PWM_TO_VOLT;
-
-    /* CSV 顺序：tgtR,rpmFR,pwmR,tgtL,rpmFL,pwmL,yaw,diff,yawA,lv,rh。 */
+    /*
+     * CSV order and units:
+     * tgtRpmR,rpmFR,rpmR,tgtRpmL,rpmFL,rpmL,
+     * steerRpm,diffRpm,yawDeg,mode,run,gear
+     */
     length = snprintf(buffer, sizeof(buffer),
-        "%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,",
-        telemetryData.targetRight,
-        telemetryData.rpmFilteredRight,
-        voltageRight,
-        telemetryData.targetLeft,
-        telemetryData.rpmFilteredLeft,
-        voltageLeft,
-        telemetryData.yawOutput,
-        telemetryData.rpmDiff,
-        telemetryData.yawAngle);
-
-    if (length > 0 && length < (int)sizeof(buffer)) {
-        length += snprintf(buffer + length, sizeof(buffer) - (size_t)length,
-                           "%d,%d\r\n",
-                           bluetoothLv, bluetoothRh);
-    }
+        "%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,"
+        "%d,%d,%d\r\n",
+        telemetryData.targetRightRpm,
+        telemetryData.filteredRightRpm,
+        telemetryData.actualRightRpm,
+        telemetryData.targetLeftRpm,
+        telemetryData.filteredLeftRpm,
+        telemetryData.actualLeftRpm,
+        telemetryData.steerRpm,
+        telemetryData.actualDiffRpm,
+        telemetryData.yawAngleDeg,
+        (int)telemetryData.mode,
+        (int)telemetryData.runFlag,
+        (int)telemetryData.gear);
 
     if (length > 0 && length < (int)sizeof(buffer)) {
         Serial_Write((const uint8_t *)buffer, (uint16_t)length);

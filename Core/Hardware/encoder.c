@@ -10,7 +10,7 @@
  *
  *          轮子参数 (JGB37-520):
  *            multiple = 4 (4倍频), ppr = 11 (编码器线数)
- *            reduction_ratio = 30 (减速比), r = 0.065m (轮子半径)
+ *            reduction_ratio = 56 (减速比), r = 0.065m (轮子半径)
  */
 
 #include "encoder.h"

@@ -198,7 +198,7 @@ void PID_Update(PID_t *p)
      *   补偿方式: Out>0 → +Offset, Out<0 → -Offset
      *     确保PID算出的小输出也能让电机真正动起来
      *
-     *   SpeedPID.OutOffset=15: JGB37-520带30:1减速箱+车体负载, 实测死区约15%
+     *   SpeedPID.OutOffset=15: JGB37-520带56:1减速箱+车体负载, 实测死区约15%
      *   YawPID.OutOffset=0:   差速RPM不需要死区补偿 (直接叠加到PWM)
      *──────────────────────────────────────────────────────*/
     if (p->Out > 0)       { p->Out += p->OutOffset; }

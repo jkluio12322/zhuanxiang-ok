@@ -257,7 +257,7 @@ void pidTuneProcess(void)
         appCommandQueuePush(message);
         workMode = modePwmSet;
         bluetoothLastRx = milliseconds;
-        pidTuneRespond("[Motor] Duty=%d%%\r\n", pwmDuty);
+        pidTuneRespond("[Motor] Open-loop test updated\r\n");
     }
     else if (strcmp(token, "yaw0") == 0) {
         message.type = commandImuCalib;

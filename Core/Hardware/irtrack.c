@@ -35,8 +35,25 @@ typedef struct {
     uint8_t state;
 } IRTrack_LutEntry_t;
 
+/* 8 路循迹通道权重，负值偏左，正值偏右。 */
+#define IR_WEIGHT_CH1 (-25)
+#define IR_WEIGHT_CH2 (-17)
+#define IR_WEIGHT_CH3 (-9)
+#define IR_WEIGHT_CH4 (-1)
+#define IR_WEIGHT_CH5 1
+#define IR_WEIGHT_CH6 9
+#define IR_WEIGHT_CH7 17
+#define IR_WEIGHT_CH8 25
+
 static const int8_t ir_weight[IRTRACK_CHANNELS] = {
-    -25, -17, -9, -3, 3, 9, 17, 25
+    IR_WEIGHT_CH1,
+    IR_WEIGHT_CH2,
+    IR_WEIGHT_CH3,
+    IR_WEIGHT_CH4,
+    IR_WEIGHT_CH5,
+    IR_WEIGHT_CH6,
+    IR_WEIGHT_CH7,
+    IR_WEIGHT_CH8
 };
 
 static const IRTrack_LutEntry_t ir_track_lut[256] = {

@@ -4,7 +4,7 @@
  *
  *          编码器参数说明:
  *          - multiple: 倍频系数 (4 倍频 = 4)
- *          - reduction_ratio: 减速比 (JGB37-520 = 30)
+ *          - reduction_ratio: 减速比 (JGB37-520 178 RPM = 56)
  *          - ppr: 编码器线数 (每圈脉冲数 = 11)
  *          - r: 车轮半径 (单位: m)
  *

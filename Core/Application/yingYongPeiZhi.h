@@ -97,8 +97,8 @@
 /* 正交编码器四倍频系数，用于将计数值换算为完整脉冲数。 */
 #define ENCODER_MULTIPLE              4U
 
-/* JGB37-520 12V 178 RPM 版本对应 30:1 减速箱。 */
-#define ENCODER_REDUCTION_RATIO       30.0f
+/* JGB37-520 12V 178 RPM 版本对应 56:1 减速箱。 */
+#define ENCODER_REDUCTION_RATIO       56.0f
 
 /* 编码器每转脉冲数，用于计算轮速。 */
 #define ENCODER_PPR                   11U
@@ -235,10 +235,10 @@
 /* 循迹模式是否使用 MPU6050 航向环，0 表示完全由循迹模块控制。 */
 #define TRACK_USE_IMU_YAW             0U
 
-/* 位置一阶低通滤波权重。 */
 #define TRACK_POSITION_FILTER_PREVIOUS 0.55f
 #define TRACK_POSITION_FILTER_CURRENT  0.45f
 
+/* 位置一阶低通滤波权重。 */
 /* ------------------------------------------------------------------------- */
 /* 8 路数字循迹策略                                                          */
 /* ------------------------------------------------------------------------- */
@@ -287,9 +287,6 @@
 
 /* VOFA CSV 发送缓冲区大小，单位字节。 */
 #define TELEMETRY_BUFFER_SIZE         128U
-
-/* 遥测 PWM 百分比换算为电压的系数，约等于每 1% 对应 0.12 V。 */
-#define TELEMETRY_PWM_TO_VOLT         0.12f
 
 /* 判断车辆已经停稳的转速误差阈值，单位 RPM。 */
 #define TELEMETRY_STOP_RPM_EPSILON    0.5f

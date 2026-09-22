@@ -198,7 +198,7 @@ void appDisplayUpdate(void)
         OLED_ShowStringSmall(3, 1, buffer);
 
         snprintf(buffer, sizeof(buffer), "TL:%+03.0f TR:%+03.0f",
-                 telemetryData.targetLeft, telemetryData.targetRight);
+                 telemetryData.targetLeftRpm, telemetryData.targetRightRpm);
         OLED_ShowStringSmall(4, 1, buffer);
 
         snprintf(buffer, sizeof(buffer), "Y:%+05.1f STR:%+05.1f",
@@ -207,26 +207,28 @@ void appDisplayUpdate(void)
         OLED_ShowStringSmall(5, 1, buffer);
 
         snprintf(buffer, sizeof(buffer), "RPM L:%+04.0f R:%+04.0f",
-                 telemetryData.rpmLeft, telemetryData.rpmRight);
+                 telemetryData.filteredLeftRpm,
+                 telemetryData.filteredRightRpm);
         OLED_ShowStringSmall(6, 1, buffer);
 
-        snprintf(buffer, sizeof(buffer), "PWM L:%+03.0f R:%+03.0f",
-                 telemetryData.pwmLeft, telemetryData.pwmRight);
+        snprintf(buffer, sizeof(buffer), "ACT L:%+04.0f R:%+04.0f",
+                 telemetryData.actualLeftRpm,
+                 telemetryData.actualRightRpm);
         OLED_ShowStringSmall(7, 1, buffer);
-
-        snprintf(buffer, sizeof(buffer), "V L:%+04.1f R:%+04.1f",
-                 telemetryData.pwmLeft * TELEMETRY_PWM_TO_VOLT,
-                 telemetryData.pwmRight * TELEMETRY_PWM_TO_VOLT);
-        OLED_ShowStringSmall(8, 1, buffer);
         return;
     } else if (workMode == modePwmSet) {
-        OLED_ShowString(1, 1, "[PWM] TEST");
+        snprintf(buffer, sizeof(buffer), "[PWM] %s",
+                 runFlag ? "RUN" : "STOP");
+        OLED_ShowString(1, 1, buffer);
 
-        snprintf(buffer, sizeof(buffer), "Duty:%+04d%%", pwmDuty);
+        snprintf(buffer, sizeof(buffer), "RPM L:%+04.0f R:%+04.0f",
+                 telemetryData.filteredLeftRpm,
+                 telemetryData.filteredRightRpm);
         OLED_ShowString(2, 1, buffer);
 
-        snprintf(buffer, sizeof(buffer), "L:%+04.0f R:%+04.0f",
-                 telemetryData.pwmLeft, telemetryData.pwmRight);
+        snprintf(buffer, sizeof(buffer), "ACT L:%+04.0f R:%+04.0f",
+                 telemetryData.actualLeftRpm,
+                 telemetryData.actualRightRpm);
         OLED_ShowString(3, 1, buffer);
 
         snprintf(buffer, sizeof(buffer), "Y:%+05.1f", imu.yaw);
@@ -237,16 +239,17 @@ void appDisplayUpdate(void)
                  runFlag ? "RUN" : "STOP", appStateGetSpeedLevel());
         OLED_ShowString(1, 1, buffer);
 
-        snprintf(buffer, sizeof(buffer), "P:%+04.0f/%+04.0f",
-                 telemetryData.pwmLeft, telemetryData.pwmRight);
+        snprintf(buffer, sizeof(buffer), "T L:%+04.0f R:%+04.0f",
+                 telemetryData.targetLeftRpm,
+                 telemetryData.targetRightRpm);
         OLED_ShowString(2, 1, buffer);
 
-        snprintf(buffer, sizeof(buffer), "L:%+04.0f R:%+04.0f",
-                 encoderLeft.velocity.angular, encoderRight.velocity.angular);
+        snprintf(buffer, sizeof(buffer), "RPM L:%+04.0f R:%+04.0f",
+                 telemetryData.actualLeftRpm,
+                 telemetryData.actualRightRpm);
         OLED_ShowString(3, 1, buffer);
 
-        snprintf(buffer, sizeof(buffer), "Y:%+05.1f LV:%+03d",
-                 imu.yaw, (int)bluetoothLv);
+        snprintf(buffer, sizeof(buffer), "Y:%+05.1f", imu.yaw);
         OLED_ShowString(4, 1, buffer);
         return;
     }
