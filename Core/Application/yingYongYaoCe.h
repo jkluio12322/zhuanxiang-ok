@@ -1,37 +1,42 @@
 /**
  * @file    yingYongYaoCe.h
- * @brief   VOFA telemetry interface.
+ * @brief   VOFA+ 遥测接口。
  */
 #ifndef __YING_YONG_YAO_CE_H
 #define __YING_YONG_YAO_CE_H
 
 #include <stdint.h>
 
-/*
- * Canonical telemetry units:
- * - wheel speed and differential: RPM
- * - yaw angle: degrees
- * - work mode: workMode_t integer
+/**
+ * @brief  VOFA+ 遥测快照。
+ * @note   轮速和差速单位为 RPM，航向角单位为度，mode 为 workMode_t 整数。
  */
 typedef struct {
-    float targetLeftRpm;          /* Left wheel target speed, RPM. */
-    float targetRightRpm;         /* Right wheel target speed, RPM. */
-    float actualLeftRpm;          /* Left wheel encoder speed, RPM. */
-    float actualRightRpm;         /* Right wheel encoder speed, RPM. */
-    float filteredLeftRpm;        /* Left wheel filtered speed, RPM. */
-    float filteredRightRpm;       /* Right wheel filtered speed, RPM. */
-    float steerRpm;               /* Yaw or line-following steering differential, RPM. */
-    float actualDiffRpm;          /* Actual left-right speed difference, RPM. */
-    float yawAngleDeg;            /* MPU6050 yaw angle, degrees. */
-    int16_t mode;                 /* Current workMode_t value. */
-    int16_t runFlag;              /* 1=running, 0=stopped. */
-    int16_t gear;                 /* Current speed level. */
-    int16_t fresh;                /* 1=new telemetry sample. */
+    float targetLeftRpm;          /* 左轮目标速度，单位 RPM。 */
+    float targetRightRpm;         /* 右轮目标速度，单位 RPM。 */
+    float actualLeftRpm;          /* 左轮编码器速度，单位 RPM。 */
+    float actualRightRpm;         /* 右轮编码器速度，单位 RPM。 */
+    float filteredLeftRpm;        /* 左轮滤波后速度，单位 RPM。 */
+    float filteredRightRpm;       /* 右轮滤波后速度，单位 RPM。 */
+    float steerRpm;               /* 航向或循迹差速量，单位 RPM。 */
+    float actualDiffRpm;          /* 左轮减右轮的实际速度差，单位 RPM。 */
+    float yawAngleDeg;            /* MPU6050 航向角，单位度。 */
+    int16_t mode;                 /* 当前 workMode_t 值。 */
+    int16_t runFlag;              /* 1 表示运行，0 表示停车。 */
+    int16_t gear;                 /* 当前速度档位。 */
+    int16_t fresh;                /* 1 表示有尚未发送的新数据。 */
 } telemetryData_t;
 
 extern telemetryData_t telemetryData;
 
+/**
+ * @brief  清零遥测快照。
+ */
 void appTelemetryInit(void);
+
+/**
+ * @brief  将最新遥测快照格式化为 VOFA CSV 并发送。
+ */
 void appTelemetrySend(void);
 
 #endif

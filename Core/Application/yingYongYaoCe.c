@@ -1,3 +1,8 @@
+/**
+ * @file    yingYongYaoCe.c
+ * @brief   VOFA+ CSV 遥测快照与发送。
+ */
+
 #include "yingYongYaoCe.h"
 #include "yingYongPeiZhi.h"
 #include "yingYongZhuangTai.h"
@@ -40,18 +45,18 @@ void appTelemetrySend(void)
 
     /*
      * CSV order and units:
-     * tgtRpmR,rpmFR,rpmR,tgtRpmL,rpmFL,rpmL,
+     * tgtRpmL,rpmFL,rpmL,tgtRpmR,rpmFR,rpmR,
      * steerRpm,diffRpm,yawDeg,mode,run,gear
      */
     length = snprintf(buffer, sizeof(buffer),
         "%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,"
         "%d,%d,%d\r\n",
-        telemetryData.targetRightRpm,
-        telemetryData.filteredRightRpm,
-        telemetryData.actualRightRpm,
         telemetryData.targetLeftRpm,
         telemetryData.filteredLeftRpm,
         telemetryData.actualLeftRpm,
+        telemetryData.targetRightRpm,
+        telemetryData.filteredRightRpm,
+        telemetryData.actualRightRpm,
         telemetryData.steerRpm,
         telemetryData.actualDiffRpm,
         telemetryData.yawAngleDeg,

@@ -1,3 +1,8 @@
+/**
+ * @file    filter.h
+ * @brief   PT1、PT2 低通滤波器和一维卡尔曼滤波器接口。
+ */
+
 #ifndef __FILTER_H
 #define __FILTER_H  /* 头文件保护宏，防止滤波器接口重复声明。 */
 #include "stdint.h"

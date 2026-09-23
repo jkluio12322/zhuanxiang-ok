@@ -26,7 +26,9 @@ volatile int32_t overflow_count_TIM2 = 0;
 volatile int32_t overflow_count_TIM3 = 0;
 
 /**
- * @brief  启动所有编码器定时器, 并使能溢出中断
+ * @brief  启动 TIM2、TIM3 的编码器接口。
+ * @note   本函数只启动编码器计数；当前速度解算使用周期差分，
+ *         不依赖定时器溢出中断。
  */
 void Encoder_Init_TIM_All(void)
 {
@@ -34,11 +36,6 @@ void Encoder_Init_TIM_All(void)
     HAL_TIM_Encoder_Start(&htim3, TIM_CHANNEL_ALL);
 }
 
-/**
- * @brief  读取本周期编码器脉冲增量 (差分, 不修改硬件计数器)
- * @param  TIMx 编码器定时器 (TIM2 或 TIM3)
- * @return 自上次调用以来的 16 位有符号脉冲增量 (带方向)
- */
 /**
  * @brief  读取编码器计数器相对上一次调用的有符号增量。
  * @param  TIMx 编码器定时器 TIM2 或 TIM3。

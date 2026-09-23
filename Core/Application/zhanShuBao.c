@@ -13,15 +13,17 @@
 /* ------------------------------------------------------------------------- */
 
 /* 编码器累计计数差达到该值，认为车体已经转过约 90 度。
- * 1016 为理论值，当前使用 2500，补偿实车轮距、打滑和安装误差。
+ * 1016 为理论值，当前使用 1100，仅保留少量打滑和安装误差余量。
  * 转不够就增大，转过头就减小。 */
-#define TRACK_CORNER_TURN_90_DIFF_COUNTS 4000
+#define TRACK_CORNER_TURN_90_DIFF_COUNTS 2000
 
-/* 九十度转向时外侧轮目标转速，单位 RPM，正值表示前进。 */
-#define TRACK_CORNER_PIVOT_OUTER_RPM 50.0f
+/* 九十度转向时外侧轮目标转速，单位 RPM，正值表示前进。
+ * 右转时外侧轮是左轮，左转时外侧轮是右轮。 */
+#define TRACK_CORNER_PIVOT_OUTER_RPM 30.0f
 
-/* 九十度转向时内侧轮目标转速，单位 RPM；当前为 0，表示内侧轮停止。 */
-#define TRACK_CORNER_PIVOT_INNER_RPM (-50.0f)
+/* 九十度转向时内侧轮目标转速，单位 RPM；当前为 0，表示内侧轮停止。
+ * 右转时内侧轮是右轮，左转时内侧轮是左轮。 */
+#define TRACK_CORNER_PIVOT_INNER_RPM (-30.0f)
 
 /* 八路红外全部压到黑线时，每一路 raw 的物理状态都为 0。 */
 #define ZHAN_SHU_BAO_HEI_XIAN_RAW_MIE 0U
@@ -82,8 +84,8 @@ void zhanShuBaoChongZhiZhuan90Du(void)
 uint8_t zhanShuBaoZhuan90Du(int8_t zhuanXiang)
 {
     int64_t jiShuCha;
-    float muBiaoZuo;
-    float muBiaoYou;
+    float muBiaoZuo;    /* 左轮目标转速。 */
+    float muBiaoYou;    /* 右轮目标转速。 */
 
     if (zhuanXiang == 0) {
         zhanShuBaoChongZhiZhuan90Du();
@@ -120,17 +122,17 @@ uint8_t zhanShuBaoZhuan90Du(int8_t zhuanXiang)
     }
 
     if (zhuanXiang > 0) {
-        muBiaoZuo = TRACK_CORNER_PIVOT_OUTER_RPM;
-        muBiaoYou = TRACK_CORNER_PIVOT_INNER_RPM;
+        muBiaoZuo = TRACK_CORNER_PIVOT_OUTER_RPM; /* 右转：左轮前进。 */
+        muBiaoYou = TRACK_CORNER_PIVOT_INNER_RPM; /* 右转：右轮停止。 */
     } else {
-        muBiaoZuo = TRACK_CORNER_PIVOT_INNER_RPM;
-        muBiaoYou = TRACK_CORNER_PIVOT_OUTER_RPM;
+        muBiaoZuo = TRACK_CORNER_PIVOT_INNER_RPM; /* 左转：左轮停止。 */
+        muBiaoYou = TRACK_CORNER_PIVOT_OUTER_RPM; /* 左转：右轮前进。 */
     }
 
-    targetLeftRpm = zhanShuBaoXianZhi(muBiaoZuo,
+    targetLeftRpm = zhanShuBaoXianZhi(muBiaoZuo, /* 逻辑左轮输出。 */
                                       -SPEED_TARGET_LIMIT_RPM,
                                       SPEED_TARGET_LIMIT_RPM);
-    targetRightRpm = zhanShuBaoXianZhi(muBiaoYou,
+    targetRightRpm = zhanShuBaoXianZhi(muBiaoYou, /* 逻辑右轮输出。 */
                                        -SPEED_TARGET_LIMIT_RPM,
                                        SPEED_TARGET_LIMIT_RPM);
     turnTarget = (targetLeftRpm - targetRightRpm) * 0.5f;

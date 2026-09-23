@@ -1,0 +1,18 @@
+{
+  "last_flash": {
+    "provider": "openocd",
+    "action": "flash",
+    "board": "",
+    "interface": "interface/cmsis-dap.cfg",
+    "target": "target/stm32f1x.cfg",
+    "search": "C:\\Users\\Lenovo\\.eide\\tools\\openocd_7a1adfbec_mingw32\\share\\openocd\\scripts",
+    "adapter_speed": "",
+    "transport": "",
+    "flash_file": "E:\\32\\32\\STM32HAL\\f103zet6\\bluecar\\MDK-ARM\\build\\bluecar\\bluecar.hex",
+    "artifacts": {
+      "flash_file": "E:\\32\\32\\STM32HAL\\f103zet6\\bluecar\\MDK-ARM\\build\\bluecar\\bluecar.hex",
+      "input_file": "E:\\32\\32\\STM32HAL\\f103zet6\\bluecar\\MDK-ARM\\build\\bluecar\\bluecar.hex"
+    },
+    "timestamp": "2026-09-23T18:08:25+08:00"
+  }
+}

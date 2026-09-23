@@ -1,3 +1,8 @@
+/**
+ * @file    yingYongXianShi.c
+ * @brief   OLED 开机配置页和运行状态页。
+ */
+
 #include "yingYongXianShi.h"
 #include "yingYongKongZhi.h"
 #include "yingYongMingLing.h"
@@ -49,9 +54,8 @@ void appDisplayShowBootScreen(void)
 }
 
 /**
- * @brief  根据当前工作模式刷新 OLED 状态页。
- * @note   循迹模式显示红外图案和状态；PWM 模式显示占空比；
- *         蓝牙模式显示速度目标、实际转速、PWM、偏航角和摇杆值。
+ * @brief  在开机配置页调整速度档位。
+ * @param  direction 大于 0 表示升档，小于 0 表示降档。
  */
 static void appDisplayChangeBootGear(int8_t direction)
 {
@@ -76,6 +80,10 @@ static void appDisplayChangeBootGear(int8_t direction)
     appStateSetSpeedLevel(level);
 }
 
+/**
+ * @brief  按 RUN、TRACK、PWM 的顺序循环开机工作模式。
+ * @note   切换后复位运动状态和 PWM 测试输出，并限制循迹模式档位。
+ */
 static void appDisplayCycleBootMode(void)
 {
     if (workMode == modeRun) {
@@ -95,6 +103,10 @@ static void appDisplayCycleBootMode(void)
     }
 }
 
+/**
+ * @brief  运行开机配置页，等待用户选择模式和启动按键。
+ * @note   该函数在初始化阶段阻塞执行；退出时再次复位运动状态并清空旧命令。
+ */
 void appBootConfigRun(void)
 {
     uint64_t lastDisplayTick = milliseconds;
@@ -143,6 +155,11 @@ void appBootConfigRun(void)
     Key_Clear();
 }
 
+/**
+ * @brief  根据当前工作模式刷新 OLED 运行状态页。
+ * @note   循迹模式显示图案和状态；PWM 模式显示开环测试信息；
+ *         蓝牙模式显示目标转速、实际转速和航向角。
+ */
 void appDisplayUpdate(void)
 {
     OLED_Clear();
@@ -192,7 +209,7 @@ void appDisplayUpdate(void)
         snprintf(buffer, sizeof(buffer), "IR:%s", irBits);
         OLED_ShowStringSmall(2, 1, buffer);
 
-        /* P 为 8 路图案，S 为 N/L/R/C/X 状态缩写。 */
+        /* S 显示 FOLLOW/TURN_L/TURN_R/LOST/FINISH/REACQ，P 显示八路图案。 */
         snprintf(buffer, sizeof(buffer), "S:%s P:%02X",
                  trackStateName, (unsigned int)ir_data.pattern);
         OLED_ShowStringSmall(3, 1, buffer);

@@ -1,3 +1,10 @@
+/**
+ * @file    timer.c
+ * @brief   系统毫秒计时和应用周期任务调度。
+ * @note    TIM5 提供 1 ms 时间戳，TIM6 分频执行传感器、按键、循迹、
+ *          速度控制和 VOFA 遥测任务。
+ */
+
 #include "timer.h"
 #include "yingYongKongZhi.h"
 #include "yingYongPeiZhi.h"
@@ -31,7 +38,7 @@ void TIM5_Init(void)
  * @brief  HAL 定时器周期中断统一回调。
  * @param  htim 触发中断的定时器句柄。
  * @note   TIM5 用于毫秒计数；TIM6 用于分频调度 MPU6050、按键、
- *         控制循环和 VOFA 遥测发送。
+ *         循迹状态机、控制循环和 VOFA 遥测发送。
  */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
@@ -40,7 +47,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         milliseconds++;
     }
 
-    /* TIM6 以 1 ms 为基准分频出传感器、按键和控制任务。 */
+    /* TIM6 以 1 ms 为基准分频出传感器、按键、循迹和控制任务。 */
     if (htim->Instance == TIM6) {
         static uint8_t sensorTick = 0;
         static uint8_t trackingTick = 0;
@@ -61,8 +68,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
             appSensorTask10ms();
         }
 
-        /* 每 50 ms 执行速度闭环、循迹和遥测发送。 */
-        /* Generate tracking targets before the 50 ms speed control task. */
+        /* 每 20 ms 生成循迹目标，供后续 50 ms 速度控制任务使用。 */
         if (++trackingTick >= APP_TRACK_PERIOD_MS) {
             trackingTick = 0;
             appTrackingTask20ms();

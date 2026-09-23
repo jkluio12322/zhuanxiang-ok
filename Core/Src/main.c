@@ -78,7 +78,7 @@ int main(void)
   Key_Init();
   Serial_Init(&huart1);
   Serial_Printf("BOOT OK\r\n");
-  Serial_Printf("#tgtRpmR,rpmFR,rpmR,tgtRpmL,rpmFL,rpmL,steerRpm,diffRpm,yawDeg,mode,run,gear\r\n");
+  Serial_Printf("#tgtRpmL,rpmFL,rpmL,tgtRpmR,rpmFR,rpmR,steerRpm,diffRpm,yawDeg,mode,run,gear\r\n");
   pidTuneInit();
   Buzzer_Init();
   BlueSerial_Init();
@@ -126,10 +126,6 @@ int main(void)
   }
 }
 
-/**
-  * @brief System Clock Configuration
-  * @retval None
-  */
 /**
  * @brief  配置 STM32F103 系统时钟。
  * @note   使用 8 MHz 外部晶振，经 PLL 九倍频得到 72 MHz 系统时钟；

@@ -1,10 +1,10 @@
 /**
  * @file    motor.c
  * @brief   TB6612 双路直流电机驱动模块
- * @note    使用 TIM1 CH1/CH2 输出 PWM, PF1~PF4 控制方向
- *          - 电机A: TIM1_CH2 (PE11) + PF1(方向1) + PF2(方向2)
- *          - 电机B: TIM1_CH1 (PE9)  + PF3(方向1) + PF4(方向2)
- *          PWM 频率 = 72MHz / 72 / 4096 ≈ 244Hz, ARR=4095
+ * @note    使用 TIM1 CH1/CH2 输出 16 kHz PWM，PF1-PF4 控制方向：
+ *          - A 轮：TIM1_CH2 (PE11)，方向引脚 PF2/PF1
+ *          - B 轮：TIM1_CH1 (PE9)，方向引脚 PF3/PF4
+ *          - TIM1 预分频为 0，自动重装载值为 4499
  */
 
 #include "motor.h"

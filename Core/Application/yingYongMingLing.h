@@ -48,7 +48,8 @@ void appCommandProcessKeys(void);
 
 /**
  * @brief  处理 USART1 在线调参命令。
- * @note   实际解析由 pidTuneProcess 完成，控制类命令仍通过统一队列执行。
+ * @note   实际解析由 pidTuneProcess 完成；运动控制类命令通过统一队列执行，
+ *         PID 增益与 duty 调试命令直接修改运行参数。
  */
 void appCommandProcessTune(void);
 

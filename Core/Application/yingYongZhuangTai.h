@@ -1,3 +1,8 @@
+/**
+ * @file    yingYongZhuangTai.h
+ * @brief   应用层状态、速度档位和 PID 接口。
+ */
+
 #ifndef __YING_YONG_ZHUANG_TAI_H
 #define __YING_YONG_ZHUANG_TAI_H  /* 头文件保护宏，防止状态接口重复声明。 */
 
@@ -36,7 +41,7 @@ void appStateInit(void);
 
 /**
  * @brief  立即复位运动状态并关停电机。
- * @note   清空左右轮目标、转向量、摇杆值以及两个增量速度环和循迹 PID
+ * @note   清空左右轮目标、转向量、摇杆值以及两个增量速度环和航向环
  *         的历史量。
  */
 void appStateResetMotion(void);

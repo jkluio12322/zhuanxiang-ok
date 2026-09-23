@@ -1,3 +1,8 @@
+/**
+ * @file    yingYongZhuangTai.c
+ * @brief   应用层状态、速度档位和 PID 参数初始化。
+ */
+
 #include "yingYongZhuangTai.h"
 #include "yingYongPeiZhi.h"
 #include "motor.h"
@@ -21,11 +26,13 @@
 #define SPEED_PID_LEFT_KP 0.25f
 #define SPEED_PID_LEFT_KI 0.020f
 #define SPEED_PID_LEFT_KD 0.0f
+#define SPEED_PID_LEFT_KF 0.0f
 
 /* 右轮增量式速度环参数。 */
 #define SPEED_PID_RIGHT_KP 0.25f
 #define SPEED_PID_RIGHT_KI 0.020f
 #define SPEED_PID_RIGHT_KD 0.0f
+#define SPEED_PID_RIGHT_KF 0.0f
 
 /* 左右速度环公共输出限制、死区和单周期变化限制。 */
 #define SPEED_PID_OUT_MAX 100.0f
@@ -91,14 +98,19 @@ static const Parameter wheelParameter = {
  * @param  kp 该轮增量式速度环比例系数。
  * @param  ki 该轮增量式速度环积分系数。
  * @param  kd 该轮增量式速度环微分系数。
- * @note   左右轮传入各自的默认参数；增量式速度环不使用 Kf、积分限幅和
- *         OutOffset，因此这些项显式清零。
+ * @param  kf 该轮增量式速度环前馈系数。
+ * @note   前馈项在应用层按目标增量补入 Out，用于直接建立克服电机死区所需的
+ *         基线 PWM；积分限幅和 OutOffset 仍不使用。
  */
-static void appStateInitSpeedPid(PID_t *pid, float kp, float ki, float kd)
+static void appStateInitSpeedPid(PID_t *pid,
+                                 float kp,
+                                 float ki,
+                                 float kd,
+                                 float kf)
 {
     PID_Init(pid);
     PID_SetParam(pid, kp, ki, kd);
-    pid->Kf = 0.0f;
+    pid->Kf = kf;
     pid->OutMax = SPEED_PID_OUT_MAX;
     pid->OutMin = SPEED_PID_OUT_MIN;
     pid->OutOffset = 0.0f;
@@ -148,7 +160,7 @@ void appStateResetYawPid(void)
 }
 
 /**
- * @brief  初始化编码器、左右增量速度环、航向环和循迹遥测 PID。
+ * @brief  初始化编码器、左右增量速度环和航向环。
  * @note   编码器机械参数和 PID 默认参数全部来自 yingYongPeiZhi.h。
  */
 void appStateInit(void)
@@ -161,11 +173,13 @@ void appStateInit(void)
     appStateInitSpeedPid(&speedPidLeft,
                          SPEED_PID_LEFT_KP,
                          SPEED_PID_LEFT_KI,
-                         SPEED_PID_LEFT_KD);
+                         SPEED_PID_LEFT_KD,
+                         SPEED_PID_LEFT_KF);
     appStateInitSpeedPid(&speedPidRight,
                          SPEED_PID_RIGHT_KP,
                          SPEED_PID_RIGHT_KI,
-                         SPEED_PID_RIGHT_KD);
+                         SPEED_PID_RIGHT_KD,
+                         SPEED_PID_RIGHT_KF);
 
     targetLeftRpm = 0.0f;
     targetRightRpm = 0.0f;
@@ -182,12 +196,11 @@ void appStateInit(void)
     yawPid.OutputRateLimit = YAW_PID_RATE_LIMIT;
     appStateResetYawPid();
 
-    /* 循迹 PID 仅用于计算遥测字段，不参与数字循迹转向。 */
 }
 
 /**
  * @brief  复位车辆运动状态并立即关闭电机。
- * @note   清空启停标志、转向量、蓝牙摇杆值以及左右轮和循迹 PID 的全部历史量，
+ * @note   清空启停标志、转向量、蓝牙摇杆值以及左右轮和航向环的历史量，
  *         防止停车后重新启动时出现积分残留或输出突变。
  */
 void appStateResetMotion(void)
@@ -242,6 +255,7 @@ float appStateGetSpeedRpm(void)
 
 /**
  * @brief  获取循迹目标圈数。
+ * @return 当前目标圈数，范围 1~5。
  */
 uint8_t appStateGetLapTarget(void)
 {
@@ -250,6 +264,7 @@ uint8_t appStateGetLapTarget(void)
 
 /**
  * @brief  设置循迹目标圈数，限制在 1~5。
+ * @param  target 目标圈数。
  */
 void appStateSetLapTarget(uint8_t target)
 {
@@ -273,6 +288,7 @@ void appStateCycleLapTarget(void)
 
 /**
  * @brief  获取当前已完成圈数。
+ * @return 当前已完成圈数。
  */
 uint8_t appStateGetCompletedLaps(void)
 {

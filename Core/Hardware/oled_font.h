@@ -1,3 +1,8 @@
+/**
+ * @file    oled_font.h
+ * @brief   OLED 8x16 ASCII 字模表。
+ */
+
 #ifndef __OLED_FONT_H
 #define __OLED_FONT_H
 

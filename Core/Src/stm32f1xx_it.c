@@ -209,11 +209,6 @@ void SysTick_Handler(void)
 /******************************************************************************/
 
 /**
-  * @brief This function handles DMA1 channel2 global interrupt.
-  */
-/* DMA1 Channel2 handler removed with USART3 DMA configuration. */
-  /* Serial TX migrated to USART1 IT — no longer using USART3 DMA TX */
-/**
   * @brief This function handles EXTI line[9:5] interrupts.
   */
 void EXTI9_5_IRQHandler(void)
@@ -292,6 +287,7 @@ void TIM1_CC_IRQHandler(void)
 void TIM2_IRQHandler(void)
 {
   /* USER CODE BEGIN TIM2_IRQn 0 */
+  /* TIM2 用于右轮编码器；溢出计数仅在对应 NVIC 中断使能时递增。 */
   extern volatile int32_t overflow_count_TIM2;
   /* USER CODE END TIM2_IRQn 0 */
   HAL_TIM_IRQHandler(&htim2);
@@ -309,6 +305,7 @@ void TIM2_IRQHandler(void)
 void TIM3_IRQHandler(void)
 {
   /* USER CODE BEGIN TIM3_IRQn 0 */
+  /* TIM3 用于左轮编码器；溢出计数仅在对应 NVIC 中断使能时递增。 */
   extern volatile int32_t overflow_count_TIM3;
   /* USER CODE END TIM3_IRQn 0 */
   HAL_TIM_IRQHandler(&htim3);
@@ -410,7 +407,7 @@ void USART2_IRQHandler(void)
 void USART3_IRQHandler(void)
 {
   /* USER CODE BEGIN USART3_IRQn 0 */
-  /* DMA TX, no TXE ISR needed */
+  /* USART3 当前未接入应用通信链路；调试和调参使用 USART1 中断收发。 */
   /* USER CODE END USART3_IRQn 0 */
   HAL_UART_IRQHandler(&huart3);
   /* USER CODE BEGIN USART3_IRQn 1 */

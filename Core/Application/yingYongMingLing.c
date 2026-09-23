@@ -1,3 +1,10 @@
+/**
+ * @file    yingYongMingLing.c
+ * @brief   应用层命令队列、蓝牙解析和按键事件处理。
+ * @note    按键、蓝牙和电机动作用命令统一由 50 ms 控制任务消费；USART1
+ *          在线调参的 PID 增益和 duty 命令属于直接调试接口。
+ */
+
 #include "yingYongMingLing.h"
 #include "yingYongPeiZhi.h"
 #include "yingYongZhuangTai.h"
@@ -9,10 +16,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* 环形命令队列：按键、蓝牙和串口调参只负责入队。 */
+/* 环形命令队列：主循环生产者入队，50 ms 控制任务消费者出队。 */
 static commandMessage_t commandQueue[COMMAND_QUEUE_SIZE];
-static uint8_t commandHead = 0;
-static uint8_t commandTail = 0;
+static volatile uint8_t commandHead = 0;
+static volatile uint8_t commandTail = 0;
 
 /**
  * @brief  初始化命令队列。
@@ -263,7 +270,8 @@ void appCommandProcessKeys(void)
 
 /**
  * @brief  处理 USART1 在线调参输入。
- * @note   解析工作在主循环执行，电机控制类命令仍通过统一命令队列延迟到控制周期执行。
+ * @note   解析工作在主循环执行；速度、转向和启停命令进入统一队列，
+ *         PID 增益与 duty 调试命令由调参模块直接生效。
  */
 void appCommandProcessTune(void)
 {

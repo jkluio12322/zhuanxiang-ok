@@ -8,7 +8,7 @@
  *             3. (可选) 在 HAL_I2C_MemRxCpltCallback 中转发本模块回调
  *
  *          文件清单 (复制到新项目):
- *             mpu6050.c / mpu6050.h  — 驱动 + 卡尔曼 + Madgwick AHRS
+ *             mpu6050.c / mpu6050.h  — 驱动 + 卡尔曼 + Mahony PI 姿态解算
  *             filter.c  / filter.h   — 卡尔曼 / PT1 / PT2 滤波器
  */
 
@@ -57,7 +57,7 @@ typedef struct {
     int16_t rawTemp;               /* 温度传感器原始值。 */
     float yaw, roll, pitch;        /* 姿态角，单位度。 */
     float temp;                    /* 温度，单位摄氏度。 */
-    float q0, q1, q2, q3;          /* Madgwick AHRS 四元数。 */
+    float q0, q1, q2, q3;          /* Mahony PI 姿态四元数。 */
 } MPU6050;
 
 /* ── 配置枚举 ─────────────────────────────────────────── */
@@ -169,7 +169,7 @@ void    MPU6050_ReadAsync_Get(int16_t *AX, int16_t *AY, int16_t *AZ,
 
 /* ── AHRS 纯数学 (ISR 安全) ───────────────────────────── */
 /**
- * @brief  使用 Madgwick 算法更新姿态角。
+ * @brief  使用 Mahony PI 互补滤波更新姿态角。
  * @param  mpu MPU6050 对象。
  * @param  dt 采样周期，单位秒。
  */

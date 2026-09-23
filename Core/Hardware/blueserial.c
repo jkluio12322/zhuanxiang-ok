@@ -45,6 +45,7 @@ void BlueSerial_Init(void)
 
 /**
  * @brief  通过蓝牙发送一个字节
+ * @param  Byte 待发送字节。
  */
 void BlueSerial_SendByte(uint8_t Byte)
 {
@@ -53,6 +54,8 @@ void BlueSerial_SendByte(uint8_t Byte)
 
 /**
  * @brief  通过蓝牙发送字节数组
+ * @param  Array 数据指针。
+ * @param  Length 数据长度，单位字节。
  */
 void BlueSerial_SendArray(uint8_t *Array, uint16_t Length)
 {
@@ -61,6 +64,7 @@ void BlueSerial_SendArray(uint8_t *Array, uint16_t Length)
 
 /**
  * @brief  通过蓝牙发送字符串
+ * @param  String 以 '\0' 结尾的字符串。
  */
 void BlueSerial_SendString(char *String)
 {
@@ -70,6 +74,8 @@ void BlueSerial_SendString(char *String)
 
 /**
  * @brief  格式化蓝牙打印
+ * @param  format printf 风格格式字符串。
+ * @param  ... 可变参数列表。
  */
 void BlueSerial_Printf(char *format, ...)
 {
@@ -93,11 +99,6 @@ void BlueSerial_ClearBuffer(void)
 }
 
 /**
- * @brief  向环形缓冲区写入一个字节 (生产者)
- * @param  Byte 待写入字节
- * @note   缓冲区满时静默丢弃
- */
-/**
  * @brief  向蓝牙接收环形缓冲区写入一个字节。
  * @param  Byte 待写入字节。
  * @note   缓冲区满时静默丢弃新字节，避免在中断中等待。
@@ -114,11 +115,6 @@ static void BlueSerial_Put(uint8_t Byte)
         BlueSerial_PutIndex++;
 }
 
-/**
- * @brief  从环形缓冲区读取一个字节 (消费者)
- * @param  Byte 输出参数: 读取的字节
- * @return 0=成功, 1=缓冲区空
- */
 /**
  * @brief  从蓝牙接收环形缓冲区取出一个字节。
  * @param  Byte 输出字节指针。
@@ -139,10 +135,6 @@ static uint8_t BlueSerial_Get(uint8_t *Byte)
 }
 
 /**
- * @brief  获取环形缓冲区中有效数据长度
- * @return 缓冲区中未读取的字节数
- */
-/**
  * @brief  获取蓝牙接收缓冲区中未读取的数据长度。
  * @return 有效数据字节数。
  */
@@ -152,11 +144,6 @@ static uint16_t BlueSerial_Length(void)
            % BLUE_SERIAL_BUFFER_SIZE;
 }
 
-/**
- * @brief  按索引读取缓冲区数据 (不移除)
- * @param  Index 从读取位置开始的偏移
- * @return 缓冲区中指定位置的字节
- */
 /**
  * @brief  读取缓冲区中指定偏移位置的数据但不移动读索引。
  * @param  Index 相对当前读索引的偏移。
@@ -188,6 +175,11 @@ uint8_t BlueSerial_ReceiveFlag(void)
  * @brief  接收并解析蓝牙数据帧
  * @note   将 '[' 和 ']' 之间的内容按 ',' 分割, 存入 BlueSerial_StringArray
  *         例: "[joystick,0,50,0,0]" → {"joystick","0","50","0","0"}
+ */
+/**
+ * @brief  从蓝牙接收缓冲区提取并解析一帧数据。
+ * @note   输入帧使用 '[' 和 ']' 定界，最多解析 6 个逗号分隔字段；
+ *         未完整到达的帧不会被消费。
  */
 void BlueSerial_Receive(void)
 {
@@ -242,7 +234,9 @@ void BlueSerial_Receive(void)
 
 /**
  * @brief  UART 接收完成回调 (中断上下文)
- * @note   每收到 1 字节即写入环形缓冲区, 并重新启动下一次接收
+ * @param  huart 触发回调的 UART 句柄。
+ * @note   USART2 每收到 1 字节即写入环形缓冲区并重新启动接收；USART1
+ *         将字节交给在线调参模块缓存。不得在中断中解析命令或执行阻塞操作。
  */
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
@@ -258,7 +252,8 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 
 /**
  * @brief  UART 发送完成回调 (中断上下文)
- * @note   USART1 TX 完成后接力发送下一块数据
+ * @param  huart 触发回调的 UART 句柄。
+ * @note   USART1 TX 完成后接力发送下一块数据；不得在中断中调用阻塞发送。
  */
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 {

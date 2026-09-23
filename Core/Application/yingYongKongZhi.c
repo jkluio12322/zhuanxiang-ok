@@ -1,3 +1,10 @@
+/**
+ * @file    yingYongKongZhi.c
+ * @brief   应用层运动控制任务。
+ * @note    本文件负责消费统一命令队列、执行左右轮独立增量式速度环、
+ *          低速补偿、直行航向修正、堵转保护和遥测快照更新。
+ */
+
 #include "yingYongKongZhi.h"
 #include "yingYongMingLing.h"
 #include "yingYongPeiZhi.h"
@@ -24,6 +31,9 @@
 /* 低速目标下的最小 PWM 补偿。 */
 #define MOTOR_LOW_SPEED_THRESHOLD_RPM 20.0f
 #define MOTOR_LOW_SPEED_MIN_PWM 12
+
+/* Speeds below this value are treated as a zero-speed target. */
+#define SPEED_PID_STOP_HOLD_RPM 0.5f
 
 /* 左右轮一阶低通滤波后的转速，作为两个独立增量式速度环的反馈。 */
 static float filteredSpeedLeft = 0.0f;
@@ -110,15 +120,75 @@ static void appControlResetSpeedFilter(void)
 }
 
 /**
- * @brief  清除循迹转向和丢线计数状态。
- * @note   停车、切换模式或直角转弯确认完成后调用，避免下一次循迹沿用旧状态。
+ * @brief  设置增量式速度环目标，并在目标方向变化时清除旧方向输出。
+ * @param  pid 待设置目标的增量式速度 PID。
+ * @param  target 新目标转速，单位 RPM，正负号表示旋转方向。
+ * @note   增量式 PID 的 Out 会跨周期累加；目标从正转切换到反转或 0 时只清积分，
+ *         旧 PWM 会让内侧轮继续正转。方向变化时将输出和误差历史归零，使停车
+ *         或反转周期立即按新目标重新建立 PWM。
  */
+static void appControlSetSpeedPidTarget(PID_t *pid, float target)
+{
+    float targetDelta = target - pid->Target;
+    float feedforwardDelta = pid->Kf * targetDelta;
+    int8_t oldDirection = (pid->Target > 0.0f)
+                          ? 1
+                          : ((pid->Target < 0.0f) ? -1 : 0);
+    int8_t newDirection = (target > 0.0f)
+                          ? 1
+                          : ((target < 0.0f) ? -1 : 0);
 
+    if (oldDirection != newDirection) {
+        pid->Out = 0.0f;
+        pid->POut = 0.0f;
+        pid->IOut = 0.0f;
+        pid->DOut = 0.0f;
+        pid->Error0 = 0.0f;
+        pid->Error1 = 0.0f;
+        pid->Error2 = 0.0f;
+        pid->LastIncrement = 0.0f;
+        pid->LastOutput = 0.0f;
+
+        /*
+         * 方向切换时从目标对应的前馈基线重新起调，避免增量 PID 从零开始
+         * 缓慢爬过电机死区；正反转原地转时也能立即建立正确方向的转矩。
+         */
+        pid->Out = pid->Kf * target;
+        pid->LastOutput = pid->Out;
+    } else {
+        /*
+         * 目标同方向变化时，只补入目标差对应的前馈增量。速度环仍保持原来的
+         * 增量式 PI 结构，目标不变时不会重复叠加前馈。
+         */
+        pid->Out += feedforwardDelta;
+    }
+
+    if (pid->Out > pid->OutMax) pid->Out = pid->OutMax;
+    if (pid->Out < pid->OutMin) pid->Out = pid->OutMin;
+    pid->LastOutput = pid->Out;
+
+    PID_SetTarget(pid, target);
+}
 
 /**
- * @brief  设置一正一反原地转目标。
- * @param  pivotSpeed 带符号转向速度，正值表示右转，负值表示左转。
- * @note   正值时左轮前进、右轮反转；负值时左轮反转、右轮前进。
+ * @brief  Force zero PWM when the speed target is zero.
+ * @param  pid Incremental speed PID whose output will be constrained.
+ * @param  target Current target speed in RPM.
+ * @note   Nonzero targets retain the normal PID output range so that the
+ *         controller can brake smoothly through zero.
+ */
+static void appControlConstrainSpeedPidOutput(PID_t *pid, float target)
+{
+    if (fabsf(target) <= SPEED_PID_STOP_HOLD_RPM) {
+        pid->Out = 0.0f;
+    }
+
+    pid->LastOutput = pid->Out;
+}
+
+/**
+ * @brief  复位运动状态、速度滤波器和循迹状态机。
+ * @note   模式切换和紧急停车后调用，防止旧目标或旧编码器状态进入下一轮控制。
  */
 void appControlResetModeState(void)
 {
@@ -127,6 +197,11 @@ void appControlResetModeState(void)
     appTrackingResetState();
 }
 
+/**
+ * @brief  设置一正一反的原地转目标。
+ * @param  pivotSpeed 带符号转向速度，单位 RPM；正值表示右转，负值表示左转。
+ * @note   正值时左轮前进、右轮反转；负值时左轮反转、右轮前进。
+ */
 static void appControlSetPivotTarget(float pivotSpeed)
 {
     targetLeftRpm = pivotSpeed;
@@ -171,10 +246,9 @@ static void appControlSetTurnTarget(float averageTargetRpm, float turnRpm)
 }
 
 /**
- * @brief  执行一条应用层控制命令。
- * @param  message 待执行的命令消息。
- * @note   所有按键、蓝牙和串口控制命令都集中在此处修改状态，
- *         避免多个输入源直接操作 PID 或电机。
+ * @brief  按指定方向调整当前速度档位。
+ * @param  direction 大于 0 表示升档，小于 0 表示降档。
+ * @note   循迹模式限制在 G1-G6 内，手动模式在 G1-G6 之间循环。
  */
 static void appControlApplyGearStep(int8_t direction)
 {
@@ -194,6 +268,12 @@ static void appControlApplyGearStep(int8_t direction)
     appStateSetSpeedLevel((uint8_t)next);
 }
 
+/**
+ * @brief  执行一条应用层控制命令。
+ * @param  message 待执行的命令消息。
+ * @note   所有进入统一队列的控制命令都在此集中修改应用状态；USART1
+ *         在线调参的 PID 增益和 duty 命令由 pid_tune 模块直接处理。
+ */
 static void appControlHandleCommand(commandMessage_t message)
 {
     /* 所有控制命令在这里集中执行，避免按键和蓝牙分别修改电机状态。 */
@@ -310,7 +390,8 @@ static void appControlHandleCommand(commandMessage_t message)
         speedPidRight.Kd = message.value;
         break;
     case commandSetSpeedKf:
-        /* 增量式速度环不使用前馈，保留命令类型以兼容旧协议。 */
+        speedPidLeft.Kf = message.value;
+        speedPidRight.Kf = message.value;
         break;
     case commandSetYawKp:
         yawPid.Kp = message.value;
@@ -343,6 +424,12 @@ static void appControlHandleCommand(commandMessage_t message)
     }
 }
 
+/**
+ * @brief  判断左右基础目标是否构成直行条件。
+ * @param  targetLeft 左轮目标转速，单位 RPM。
+ * @param  targetRight 右轮目标转速，单位 RPM。
+ * @return 1 表示左右目标近似相等且平均速度达到航向环启用阈值，0 表示不启用。
+ */
 static uint8_t appControlIsStraightTarget(float targetLeft, float targetRight)
 {
     float averageTarget = (targetLeft + targetRight) * 0.5f;
@@ -352,6 +439,11 @@ static uint8_t appControlIsStraightTarget(float targetLeft, float targetRight)
            && (fabsf(averageTarget) >= YAW_MIN_TARGET_RPM);
 }
 
+/**
+ * @brief  将左右速度环输出同步为两者平均值。
+ * @note   进入直行航向闭环前调用，避免左右速度环历史输出不一致导致航向环
+ *         一开始就产生大差速修正。
+ */
 static void appControlSynchronizeSpeedPidOutputs(void)
 {
     float averagePwm = (speedPidLeft.Out + speedPidRight.Out) * 0.5f;
@@ -371,6 +463,9 @@ static void appControlSynchronizeSpeedPidOutputs(void)
     speedPidRight.LastIncrement = 0.0f;
 }
 
+/**
+ * @brief  进入直行航向闭环并锁存当前航向目标。
+ */
 static void appControlEnterStraightYawControl(void)
 {
     appControlSynchronizeSpeedPidOutputs();
@@ -381,6 +476,9 @@ static void appControlEnterStraightYawControl(void)
     straightYawControlActive = 1U;
 }
 
+/**
+ * @brief  退出直行航向闭环并清除航向环状态。
+ */
 static void appControlExitStraightYawControl(void)
 {
     if (straightYawControlActive) {
@@ -391,6 +489,10 @@ static void appControlExitStraightYawControl(void)
     straightYawControlActive = 0U;
 }
 
+/**
+ * @brief  按 100 ms 分频更新一次直行航向 PI/PID 环。
+ * @note   该函数只更新航向环输出，最终左右目标仍由速度环闭环跟踪。
+ */
 static void appControlUpdateStraightYawControl(void)
 {
     if (yawUpdateTick == 0U) {
@@ -407,8 +509,9 @@ static void appControlUpdateStraightYawControl(void)
 
 /**
  * @brief  执行 50 ms 周期控制任务。
- * @note   先更新编码器速度和命令队列，再根据模式执行循迹或 PWM 测试，
- *         随后运行左右独立增量式速度环、低速补偿、输出限幅和遥测快照更新。
+ * @note   先更新编码器速度和命令队列；循迹模式跟踪 20 ms 任务生成的目标，
+ *         PWM 测试模式绕过速度环。随后运行左右独立增量式速度环、低速补偿、
+ *         输出限幅和遥测快照更新。
  */
 void appControlTask50ms(void)
 {
@@ -422,7 +525,7 @@ void appControlTask50ms(void)
         appControlHandleCommand(message);
     }
 
-    /* 循迹模式使用位置环生成目标速度，PWM 测试模式直接输出占空比。 */
+    /* 循迹目标由 20 ms 状态机更新，PWM 测试模式直接输出占空比。 */
     float rpmDifference = encoderLeft.velocity.angular
                           - encoderRight.velocity.angular;
 
@@ -561,12 +664,14 @@ void appControlTask50ms(void)
 
     /* 左右轮分别执行独立增量 PID，各自跟踪自己的目标转速。 */
     speedPidLeft.Actual = filteredSpeedLeft;
-    PID_SetTarget(&speedPidLeft, targetLeft);
+    appControlSetSpeedPidTarget(&speedPidLeft, targetLeft);
     PID_IncrementalUpdate(&speedPidLeft);
+    appControlConstrainSpeedPidOutput(&speedPidLeft, targetLeft);
 
     speedPidRight.Actual = filteredSpeedRight;
-    PID_SetTarget(&speedPidRight, targetRight);
+    appControlSetSpeedPidTarget(&speedPidRight, targetRight);
     PID_IncrementalUpdate(&speedPidRight);
+    appControlConstrainSpeedPidOutput(&speedPidRight, targetRight);
 
     int16_t leftPwm = (int16_t)speedPidLeft.Out;
     int16_t rightPwm = (int16_t)speedPidRight.Out;
@@ -628,8 +733,8 @@ void appControlTask50ms(void)
     }
 
     /* 更新电机输出并准备本周期遥测快照。 */
-    Motor_SetSpeedA(leftPwm);
-    Motor_SetSpeedB(rightPwm);
+    Motor_SetSpeedA(leftPwm);   /* 左轮 -> Motor A。 */
+    Motor_SetSpeedB(rightPwm);  /* 右轮 -> Motor B。 */
 
     telemetryData.targetLeftRpm = targetLeft;
     telemetryData.targetRightRpm = targetRight;

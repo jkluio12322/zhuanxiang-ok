@@ -13,7 +13,8 @@ extern volatile uint64_t milliseconds;
 
 /**
  * @brief  初始化并启动 TIM6 周期任务调度。
- * @note   TIM6 负责产生 10 ms 传感器任务、20 ms 按键任务和 50 ms 控制任务。
+ * @note   TIM6 负责产生 10 ms 传感器、20 ms 按键、20 ms 循迹和
+ *         50 ms 控制/遥测任务。
  */
 void Timer_Init(void);
 

@@ -1,16 +1,15 @@
 /**
  * @file    ringbuf.h
- * @brief   Lock-free SPSC ring buffer for bare-metal inter-module IPC
- * @note    Single producer, single consumer — no locks needed on Cortex-M3
- *          Multi-byte element push/pop via memcpy
+ * @brief   裸机模块间通信使用的单生产者单消费者环形缓冲区。
+ * @note    head 只由生产者写入，tail 只由消费者写入。
  *
- *          Usage:
+ *          使用示例:
  *            RingBuf rb;
  *            uint8_t buf[256];
  *            RingBuf_Init(&rb, buf, sizeof(buf));
- *            RingBuf_Put(&rb, 0xAA);           // blocking or non-blocking
- *            RingBuf_PutNB(&rb, 0xAA);         // non-blocking, returns -1 if full
- *            RingBuf_Get(&rb, &byte);          // returns 0 or -1
+ *            RingBuf_Put(&rb, 0xAA);     // 阻塞写入
+ *            RingBuf_PutNB(&rb, 0xAA);   // 非阻塞，满时返回 -1
+ *            RingBuf_Get(&rb, &byte);    // 成功返回 0，空时返回 -1
  */
 
 #ifndef __RINGBUF_H
@@ -18,12 +17,12 @@
 
 #include <stdint.h>
 
-/* ---- Generic byte-level ring buffer ---- */
+/* ---- 通用字节环形缓冲区 ---- */
 typedef struct {
     uint8_t          *buf;
-    uint16_t          capacity;    /* total buffer size in bytes */
-    volatile uint16_t head;        /* write index (producer: ISR or task) */
-    volatile uint16_t tail;        /* read index  (consumer: main loop or ISR) */
+    uint16_t          capacity;    /* 缓冲区总容量，单位字节。 */
+    volatile uint16_t head;        /* 写索引，只由生产者修改。 */
+    volatile uint16_t tail;        /* 读索引，只由消费者修改。 */
 } RingBuf;
 
 /**
@@ -53,6 +52,7 @@ uint16_t RingBuf_Free(RingBuf *rb);
  * @param  rb 环形缓冲区对象。
  * @param  byte 待写入字节。
  * @return 固定返回 0。
+ * @note   缓冲区满时忙等；禁止在中断上下文调用。
  */
 int RingBuf_Put(RingBuf *rb, uint8_t byte);
 

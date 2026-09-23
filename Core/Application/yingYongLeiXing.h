@@ -27,7 +27,7 @@ typedef enum {
     commandSetSpeedKp,     /* 同时设置左右增量式速度环 Kp。 */
     commandSetSpeedKi,     /* 同时设置左右增量式速度环 Ki。 */
     commandSetSpeedKd,     /* 同时设置左右增量式速度环 Kd。 */
-    commandSetSpeedKf,     /* 旧前馈命令，增量式速度环不使用该参数。 */
+    commandSetSpeedKf,     /* 同时设置左右增量式速度环前馈系数。 */
     commandSetYawKp,       /* 设置航向角环 Kp。 */
     commandSetYawKi,       /* 设置航向角环 Ki。 */
     commandSetYawKd,       /* 设置航向角环 Kd。 */

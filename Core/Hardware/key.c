@@ -45,6 +45,12 @@ uint8_t Key_Check(uint8_t n, uint8_t Flag)
     return 0;
 }
 
+/**
+ * @brief  取出一次短按或长按事件。
+ * @param  n 按键编号 KEY_1-KEY_4。
+ * @return 1 表示取得一次事件，0 表示没有短按或长按。
+ * @note   一次调用只消费短按或长按中的一个，并清除连发标志。
+ */
 uint8_t Key_CheckSingleOrLong(uint8_t n)
 {
     uint8_t event = 0U;

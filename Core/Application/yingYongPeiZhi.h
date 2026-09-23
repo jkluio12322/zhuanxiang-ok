@@ -16,10 +16,10 @@
 /* MPU6050 姿态采样任务周期，单位毫秒。 */
 #define APP_SENSOR_PERIOD_MS          10U
 
-/* 速度环、循迹和电机控制任务周期，单位毫秒。 */
+/* 左右速度环和电机控制任务周期，单位毫秒。 */
 #define APP_CONTROL_PERIOD_MS         50U
 
-/* Tracking sensor, lookup table and state-machine task period. */
+/* 循迹采样、查表和状态机任务周期，单位毫秒。 */
 #define APP_TRACK_PERIOD_MS           20U
 
 /* OLED 状态页刷新周期，单位毫秒。 */
@@ -34,7 +34,6 @@
 /* 启动蜂鸣器鸣叫时间，单位毫秒。 */
 #define APP_BOOT_BEEP_MS              200U
 
-/* 开机页等待的启动按键编号，对应 KEY3。 */
 /* ------------------------------------------------------------------------- */
 /* TIM1 电机 PWM                                                             */
 /* ------------------------------------------------------------------------- */
@@ -91,7 +90,7 @@
 /* 编码器定时器计数上限，使用 16 位最大值。 */
 #define ENCODER_TIMER_PERIOD          65535U
 
-/* 编码器输入捕获数字滤波等级，数值越大抗干扰越强。 */
+/* 编码器定时器输入数字滤波等级，数值越大抗干扰越强。 */
 #define ENCODER_INPUT_FILTER          15U
 
 /* 正交编码器四倍频系数，用于将计数值换算为完整脉冲数。 */
@@ -205,34 +204,19 @@
 #define YAW_MIN_TARGET_RPM            1.0f
 
 /* ------------------------------------------------------------------------- */
-/* 循迹位置式 PID                                                            */
+/* 循迹位置式 PID 兼容定义                                                   */
 /* ------------------------------------------------------------------------- */
 
-/* 循迹位置 PID 比例系数，输入为归一化线路位置 -7~+7。 */
+/* 以下定义为旧接口兼容项，当前数字查表循迹不读取这些值。
+ * 保留宏名是为了避免影响外部旧代码，调参时不要修改这些数值。 */
 #define TRACK_PID_KP                  4.5f
-
-/* 循迹位置 PID 积分系数，当前不使用积分。 */
 #define TRACK_PID_KI                  0.0f
-
-/* 循迹位置 PID 微分系数，用于抑制数字传感器切换造成的摆动。 */
 #define TRACK_PID_KD                  0.8f
-
-/* 循迹位置环输出上限，单位 RPM，限制左右轮相对中心速度的最大差速。 */
 #define TRACK_PID_OUT_MAX             25.0f
-
-/* 循迹位置环输出下限，单位 RPM。 */
 #define TRACK_PID_OUT_MIN             (-25.0f)
-
-/* 循迹位置环积分项限幅；当前 Ki=0，保留该值便于后续实车加积分。 */
 #define TRACK_PID_INTEGRAL_LIMIT      8.0f
-
-/* 循迹位置环误差死区；数字权重误差需要完整参与调节，因此初始为 0。 */
 #define TRACK_PID_DEADBAND            0.0f
-
-/* 循迹位置环单周期输出变化率限制，单位 RPM。 */
 #define TRACK_PID_RATE_LIMIT          12.0f
-
-/* 循迹模式是否使用 MPU6050 航向环，0 表示完全由循迹模块控制。 */
 #define TRACK_USE_IMU_YAW             0U
 
 #define TRACK_POSITION_FILTER_PREVIOUS 0.55f
@@ -246,16 +230,16 @@
 /* 循迹模式允许使用的最高档位。 */
 #define TRACK_MAX_SPEED_LEVEL         6U
 
-/* 1.0 means tracking uses the full selected-speed-table RPM. */
+/* 1.0 表示循迹使用所选档位的完整基准 RPM。 */
 #define TRACK_DRIVE_SPEED_SCALE       1.00f
 
-/* +1 keeps the logical right direction; -1 reverses sensor/steering direction. */
+/* +1 保持当前逻辑转向方向，-1 可反向修正传感器或安装方向。 */
 #define TRACK_STEERING_SIGN           1.0f
 
-/* A normal line pattern must contain 1..6 black channels. */
-#define TRACK_LINE_VALID_MAX_BLACK    6U
+/* 普通有效线路图案必须包含 1~6 个黑线通道。 */
+#define TRACK_LINE_VALID_MAX_BLACK    7U
 
-/* Invalid line must be confirmed for 3 x 20 ms before entering LOST. */
+/* 无效线路连续确认 3 个 20 ms 周期后才进入丢线状态。 */
 #define TRACK_LINE_INVALID_CONFIRM_TICKS 3U
 
 /* 急弯锁存后的最短持续时间，6 个 20 ms 周期约为 120 ms。 */
@@ -267,7 +251,7 @@
 /* 判定新线路已经居中的最大归一化位置绝对值。 */
 #define TRACK_CORNER_REACQUIRE_POSITION_MAX 2.0f
 
-/* 急弯检测、转弯速度、九十度计数和重新找线参数已分别移到
+/* 急弯检测、转弯速度、急弯计数阈值和重新找线参数已分别移到
  * yingYongXunJi.c 与 zhanShuBao.c 顶部。 */
 
 /* 全灭计圈、全亮丢线及左右摆头找线参数。 */
@@ -275,7 +259,7 @@
 #define TRACK_LOST_PATTERN            0x00U
 #define TRACK_FINISH_CONFIRM_TICKS    3U
 #define TRACK_FINISH_CLEAR_TICKS      10U
-#define TRACK_SWEEP_HALF_TICKS        50U
+#define TRACK_SWEEP_HALF_TICKS        10U
 #define TRACK_SWEEP_ROUNDS            3U
 #define TRACK_START_FORWARD_TICKS     50U
 #define TRACK_LAP_TARGET_DEFAULT      1U

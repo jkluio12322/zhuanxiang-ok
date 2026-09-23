@@ -2,7 +2,7 @@
  * @file    key.h
  * @brief   非阻塞按键状态机 (移植自平衡车项目)
  * @note    支持: 短按/长按/双击/持续按住/按下/抬起
- *          Key_Tick() 每 1ms 调用一次, Key_Check() 查询按键事件
+ *          Key_Tick() 每 20 ms 调用一次, Key_Check() 查询按键事件
  */
 
 #ifndef __BSP_KEY_H

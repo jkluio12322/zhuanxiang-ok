@@ -14,7 +14,7 @@ extern "C" {
  */
 void Error_Handler(void);
 
-/* CubeMX generated pin labels. */
+/* TB6612 电机方向控制 GPIO。 */
 #define pwm1_1_Pin GPIO_PIN_1
 #define pwm1_1_GPIO_Port GPIOF
 #define pwm1_0_Pin GPIO_PIN_2
@@ -24,9 +24,11 @@ void Error_Handler(void);
 #define pwm2_0_Pin GPIO_PIN_4
 #define pwm2_0_GPIO_Port GPIOF
 
+/* 有源蜂鸣器，PG6 低电平开启。 */
 #define buzzer_Pin GPIO_PIN_6
 #define buzzer_GPIO_Port GPIOG
 
+/* 按键输入：KEY3=PC6、KEY2=PC7、KEY1=PC8、KEY4=PC9。 */
 #define key3_Pin GPIO_PIN_6
 #define key3_GPIO_Port GPIOC
 #define key3_EXTI_IRQn EXTI9_5_IRQn
@@ -40,6 +42,7 @@ void Error_Handler(void);
 #define key4_GPIO_Port GPIOC
 #define key4_EXTI_IRQn EXTI9_5_IRQn
 
+/* 八路循迹输入：IR1-IR6 位于 GPIOD，IR7-IR8 位于 GPIOG。 */
 #define IR1_Pin GPIO_PIN_2
 #define IR1_GPIO_Port GPIOD
 #define IR2_Pin GPIO_PIN_3
@@ -57,6 +60,7 @@ void Error_Handler(void);
 #define IR8_Pin GPIO_PIN_10
 #define IR8_GPIO_Port GPIOG
 
+/* MPU6050 数据就绪中断输入。 */
 #define MPU6050_INT_Pin GPIO_PIN_12
 #define MPU6050_INT_GPIO_Port GPIOA
 #define MPU6050_INT_EXTI_IRQn EXTI15_10_IRQn

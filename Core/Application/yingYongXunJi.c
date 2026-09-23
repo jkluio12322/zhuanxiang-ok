@@ -1,6 +1,6 @@
 /**
  * @file    yingYongXunJi.c
- * @brief   Direct lookup eight-channel line tracking controller.
+ * @brief   八路数字循迹、急弯确认和丢线搜索状态机。
  */
 
 #include "yingYongXunJi.h"
@@ -33,10 +33,15 @@
 /* 转弯后等待最中间两路确认时使用的前进速度，单位 RPM。 */
 #define TRACK_CORNER_REACQUIRE_BASE_RPM 15.0f
 
-/* Minimum forward target used by the direct tracking lookup table. */
+/* 查表循迹允许的最低前进目标，单位 RPM。 */
 #define TRACK_MIN_FORWARD_RPM 15.0f
 
-/* Lost-line search uses a positive differential, never a reverse wheel. */
+/* 中心单路和中路双路图案，使用零差速目标并参与目标低通滤波。 */
+#define TRACK_CENTER_LEFT_PATTERN   0x08U
+#define TRACK_CENTER_RIGHT_PATTERN  0x10U
+#define TRACK_CENTER_PAIR_PATTERN   0x18U
+
+/* 丢线搜索只使用正向差速，不允许车轮反转。 */
 #define TRACK_SWEEP_OUTER_RPM 35.0f
 #define TRACK_SWEEP_INNER_RPM 10.0f
 
@@ -55,9 +60,11 @@ static uint8_t trackFinishClearTicks = 0U;
 static uint8_t trackFinishArmed = 0U;
 static uint8_t trackStartupTicks = 0U;
 static uint8_t trackLineAcquired = 0U;
+#if 0
 static uint8_t trackLostSweepTicks = 0U;
 static uint8_t trackLostSweepPhase = 0U;
 static int8_t trackLostSweepStartDirection = -1;
+#endif
 static int8_t trackCornerCandidateDirection = 0;
 static uint8_t trackCornerCandidateTicks = 0U;
 static int8_t trackPendingCornerDirection = 0;
@@ -70,9 +77,20 @@ static uint16_t trackCornerReacquireTicks = 0U;
 static int8_t trackTurnDirection = 0;
 static uint16_t trackTurnTicks = 0U;
 static float trackSteerOutput = 0.0f;
+static float trackFilteredLeftPercent = 100.0f;
+static float trackFilteredRightPercent = 100.0f;
 
+#if 0
 static void appTrackingUpdateLineSearch(float baseSpeed);
+#endif
 
+/**
+ * @brief  将浮点数限制在指定范围内。
+ * @param  value 待限制的值。
+ * @param  minValue 允许的最小值。
+ * @param  maxValue 允许的最大值。
+ * @return 限制后的值。
+ */
 static float appTrackingClampValue(float value, float minValue, float maxValue)
 {
     if (value > maxValue) return maxValue;
@@ -85,7 +103,8 @@ static float appTrackingClampValue(float value, float minValue, float maxValue)
  * @param  nominalLeft 未限幅的左轮目标转速，单位 RPM。
  * @param  nominalRight 未限幅的右轮目标转速，单位 RPM。
  * @param  minRpm 左右轮允许的最小目标转速，单位 RPM。
- * @note   普通循迹使用正转下限；急弯模式可按参数允许内轮停止或反转。
+ * @note   普通循迹使用正转下限，避免内轮反转；需要反向内轮的急弯动作
+ *         由战术包模块直接设置目标。
  */
 static void appTrackingApplyTargets(float nominalLeft,
                                     float nominalRight,
@@ -127,16 +146,60 @@ static void appTrackingSetTargets(float nominalLeft, float nominalRight)
                             TRACK_MIN_FORWARD_RPM);
 }
 
+/**
+ * @brief  复位左右轮百分比低通滤波器。
+ * @note   进入普通循迹、完成急弯或重新启动时调用，避免旧线路位置继续影响输出。
+ */
+static void appTrackingResetTargetFilter(void)
+{
+    trackFilteredLeftPercent = 100.0f;
+    trackFilteredRightPercent = 100.0f;
+}
+
+/**
+ * @brief  根据当前红外查表结果生成左右轮目标转速。
+ * @param  baseSpeed 当前档位对应的循迹基准速度，单位 RPM。
+ * @note   窄线图案对百分比输出进行低通滤波，宽线图案直接采用查表结果；
+ *         中心单路和中心双路图案使用零差速以抑制直线抖动。
+ */
 static void appTrackingApplyLutTargets(float baseSpeed)
 {
-    float nominalLeft = baseSpeed
-                        * (float)ir_data.left_percent / 100.0f;
-    float nominalRight = baseSpeed
-                         * (float)ir_data.right_percent / 100.0f;
+    float leftPercent = (float)ir_data.left_percent;
+    float rightPercent = (float)ir_data.right_percent;
+    float nominalLeft;
+    float nominalRight;
+
+    if ((ir_data.pattern == TRACK_CENTER_LEFT_PATTERN)
+        || (ir_data.pattern == TRACK_CENTER_RIGHT_PATTERN)
+        || (ir_data.pattern == TRACK_CENTER_PAIR_PATTERN)) {
+        leftPercent = 100.0f;
+        rightPercent = 100.0f;
+    }
+
+    if (ir_data.black_count <= 2U) {
+        trackFilteredLeftPercent =
+            (TRACK_POSITION_FILTER_PREVIOUS * trackFilteredLeftPercent)
+            + (TRACK_POSITION_FILTER_CURRENT * leftPercent);
+        trackFilteredRightPercent =
+            (TRACK_POSITION_FILTER_PREVIOUS * trackFilteredRightPercent)
+            + (TRACK_POSITION_FILTER_CURRENT * rightPercent);
+    } else {
+        trackFilteredLeftPercent = leftPercent;
+        trackFilteredRightPercent = rightPercent;
+    }
+
+    nominalLeft = baseSpeed * trackFilteredLeftPercent / 100.0f;
+    nominalRight = baseSpeed * trackFilteredRightPercent / 100.0f;
 
     appTrackingSetTargets(nominalLeft, nominalRight);
 }
 
+/**
+ * @brief  生成丢线搜索时的左右轮正转目标。
+ * @param  nominalSide 搜索偏向，正值向右，负值向左。
+ * @note   外轮使用 35 RPM、内轮使用 10 RPM，只允许正向运动。
+ */
+#if 0
 static void appTrackingSetSearchTargets(int8_t nominalSide)
 {
     float nominalLeft;
@@ -152,11 +215,12 @@ static void appTrackingSetSearchTargets(int8_t nominalSide)
 
     appTrackingApplyTargets(nominalLeft, nominalRight, 0.0f);
 }
+#endif
 
 /**
  * @brief  停止循迹运动并清除状态机状态。
- * @note   急弯时内侧轮的具体速度由 zhanShuBao.c 配置；当前参数为停止，
- *         不是反转。该入口用于停车和重新启动。
+ * @note   急弯时内侧轮的具体速度由 zhanShuBao.c 配置；当前内侧轮使用
+ *         -50 RPM 反转。该入口用于停车和重新启动。
  */
 static void appTrackingStop(void)
 {
@@ -165,6 +229,10 @@ static void appTrackingStop(void)
     appTrackingResetState();
 }
 
+/**
+ * @brief  判断当前红外图案是否包含有效黑线。
+ * @return 1 表示存在 1~6 个黑线通道且不是全黑或全白，0 表示无效。
+ */
 static uint8_t appTrackingHasValidLine(void)
 {
     return (uint8_t)((zhanShuBaoDiuXian() == 0U)
@@ -173,6 +241,9 @@ static uint8_t appTrackingHasValidLine(void)
                      && (ir_data.black_count <= TRACK_LINE_VALID_MAX_BLACK));
 }
 
+/**
+ * @brief  清除一次急弯锁存及其完成确认计数。
+ */
 static void appTrackingClearTurnLatch(void)
 {
     trackTurnDirection = 0;
@@ -201,6 +272,11 @@ static void appTrackingClearPendingCorner(void)
     trackPendingCornerTicks = 0U;
 }
 
+/**
+ * @brief  进入丢线搜索状态。
+ * @param  preferredSide 首选搜索方向，正值向右，负值向左，0 表示使用最后检测侧。
+ */
+#if 0
 static void appTrackingBeginLineSearch(int8_t preferredSide)
 {
     trackControlState = TRACK_CONTROL_LOST;
@@ -211,6 +287,7 @@ static void appTrackingBeginLineSearch(int8_t preferredSide)
     appTrackingClearCornerCandidate();
     appTrackingClearPendingCorner();
 }
+#endif
 
 /**
  * @brief  更新急弯边缘候选。
@@ -370,7 +447,7 @@ static uint8_t appTrackingUpdatePendingCorner(void)
 }
 
 /**
- * @brief  以指定方向启动一次九十度转弯。
+ * @brief  以指定方向启动一次急弯转向。
  * @param  direction -1 表示左转，+1 表示右转。
  * @return 1 表示已启动，0 表示方向无效。
  */
@@ -397,7 +474,7 @@ static uint8_t appTrackingStartCornerTurnDirection(int8_t direction)
 }
 
 /**
- * @brief  根据强压线图案或边缘候选启动 90 度急弯。
+ * @brief  根据强压线图案或边缘候选启动一次急弯。
  * @return 1 表示本周期已经启动转弯，0 表示未启动。
  */
 static uint8_t appTrackingStartCornerTurn(void)
@@ -438,8 +515,8 @@ static uint8_t appTrackingCornerCenterSeen(void)
 /**
  * @brief  结束一次急弯动作并恢复普通查表循迹。
  * @param  baseSpeed 当前普通循迹基准速度，单位 RPM。
- * @note   编码器先达到九十度或循迹模块先连续确认最中间任意一路压线，
- *         都可以调用该函数。
+ * @note   转弯过程中连续确认居中可以调用该函数；编码器达到硬阈值时先进入
+ *         低速重捕阶段，重捕成功后再由该函数恢复普通循迹。
  */
 static void appTrackingFinishCornerTurn(float baseSpeed)
 {
@@ -451,7 +528,7 @@ static void appTrackingFinishCornerTurn(float baseSpeed)
 
     /*
      * 如果重新捕获期间已经锁存了下一弯，第一弯结束后不要回到普通循迹，
-     * 直接以锁存方向启动下一次九十度转弯。
+     * 直接以锁存方向启动下一次急弯转向。
      */
     if ((pendingDirection != 0)
         && (trackPendingCornerTicks >= TRACK_CORNER_PENDING_CONFIRM_TICKS)) {
@@ -461,14 +538,16 @@ static void appTrackingFinishCornerTurn(float baseSpeed)
 
     appTrackingClearPendingCorner();
     trackControlState = TRACK_CONTROL_FOLLOW;
+    appTrackingResetTargetFilter();
     appTrackingApplyLutTargets(baseSpeed);
 }
 
 /**
- * @brief  保持急弯锁存并等待新线路重新居中。
+ * @brief  执行急弯动作或低速重捕，并等待新线路重新居中。
  * @param  baseSpeed 当前普通循迹基准速度，单位 RPM。
- * @note   最中间两路在编码器上限前连续确认即可提前完成；达到编码器上限
- *         仍未确认时立即判定找线失败，不再进入低速重捕等待。
+ * @note   最中间两路在编码器上限前连续确认即可提前完成；达到编码器上限后
+ *         先进入 REACQUIRE 低速前进，连续居中后回到 FOLLOW。重捕期间确认到
+ *         下一弯时直接启动下一次转向，1 秒内仍未居中才进入丢线搜索。
  */
 static void appTrackingUpdateCornerTurn(float baseSpeed)
 {
@@ -478,17 +557,21 @@ static void appTrackingUpdateCornerTurn(float baseSpeed)
 
         if (zhanShuBaoZhuan90Du(trackTurnDirection)) {
             /*
-             * 编码器已经到达硬上限，但最中间两路仍未连续确认三次。
-             * 本次九十度转弯视为找线失败，立即交给现有丢线搜索处理。
+             * 编码器已经达到标定阈值。此时线路可能已经转过弯口但尚未稳定
+             * 居中，先以低速前进继续找线，不立即判定丢线。
              */
-            appTrackingBeginLineSearch(trackTurnDirection);
-            appTrackingUpdateLineSearch(baseSpeed);
+            trackControlState = TRACK_CONTROL_REACQUIRE;
+            trackCornerCompleteTicks = 0U;
+            trackCornerCenterSinceTurn = 0U;
+            trackCornerReacquireTicks = 0U;
+            appTrackingSetTargets(TRACK_CORNER_REACQUIRE_BASE_RPM,
+                                  TRACK_CORNER_REACQUIRE_BASE_RPM);
             return;
         }
 
         /*
          * 编码器还没到目标值时，如果循迹模块已经连续三次检测到
-         * 最中间任意一路压线，就按循迹模块的结果提前完成九十度转弯。
+         * 最中间任意一路压线，就按循迹模块的结果提前结束急弯转向。
          */
         if ((trackTurnTicks >= TRACK_CORNER_MIN_TICKS)
             && appTrackingCornerCenterSeen()) {
@@ -508,8 +591,12 @@ static void appTrackingUpdateCornerTurn(float baseSpeed)
 
         if (trackTurnTicks >= TRACK_CORNER_TIMEOUT_TICKS) {
             zhanShuBaoChongZhiZhuan90Du();
-            appTrackingBeginLineSearch(trackTurnDirection);
-            appTrackingUpdateLineSearch(baseSpeed);
+            /*
+             * 暂时禁用丢线搜索。
+             * appTrackingBeginLineSearch(trackTurnDirection);
+             * appTrackingUpdateLineSearch(baseSpeed);
+             */
+            appTrackingStop();
             return;
         }
 
@@ -546,8 +633,12 @@ static void appTrackingUpdateCornerTurn(float baseSpeed)
 
     if (trackCornerReacquireTicks
         >= TRACK_CORNER_REACQUIRE_TIMEOUT_TICKS) {
-        appTrackingBeginLineSearch(trackTurnDirection);
-        appTrackingUpdateLineSearch(baseSpeed);
+        /*
+         * 暂时禁用丢线搜索。
+         * appTrackingBeginLineSearch(trackTurnDirection);
+         * appTrackingUpdateLineSearch(baseSpeed);
+         */
+        appTrackingStop();
         return;
     }
 
@@ -555,6 +646,11 @@ static void appTrackingUpdateCornerTurn(float baseSpeed)
                           TRACK_CORNER_REACQUIRE_BASE_RPM);
 }
 
+/**
+ * @brief  执行启动后的直线前进阶段，直到检测到有效线路。
+ * @param  baseSpeed 当前档位对应的循迹基准速度，单位 RPM。
+ * @return 1 表示本周期仍处于启动前进阶段，0 表示允许进入普通循迹。
+ */
 static uint8_t appTrackingUpdateStartupForward(float baseSpeed)
 {
     if (trackLineAcquired) {
@@ -577,6 +673,11 @@ static uint8_t appTrackingUpdateStartupForward(float baseSpeed)
     return 0U;
 }
 
+/**
+ * @brief  处理八路全黑终点图案和计圈状态。
+ * @return 1 表示本周期终点状态已接管控制，0 表示继续普通循迹。
+ * @note   转弯和转弯后找线期间忽略全黑图案，防止扫线过程被误判为终点。
+ */
 static uint8_t appTrackingUpdateFinish(void)
 {
     uint8_t finishSeen = zhanShuBaoYuDaoHeiXian();
@@ -649,6 +750,12 @@ static uint8_t appTrackingUpdateFinish(void)
     return 1U;
 }
 
+/**
+ * @brief  更新丢线搜索状态并生成摆头找线目标。
+ * @param  baseSpeed 恢复线路后使用的循迹基准速度，单位 RPM。
+ * @note   搜索超过规定往返次数仍找不到线路时立即停车。
+ */
+#if 0
 static void appTrackingUpdateLineSearch(float baseSpeed)
 {
     int8_t direction;
@@ -667,6 +774,7 @@ static void appTrackingUpdateLineSearch(float baseSpeed)
         appTrackingClearCornerCandidate();
         trackCornerArmed = 1U;
 
+        appTrackingResetTargetFilter();
         appTrackingApplyLutTargets(baseSpeed);
         return;
     }
@@ -694,7 +802,12 @@ static void appTrackingUpdateLineSearch(float baseSpeed)
     appTrackingSetSearchTargets(direction);
     trackLostSweepTicks++;
 }
+#endif
 
+/**
+ * @brief  复位循迹状态机、急弯状态、滤波器和红外数据。
+ * @note   停车、重新启动或切换模式时调用；不会修改 PID 参数。
+ */
 void appTrackingResetState(void)
 {
     trackControlState = TRACK_CONTROL_FOLLOW;
@@ -703,9 +816,11 @@ void appTrackingResetState(void)
     trackFinishArmed = 0U;
     trackStartupTicks = 0U;
     trackLineAcquired = 0U;
+#if 0
     trackLostSweepTicks = 0U;
     trackLostSweepPhase = 0U;
     trackLostSweepStartDirection = -1;
+#endif
     trackInvalidLineTicks = 0U;
     appTrackingClearTurnLatch();
     trackCornerArmed = 1U;
@@ -713,6 +828,7 @@ void appTrackingResetState(void)
     appTrackingClearCornerCandidate();
     appTrackingClearPendingCorner();
     trackSteerOutput = 0.0f;
+    appTrackingResetTargetFilter();
 
     for (uint8_t i = 0U; i < IRTRACK_CHANNELS; i++) {
         ir_data.raw[i] = 1U;
@@ -727,6 +843,10 @@ void appTrackingResetState(void)
     ir_data.last_side = 0;
 }
 
+/**
+ * @brief  启动一次新的循迹任务。
+ * @note   清零已完成圈数并复位状态机，但不直接设置运行标志。
+ */
 void appTrackingStart(void)
 {
     appStateResetLapProgress();
@@ -734,6 +854,11 @@ void appTrackingStart(void)
     pwmDuty = 0;
 }
 
+/**
+ * @brief  执行 20 ms 数字循迹任务。
+ * @note   先读取并计算八路红外，再按停止、启动、终点、急弯、丢线和普通循迹
+ *         的优先级更新目标速度。本函数只生成目标，电机输出由 50 ms 控制任务执行。
+ */
 void appTrackingTask20ms(void)
 {
     float baseSpeed;
@@ -791,9 +916,14 @@ void appTrackingTask20ms(void)
         }
 
         if (trackControlState != TRACK_CONTROL_LOST) {
-            appTrackingBeginLineSearch(ir_data.last_side);
+            /*
+             * 暂时禁用丢线搜索。
+             * appTrackingBeginLineSearch(ir_data.last_side);
+             * appTrackingUpdateLineSearch(baseSpeed);
+             */
+            appTrackingStop();
+            return;
         }
-        appTrackingUpdateLineSearch(baseSpeed);
         return;
     }
 
@@ -808,21 +938,37 @@ void appTrackingTask20ms(void)
     appTrackingApplyLutTargets(baseSpeed);
 }
 
+/**
+ * @brief  获取当前循迹控制状态。
+ * @return 当前状态机枚举值。
+ */
 TrackControlState_t appTrackingGetState(void)
 {
     return trackControlState;
 }
 
+/**
+ * @brief  获取归一化线路位置。
+ * @return 位置值，负值偏左，正值偏右，范围约为 -7...+7。
+ */
 float appTrackingGetPosition(void)
 {
     return ir_data.position;
 }
 
+/**
+ * @brief  获取最近一次循迹差速输出。
+ * @return 左右目标差的一半，单位 RPM。
+ */
 float appTrackingGetSteer(void)
 {
     return trackSteerOutput;
 }
 
+/**
+ * @brief  复制循迹状态机的诊断字段。
+ * @param  output 输出结构体指针；为 NULL 时函数直接返回。
+ */
 void appTrackingGetDiagnostics(TrackDiagnostics_t *output)
 {
     if (output == 0) {

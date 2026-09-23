@@ -1,3 +1,9 @@
+/**
+ * @file    yingYongChuanGanQi.c
+ * @brief   应用层 MPU6050 姿态采样任务。
+ * @note    异步 I2C 完成中断只提供数据，姿态解算在 10 ms 任务中执行。
+ */
+
 #include "yingYongChuanGanQi.h"
 #include "yingYongPeiZhi.h"
 #include "yingYongZhuangTai.h"
@@ -7,7 +13,7 @@
 /**
  * @brief  执行一次 MPU6050 姿态采样任务。
  * @note   异步 I2C 数据未就绪时直接返回；数据就绪后更新原始轴数据并运行 AHRS，
- *         最后根据中断标志启动下一次异步读取。
+ *         最后无条件启动下一次异步读取。PA12 中断标志只用于诊断。
  */
 void appSensorTask10ms(void)
 {
@@ -34,8 +40,8 @@ void appSensorTask10ms(void)
     MPU6050_AHRS_Update(&imu, (float)APP_SENSOR_PERIOD_MS / 1000.0f);
 
     /*
-     * The 100 Hz sensor task owns the transfer chain. PA12 INT remains
-     * diagnostic only; a missing edge must not stop future samples.
+     * 100 Hz 传感器任务负责维持异步读取链。PA12 中断只作为数据就绪诊断，
+     * 即使丢失边沿也不能停止后续采样。
      */
     mpu_int_ready = 0;
     MPU6050_ReadAsync_Start();

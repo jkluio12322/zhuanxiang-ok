@@ -1,3 +1,9 @@
+/**
+ * @file    pid_tune.c
+ * @brief   USART1 在线调参和电机测试命令解析。
+ * @note    UART 中断只负责缓存字节，命令在主循环中解析。
+ */
+
 #include "pid_tune.h"
 #include "yingYongMingLing.h"
 #include "yingYongPeiZhi.h"
@@ -10,12 +16,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-/**
- * @file    pid_tune.c
- * @brief   USART1 在线调参和电机测试命令解析。
- * @note    UART 中断只负责缓存字节，命令在主循环中解析。
- */
 
 /* 调参响应缓冲区大小，足够容纳帮助信息和 PID 参数。 */
 #define PID_TUNE_RESPONSE_BUFFER_SIZE 256U
@@ -135,12 +135,22 @@ void pidTuneProcess(void)
         pidTuneRespond("[SpeedPID] R Kp=%.2f Ki=%.2f Kd=%.2f\r\n",
                        speedPidRight.Kp, speedPidRight.Ki, speedPidRight.Kd);
     }
-    /* 增量式速度环不使用 Kf，旧命令保留为无效兼容响应。 */
-    else if ((strcmp(token, "skf") == 0
-              || strcmp(token, "skfl") == 0
-              || strcmp(token, "skfr") == 0)
-             && argumentCount >= 2) {
-        pidTuneRespond("[SpeedPID] Kf disabled for incremental PID\r\n");
+    /* skf 同时设置两轮前馈，skfl/skfr 分别设置左轮和右轮前馈。 */
+    else if (strcmp(token, "skf") == 0 && argumentCount >= 2) {
+        speedPidLeft.Kf = value;
+        speedPidRight.Kf = value;
+        pidTuneRespond("[SpeedPID] Kf L=%.2f R=%.2f\r\n",
+                       speedPidLeft.Kf, speedPidRight.Kf);
+    }
+    else if (strcmp(token, "skfl") == 0 && argumentCount >= 2) {
+        speedPidLeft.Kf = value;
+        pidTuneRespond("[SpeedPID] Kf L=%.2f R=%.2f\r\n",
+                       speedPidLeft.Kf, speedPidRight.Kf);
+    }
+    else if (strcmp(token, "skfr") == 0 && argumentCount >= 2) {
+        speedPidRight.Kf = value;
+        pidTuneRespond("[SpeedPID] Kf L=%.2f R=%.2f\r\n",
+                       speedPidLeft.Kf, speedPidRight.Kf);
     }
     /* 航向环 PID 参数只作用于 yawPid。 */
     else if (strcmp(token, "ykp") == 0 && argumentCount >= 2) {
@@ -321,8 +331,8 @@ void pidTuneRxCallback(uint8_t byte)
 
 /**
  * @brief  发送待处理的调参响应。
- * @note   只有 tuneResponsePending 为 1 时才发送；发送前关闭中断，
- *         发送完成后恢复中断并清除待发送标志。
+ * @note   只有 tuneResponsePending 为 1 时才处理；Serial_SendString 将内容
+ *         复制到发送环形缓冲区后立即返回，因此入队完成后清除待发送标志。
  */
 void pidTuneProcessResponse(void)
 {

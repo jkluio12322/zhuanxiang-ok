@@ -1,0 +1,9 @@
+{
+  "openocd": {
+    "board": "",
+    "interface": "interface/cmsis-dap.cfg",
+    "target": "target/stm32f1x.cfg",
+    "adapter_speed": "",
+    "transport": ""
+  }
+}

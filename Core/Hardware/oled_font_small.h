@@ -1,3 +1,8 @@
+/**
+ * @file    oled_font_small.h
+ * @brief   OLED 6x8 ASCII 小字模表。
+ */
+
 #ifndef __OLED_FONT_SMALL_H
 #define __OLED_FONT_SMALL_H
 
@@ -6,7 +11,7 @@
 /*
  * 5x7 ASCII font with one blank spacing column per glyph.
  * Character range: 0x20 (' ') through 0x7E ('~').
- * Each column uses bit 0 for the top row and bit 6 for the bottom row.
+ * 每列 bit0 对应最上方像素，bit6 对应最下方像素。
  */
 const uint8_t OLED_F6x8[95][6] =
 {
