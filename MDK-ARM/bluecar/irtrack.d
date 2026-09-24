@@ -1,5 +1,5 @@
-bluecar\irtrack.o: ../Core/Hardware/irtrack.c
-bluecar\irtrack.o: ../Core/Hardware/irtrack.h
+bluecar\irtrack.o: ../Core/Hardware/Peripherals/Sensors/irtrack.c
+bluecar\irtrack.o: ../Core/Hardware/Peripherals/Sensors/irtrack.h
 bluecar\irtrack.o: ../Core/Inc/main.h
 bluecar\irtrack.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h
 bluecar\irtrack.o: ../Core/Inc/stm32f1xx_hal_conf.h
@@ -30,5 +30,5 @@ bluecar\irtrack.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h
 bluecar\irtrack.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h
 bluecar\irtrack.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h
 bluecar\irtrack.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h
-bluecar\irtrack.o: ../Core/Application/yingYongLeiXing.h
+bluecar\irtrack.o: ../Core/Application/Config/yingYongLeiXing.h
 bluecar\irtrack.o: F:\kilv5\ARM\ARMCC\Bin\..\include\string.h

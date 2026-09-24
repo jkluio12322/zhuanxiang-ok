@@ -1,7 +1,7 @@
 bluecar\zhanshubao.o: ../Core/Application/zhanShuBao.c
 bluecar\zhanshubao.o: ../Core/Application/zhanShuBao.h
 bluecar\zhanshubao.o: F:\kilv5\ARM\ARMCC\Bin\..\include\stdint.h
-bluecar\zhanshubao.o: ../Core/Application/yingYongPeiZhi.h
+bluecar\zhanshubao.o: ../Core/Hardware/irtrack.h
 bluecar\zhanshubao.o: ../Core/Inc/main.h
 bluecar\zhanshubao.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h
 bluecar\zhanshubao.o: ../Core/Inc/stm32f1xx_hal_conf.h
@@ -32,8 +32,3 @@ bluecar\zhanshubao.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h
 bluecar\zhanshubao.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h
 bluecar\zhanshubao.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h
 bluecar\zhanshubao.o: ../Core/Application/yingYongLeiXing.h
-bluecar\zhanshubao.o: ../Core/Application/yingYongZhuangTai.h
-bluecar\zhanshubao.o: ../Core/Hardware/encoder.h
-bluecar\zhanshubao.o: ../Core/Hardware/mpu6050.h
-bluecar\zhanshubao.o: ../Core/Hardware/pid.h
-bluecar\zhanshubao.o: ../Core/Hardware/irtrack.h

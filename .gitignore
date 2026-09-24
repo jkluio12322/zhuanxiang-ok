@@ -1,0 +1,8 @@
+# Local build logs, crash dumps, and editor backups
+*.log
+*.bak
+hs_err_pid*
+replay_pid*
+
+# Keil full-build report
+bluecar.build_log.htm

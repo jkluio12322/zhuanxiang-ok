@@ -1,5 +1,5 @@
-bluecar\encoder.o: ../Core/Hardware/encoder.c
-bluecar\encoder.o: ../Core/Hardware/encoder.h
+bluecar\encoder.o: ../Core/Hardware/Peripherals/Motion/encoder.c
+bluecar\encoder.o: ../Core/Hardware/Peripherals/Motion/encoder.h
 bluecar\encoder.o: ../Core/Inc/main.h
 bluecar\encoder.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h
 bluecar\encoder.o: ../Core/Inc/stm32f1xx_hal_conf.h
@@ -30,4 +30,4 @@ bluecar\encoder.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h
 bluecar\encoder.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h
 bluecar\encoder.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h
 bluecar\encoder.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h
-bluecar\encoder.o: ../Core/Application/yingYongLeiXing.h
+bluecar\encoder.o: ../Core/Application/Config/yingYongLeiXing.h

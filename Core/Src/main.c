@@ -70,7 +70,7 @@ int main(void)
   HAL_Delay(APP_OLED_BOOT_DELAY_MS);
 
   Motor_Init();
-  IRTrack_Init(IR_MODE_DIGITAL);
+  IRTrack_Init();
   MPU6050_init(&hi2c1);
   Encoder_Init_TIM_All();
   Timer_Init();
@@ -78,7 +78,7 @@ int main(void)
   Key_Init();
   Serial_Init(&huart1);
   Serial_Printf("BOOT OK\r\n");
-  Serial_Printf("#tgtRpmL,rpmFL,rpmL,tgtRpmR,rpmFR,rpmR,steerRpm,diffRpm,yawDeg,mode,run,gear\r\n");
+  Serial_Printf("#tgtRpmL,rpmFL,rpmL,tgtRpmR,rpmFR,rpmR,steerRpm,diffRpm,yawDeg,trackError,mode,run,gear,turnPhase\r\n");
   pidTuneInit();
   Buzzer_Init();
   BlueSerial_Init();

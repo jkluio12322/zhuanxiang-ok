@@ -1,5 +1,5 @@
-bluecar\blueserial.o: ../Core/Hardware/blueserial.c
-bluecar\blueserial.o: ../Core/Hardware/blueserial.h
+bluecar\blueserial.o: ../Core/Application/Communication/blueserial.c
+bluecar\blueserial.o: ../Core/Application/Communication/blueserial.h
 bluecar\blueserial.o: ../Core/Inc/main.h
 bluecar\blueserial.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h
 bluecar\blueserial.o: ../Core/Inc/stm32f1xx_hal_conf.h
@@ -30,10 +30,10 @@ bluecar\blueserial.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h
 bluecar\blueserial.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h
 bluecar\blueserial.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h
 bluecar\blueserial.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h
-bluecar\blueserial.o: ../Core/Application/yingYongLeiXing.h
+bluecar\blueserial.o: ../Core/Application/Config/yingYongLeiXing.h
 bluecar\blueserial.o: F:\kilv5\ARM\ARMCC\Bin\..\include\string.h
 bluecar\blueserial.o: F:\kilv5\ARM\ARMCC\Bin\..\include\stdlib.h
 bluecar\blueserial.o: F:\kilv5\ARM\ARMCC\Bin\..\include\stdio.h
 bluecar\blueserial.o: F:\kilv5\ARM\ARMCC\Bin\..\include\stdarg.h
-bluecar\blueserial.o: ../Core/Hardware/pid_tune.h
-bluecar\blueserial.o: ../Core/Hardware/serial.h
+bluecar\blueserial.o: ../Core/Application/Communication/pid_tune.h
+bluecar\blueserial.o: ../Core/Application/Communication/serial.h

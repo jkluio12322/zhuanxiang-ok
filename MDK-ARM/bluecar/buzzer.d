@@ -1,5 +1,5 @@
-bluecar\buzzer.o: ../Core/Hardware/buzzer.c
-bluecar\buzzer.o: ../Core/Hardware/buzzer.h
+bluecar\buzzer.o: ../Core/Hardware/Peripherals/IO/buzzer.c
+bluecar\buzzer.o: ../Core/Hardware/Peripherals/IO/buzzer.h
 bluecar\buzzer.o: ../Core/Inc/main.h
 bluecar\buzzer.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h
 bluecar\buzzer.o: ../Core/Inc/stm32f1xx_hal_conf.h
@@ -30,4 +30,4 @@ bluecar\buzzer.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h
 bluecar\buzzer.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h
 bluecar\buzzer.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h
 bluecar\buzzer.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h
-bluecar\buzzer.o: ../Core/Application/yingYongLeiXing.h
+bluecar\buzzer.o: ../Core/Application/Config/yingYongLeiXing.h

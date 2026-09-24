@@ -1,0 +1,250 @@
+/**
+ * @file    yingYongMingLing.c
+ * @brief   应用层命令队列、蓝牙解析和按键事件处理。
+ * @note    按键、蓝牙和电机动作用命令统一由 50 ms 控制任务消费；USART1
+ *          在线调参的 PID 增益和 duty 命令属于直接调试接口。
+ */
+
+#include "yingYongMingLing.h"
+#include "yingYongPeiZhi.h"
+#include "yingYongZhuangTai.h"
+#include "blueserial.h"
+#include "key.h"
+#include "pid_tune.h"
+#include "timer.h"
+
+#include <stdlib.h>
+#include <string.h>
+
+/* 环形命令队列：主循环生产者入队，50 ms 控制任务消费者出队。 */
+static commandMessage_t commandQueue[COMMAND_QUEUE_SIZE];
+static volatile uint8_t commandHead = 0;
+static volatile uint8_t commandTail = 0;
+
+/**
+ * @brief  初始化命令队列。
+ * @note   将读写索引同时归零，使队列处于空状态。
+ */
+void appCommandInit(void)
+{
+    commandHead = 0;
+    commandTail = 0;
+}
+
+/**
+ * @brief  使用类型和数值构造一条命令并压入队列。
+ */
+void appCommandPushValue(commandType_t type, float value)
+{
+    commandMessage_t message;
+
+    message.type = type;
+    message.value = value;
+    appCommandQueuePush(message);
+}
+
+/**
+ * @brief  将控制命令写入环形队列。
+ * @param  message 待入队的命令消息。
+ * @note   队列满时直接丢弃新命令，保留尚未执行的控制动作。
+ */
+void appCommandQueuePush(commandMessage_t message)
+{
+    /* 队列满时丢弃新命令，避免覆盖尚未执行的控制命令。 */
+    uint8_t next = (uint8_t)((commandHead + 1U) % COMMAND_QUEUE_SIZE);
+    if (next == commandTail) return;
+    commandQueue[commandHead] = message;
+    commandHead = next;
+}
+
+/**
+ * @brief  从环形队列读取一条命令。
+ * @param  message 用于接收命令的指针。
+ * @return 0 表示成功，-1 表示队列为空。
+ */
+int appCommandQueuePop(commandMessage_t *message)
+{
+    if (commandHead == commandTail) return -1;
+    *message = commandQueue[commandTail];
+    commandTail = (uint8_t)((commandTail + 1U) % COMMAND_QUEUE_SIZE);
+    return 0;
+}
+
+/**
+ * @brief  计算当前队列中待执行命令数量。
+ * @return 队列中的有效命令条数。
+ */
+uint8_t appCommandQueueAvailable(void)
+{
+    return (uint8_t)((commandHead + COMMAND_QUEUE_SIZE - commandTail)
+                     % COMMAND_QUEUE_SIZE);
+}
+
+/**
+ * @brief  解析蓝牙数据帧并生成控制命令。
+ * @note   joystick 帧转换为速度、差速、原地转和启动命令；key 帧转换为启停或换档命令。
+ *         只有 modeRun 模式响应摇杆，其他模式会忽略摇杆控制。
+ */
+void appCommandProcessBluetooth(void)
+{
+    if (!BlueSerial_ReceiveFlag()) return;
+
+    BlueSerial_Receive();
+    bluetoothLastRx = milliseconds;
+    /* 只有蓝牙/手动模式响应摇杆，其他模式保持摇杆值为 0。 */
+    if (workMode != modeRun) {
+        bluetoothLv = 0;
+        bluetoothRh = 0;
+        return;
+    }
+
+    /* 解析 [joystick,左横,左纵,右横,右纵] 数据帧。 */
+    if (strcmp(BlueSerial_StringArray[0], "joystick") == 0) {
+        int8_t lv = (int8_t)atoi(BlueSerial_StringArray[2]);
+        int8_t rh = (int8_t)atoi(BlueSerial_StringArray[3]);
+        bluetoothLv = lv;
+        bluetoothRh = rh;
+
+        /* 摇杆回中时下发停车命令，否则下发速度、原地转或差速命令。 */
+        if (lv != 0 || rh != 0) {
+            if (abs((int)rh) >= BLUETOOTH_PIVOT_THRESHOLD_PERCENT) {
+                /*
+                 * 右摇杆满舵时忽略纵向输入，按当前档位速度直接一正一反原地转。
+                 * 正值右转，负值左转。
+                 */
+                float pivotSpeed = (rh > 0) ? appStateGetSpeedRpm()
+                                            : -appStateGetSpeedRpm();
+                appCommandPushValue(commandPivot, pivotSpeed);
+            } else {
+                /* 未满舵时保持原来的前进速度和普通差速转向。 */
+                appCommandPushValue(
+                    commandSpeed,
+                    (float)lv / BLUETOOTH_STICK_SCALE
+                    * appStateGetSpeedRpm());
+                appCommandPushValue(
+                    commandTurn,
+                    (float)rh / BLUETOOTH_STICK_SCALE
+                    * appStateGetSpeedRpm() * BLUETOOTH_TURN_SCALE);
+            }
+
+            appCommandPushValue(commandStart, 0.0f);
+        } else {
+            appCommandPushValue(commandStop, 0.0f);
+        }
+    } else if (strcmp(BlueSerial_StringArray[0], "key") == 0) {
+        /* 蓝牙按键帧只处理启动停止和加减档，不直接修改运行状态。 */
+        if (strcmp(BlueSerial_StringArray[1], "1") == 0
+            && strcmp(BlueSerial_StringArray[2], "up") == 0) {
+            appCommandPushValue(runFlag ? commandStop : commandStart, 0.0f);
+        } else if (strcmp(BlueSerial_StringArray[1], "2") == 0
+                   && strcmp(BlueSerial_StringArray[2], "up") == 0) {
+            appCommandPushValue(commandGearDown, 0.0f);
+        } else if (strcmp(BlueSerial_StringArray[1], "3") == 0
+                   && strcmp(BlueSerial_StringArray[2], "up") == 0) {
+            appCommandPushValue(commandGearUp, 0.0f);
+        }
+    }
+}
+
+/**
+ * @brief  扫描按键状态并生成对应控制命令。
+ * @note   KEY1 负责蓝牙/循迹模式切换，KEY4 负责升档；
+ *         KEY2/KEY3 在不同模式下分别执行启停、倒车或 PWM 调整。
+ */
+void appCommandProcessKeys(void)
+{
+    /* KEY1 在蓝牙/手动模式和循迹模式之间切换，短按和长按均只切换一次。
+     * 只有 modeRun 才进入循迹；PWM 测试模式按一下直接回到手动模式，避免
+     * 摇杆因为 workMode 不是 modeRun 而被 appCommandProcessBluetooth 丢弃。 */
+    if (Key_CheckSingleOrLong(KEY_1)) {
+        appCommandPushValue((workMode == modeRun) ? commandModeTrack
+                                                  : commandModeRun,
+                            0.0f);
+    }
+
+    /* KEY4 始终用于升档。 */
+    if (workMode == modeTrack) {
+        uint8_t lapKey = Key_Check(KEY_4, KEY_SINGLE);
+
+        (void)Key_CheckSingleOrLong(KEY_4);
+
+        if (lapKey && !runFlag) {
+            appCommandPushValue(commandLapCycle, 0.0f);
+        }
+    } else {
+        if (Key_Check(KEY_4, KEY_SINGLE)) {
+            appCommandPushValue(commandGearUp, 0.0f);
+        }
+
+        if (Key_Check(KEY_4, KEY_LONG)) {
+            appCommandPushValue(commandGearDown, 0.0f);
+        }
+    }
+
+    /* 循迹模式下 KEY2 启停，KEY3 立即停车。 */
+    if (workMode == modeTrack) {
+        if (Key_Check(KEY_2, KEY_SINGLE)) {
+            appCommandPushValue(runFlag ? commandStop : commandStart, 0.0f);
+        }
+        if (Key_Check(KEY_3, KEY_SINGLE)) {
+            appCommandPushValue(commandStop, 0.0f);
+        }
+    } else if (workMode == modePwmSet) {
+        /* PWM 测试模式使用 KEY2/KEY3 按步长增减占空比。 */
+        int16_t previous = pwmDuty;
+        if (Key_Check(KEY_2, KEY_SINGLE)) {
+            pwmDuty += PWM_TEST_STEP_PERCENT;
+            if (pwmDuty > PWM_TEST_MAX_PERCENT) pwmDuty = PWM_TEST_MAX_PERCENT;
+        }
+        if (Key_Check(KEY_3, KEY_SINGLE)) {
+            pwmDuty -= PWM_TEST_STEP_PERCENT;
+            if (pwmDuty < PWM_TEST_MIN_PERCENT) pwmDuty = PWM_TEST_MIN_PERCENT;
+        }
+        if (pwmDuty != previous) {
+            if (pwmDuty == 0) {
+                appCommandPushValue(commandStop, 0.0f);
+            } else {
+                appCommandPushValue(commandStart, 0.0f);
+                appCommandPushValue(commandSpeed, (float)pwmDuty);
+            }
+        }
+    } else {
+        /* 蓝牙/手动模式下 KEY2 前进、KEY3 后退。 */
+        uint8_t key2 = Key_Check(KEY_2, KEY_SINGLE);
+        uint8_t key3 = Key_Check(KEY_3, KEY_SINGLE);
+
+        if (key2 || key3) {
+            float speed = appStateGetSpeedRpm();
+            if (key2) {
+                if (runFlag
+                    && (targetLeftRpm + targetRightRpm) > 0.0f) {
+                    appCommandPushValue(commandStop, 0.0f);
+                } else {
+                    appCommandPushValue(commandStart, 0.0f);
+                    appCommandPushValue(commandSpeed, speed);
+                }
+            } else {
+                if (runFlag
+                    && (targetLeftRpm + targetRightRpm) < 0.0f) {
+                    appCommandPushValue(commandStop, 0.0f);
+                } else {
+                    appCommandPushValue(commandStart, 0.0f);
+                    appCommandPushValue(commandSpeed, -speed);
+                }
+            }
+            appCommandPushValue(commandTurn, 0.0f);
+            bluetoothLastRx = milliseconds;
+        }
+    }
+}
+
+/**
+ * @brief  处理 USART1 在线调参输入。
+ * @note   解析工作在主循环执行；速度、转向和启停命令进入统一队列，
+ *         PID 增益与 duty 调试命令由调参模块直接生效。
+ */
+void appCommandProcessTune(void)
+{
+    /* 串口调参命令在主循环中解析，具体控制命令进入同一命令队列。 */
+    pidTuneProcess();
+}

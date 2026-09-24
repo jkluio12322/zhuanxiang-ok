@@ -15,48 +15,78 @@ virtualFolder:
           files:
             - path: startup_stm32f103xe.s
           folders: []
-        - name: User
+        - name: Communication
+          files:
+            - path: ../Core/Application/Communication/yingYongMingLing.c
+            - path: ../Core/Application/Communication/yingYongYaoCe.c
+            - path: ../Core/Application/Communication/pid_tune.c
+            - path: ../Core/Application/Communication/serial.c
+            - path: ../Core/Application/Communication/blueserial.c
+            - path: ../Core/Application/Communication/bytestream.c
+          folders: []
+        - name: Control
+          files:
+            - path: ../Core/Application/Control/yingYongKongZhi.c
+            - path: ../Core/Application/Control/yingYongXunJi.c
+            - path: ../Core/Application/Control/yingYongZhuangTai.c
+            - path: ../Core/Application/Control/pid.c
+          folders: []
+        - name: Config
+          files:
+            - path: ../Core/Application/Config/yingYongPeiZhi.h
+            - path: ../Core/Application/Config/yingYongLeiXing.h
+          folders: []
+        - name: Display
+          files:
+            - path: ../Core/Application/Display/yingYongXianShi.c
+          folders: []
+    - name: Hardware
+      files: []
+      folders:
+        - name: Buffers
+          files:
+            - path: ../Core/Hardware/Buffers/ringbuf.c
+          folders: []
+        - name: Peripherals
           files: []
           folders:
-            - name: Core
+            - name: Motion
               files:
-                - path: ../Core/Src/main.c
-                - path: ../Core/Src/gpio.c
-                - path: ../Core/Src/dma.c
-                - path: ../Core/Src/i2c.c
-                - path: ../Core/Src/tim.c
-                - path: ../Core/Src/usart.c
-                - path: ../Core/Src/stm32f1xx_it.c
-                - path: ../Core/Src/stm32f1xx_hal_msp.c
-              folders:
-                - name: Hardware
-                  files:
-                    - path: ../Core/Hardware/motor.c
-                    - path: ../Core/Hardware/encoder.c
-                    - path: ../Core/Hardware/pid.c
-                    - path: ../Core/Hardware/pid_tune.c
-                    - path: ../Core/Hardware/mpu6050.c
-                    - path: ../Core/Hardware/filter.c
-                    - path: ../Core/Hardware/oled.c
-                    - path: ../Core/Hardware/key.c
-                    - path: ../Core/Hardware/buzzer.c
-                    - path: ../Core/Hardware/serial.c
-                    - path: ../Core/Hardware/timer.c
-                    - path: ../Core/Hardware/blueserial.c
-                    - path: ../Core/Hardware/ringbuf.c
-                    - path: ../Core/Hardware/irtrack.c
-                  folders: []
-                - name: Application
-                  files:
-                    - path: ../Core/Application/yingYongMingLing.c
-                    - path: ../Core/Application/yingYongKongZhi.c
-                    - path: ../Core/Application/yingYongXunJi.c
-                    - path: ../Core/Application/zhanShuBao.c
-                    - path: ../Core/Application/yingYongXianShi.c
-                    - path: ../Core/Application/yingYongChuanGanQi.c
-                    - path: ../Core/Application/yingYongZhuangTai.c
-                    - path: ../Core/Application/yingYongYaoCe.c
-                  folders: []
+                - path: ../Core/Hardware/Peripherals/Motion/motor.c
+                - path: ../Core/Hardware/Peripherals/Motion/encoder.c
+              folders: []
+            - name: Sensors
+              files:
+                - path: ../Core/Hardware/Peripherals/Sensors/irtrack.c
+                - path: ../Core/Hardware/Peripherals/Sensors/mpu6050.c
+                - path: ../Core/Hardware/Peripherals/Sensors/filter.c
+              folders: []
+            - name: Display
+              files:
+                - path: ../Core/Hardware/Peripherals/Display/oled.c
+                - path: ../Core/Hardware/Peripherals/Display/oled_font.h
+                - path: ../Core/Hardware/Peripherals/Display/oled_font_small.h
+              folders: []
+            - name: IO
+              files:
+                - path: ../Core/Hardware/Peripherals/IO/key.c
+                - path: ../Core/Hardware/Peripherals/IO/buzzer.c
+              folders: []
+        - name: System
+          files:
+            - path: ../Core/Hardware/System/timer.c
+          folders: []
+    - name: Core
+      files:
+        - path: ../Core/Src/main.c
+        - path: ../Core/Src/gpio.c
+        - path: ../Core/Src/dma.c
+        - path: ../Core/Src/i2c.c
+        - path: ../Core/Src/tim.c
+        - path: ../Core/Src/usart.c
+        - path: ../Core/Src/stm32f1xx_it.c
+        - path: ../Core/Src/stm32f1xx_hal_msp.c
+      folders: []
     - name: Drivers
       files: []
       folders:
@@ -97,8 +127,16 @@ targets:
         - STM32F103xE
       incList:
         - ../Core/Inc
-        - ../Core/Application
-        - ../Core/Hardware
+        - ../Core/Application/Communication
+        - ../Core/Application/Control
+        - ../Core/Application/Config
+        - ../Core/Application/Display
+        - ../Core/Hardware/Buffers
+        - ../Core/Hardware/Peripherals/Motion
+        - ../Core/Hardware/Peripherals/Sensors
+        - ../Core/Hardware/Peripherals/Display
+        - ../Core/Hardware/Peripherals/IO
+        - ../Core/Hardware/System
         - ../Drivers/STM32F1xx_HAL_Driver/Inc
         - ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy
         - ../Drivers/CMSIS/Device/ST/STM32F1xx/Include

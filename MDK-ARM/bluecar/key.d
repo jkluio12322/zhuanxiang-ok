@@ -1,5 +1,5 @@
-bluecar\key.o: ../Core/Hardware/key.c
-bluecar\key.o: ../Core/Hardware/key.h
+bluecar\key.o: ../Core/Hardware/Peripherals/IO/key.c
+bluecar\key.o: ../Core/Hardware/Peripherals/IO/key.h
 bluecar\key.o: ../Core/Inc/main.h
 bluecar\key.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h
 bluecar\key.o: ../Core/Inc/stm32f1xx_hal_conf.h
@@ -30,4 +30,4 @@ bluecar\key.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h
 bluecar\key.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h
 bluecar\key.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h
 bluecar\key.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h
-bluecar\key.o: ../Core/Application/yingYongLeiXing.h
+bluecar\key.o: ../Core/Application/Config/yingYongLeiXing.h

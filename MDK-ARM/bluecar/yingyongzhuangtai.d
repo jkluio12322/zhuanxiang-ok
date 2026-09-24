@@ -1,5 +1,5 @@
-bluecar\yingyongzhuangtai.o: ../Core/Application/yingYongZhuangTai.c
-bluecar\yingyongzhuangtai.o: ../Core/Application/yingYongZhuangTai.h
+bluecar\yingyongzhuangtai.o: ../Core/Application/Control/yingYongZhuangTai.c
+bluecar\yingyongzhuangtai.o: ../Core/Application/Control/yingYongZhuangTai.h
 bluecar\yingyongzhuangtai.o: ../Core/Inc/main.h
 bluecar\yingyongzhuangtai.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h
 bluecar\yingyongzhuangtai.o: ../Core/Inc/stm32f1xx_hal_conf.h
@@ -30,9 +30,9 @@ bluecar\yingyongzhuangtai.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_p
 bluecar\yingyongzhuangtai.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h
 bluecar\yingyongzhuangtai.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h
 bluecar\yingyongzhuangtai.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h
-bluecar\yingyongzhuangtai.o: ../Core/Application/yingYongLeiXing.h
-bluecar\yingyongzhuangtai.o: ../Core/Hardware/encoder.h
-bluecar\yingyongzhuangtai.o: ../Core/Hardware/mpu6050.h
-bluecar\yingyongzhuangtai.o: ../Core/Hardware/pid.h
-bluecar\yingyongzhuangtai.o: ../Core/Application/yingYongPeiZhi.h
-bluecar\yingyongzhuangtai.o: ../Core/Hardware/motor.h
+bluecar\yingyongzhuangtai.o: ../Core/Application/Config/yingYongLeiXing.h
+bluecar\yingyongzhuangtai.o: ../Core/Hardware/Peripherals/Motion/encoder.h
+bluecar\yingyongzhuangtai.o: ../Core/Hardware/Peripherals/Sensors/mpu6050.h
+bluecar\yingyongzhuangtai.o: ../Core/Application/Control/pid.h
+bluecar\yingyongzhuangtai.o: ../Core/Application/Config/yingYongPeiZhi.h
+bluecar\yingyongzhuangtai.o: ../Core/Hardware/Peripherals/Motion/motor.h
