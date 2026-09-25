@@ -4,7 +4,7 @@
  */
 
 #ifndef __BYTE_STREAM_H
-#define __BYTE_STREAM_H
+#define __BYTE_STREAM_H  /* 头文件保护宏，防止字节流接口重复声明。 */
 
 #include "main.h"
 #include <stdarg.h>

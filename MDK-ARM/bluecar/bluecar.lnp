@@ -5,6 +5,7 @@
 "bluecar\pid_tune.o"
 "bluecar\serial.o"
 "bluecar\blueserial.o"
+"bluecar\bytestream.o"
 "bluecar\yingyongkongzhi.o"
 "bluecar\yingyongxunji.o"
 "bluecar\yingyongzhuangtai.o"

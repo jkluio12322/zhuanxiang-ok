@@ -16,43 +16,70 @@
 
 /* G1~G6 档位对应的中心速度，单位 RPM。 */
 #define SPEED_TABLE_G1_RPM 30.0f
+/* G2 档中心速度，单位 RPM。 */
 #define SPEED_TABLE_G2_RPM 55.0f
+/* G3 档中心速度，单位 RPM。 */
 #define SPEED_TABLE_G3_RPM 80.0f
+/* G4 档中心速度，单位 RPM。 */
 #define SPEED_TABLE_G4_RPM 105.0f
+/* G5 档中心速度，单位 RPM。 */
 #define SPEED_TABLE_G5_RPM 130.0f
+/* G6 档中心速度，单位 RPM。 */
 #define SPEED_TABLE_G6_RPM 170.0f
 
 /* 左轮增量式速度环参数。 */
 #define SPEED_PID_LEFT_KP 0.25f
+/* 左轮速度环积分增益。 */
 #define SPEED_PID_LEFT_KI 0.020f
+/* 左轮速度环微分增益。 */
 #define SPEED_PID_LEFT_KD 0.0f
+/* 左轮速度环前馈增益。 */
 #define SPEED_PID_LEFT_KF 0.0f
 
 /* 右轮增量式速度环参数。 */
 #define SPEED_PID_RIGHT_KP 0.25f
+/* 右轮速度环积分增益。 */
 #define SPEED_PID_RIGHT_KI 0.020f
+/* 右轮速度环微分增益。 */
 #define SPEED_PID_RIGHT_KD 0.0f
+/* 右轮速度环前馈增益。 */
 #define SPEED_PID_RIGHT_KF 0.0f
 
+/* 左右轮平均速度环比例增益。 */
 #define SPEED_PID_AVERAGE_KP 0.25f
+/* 左右轮平均速度环积分增益。 */
 #define SPEED_PID_AVERAGE_KI 0.020f
+/* 左右轮平均速度环微分增益。 */
 #define SPEED_PID_AVERAGE_KD 0.0f
+/* 左右轮平均速度环前馈增益。 */
 #define SPEED_PID_AVERAGE_KF 0.0f
 
 /* 左右速度环公共输出限制、死区和单周期变化限制。 */
+/* 速度环 PWM 输出的最大百分比。 */
 #define SPEED_PID_OUT_MAX 100.0f
+/* 速度环 PWM 输出的最小百分比。 */
 #define SPEED_PID_OUT_MIN (-100.0f)
+/* 速度环输出死区，减少目标附近的小幅抖动。 */
 #define SPEED_PID_DEADBAND 1.8f
+/* 速度环输出每周期允许的最大变化量。 */
 #define SPEED_PID_RATE_LIMIT 35.0f
 
 /* 航向角环常调参数。 */
+/* 航向角环比例增益。 */
 #define YAW_PID_KP 2.0f
+/* 航向角环积分增益。 */
 #define YAW_PID_KI 0.02f
+/* 航向角环微分增益。 */
 #define YAW_PID_KD 0.5f
+/* 航向角环差速输出上限，单位 RPM。 */
 #define YAW_PID_OUT_MAX 10.0f
+/* 航向角环差速输出下限，单位 RPM。 */
 #define YAW_PID_OUT_MIN (-10.0f)
+/* 航向角环积分项限幅，防止积分饱和。 */
 #define YAW_PID_INTEGRAL_LIMIT 10.0f
+/* 航向角环误差死区，单位度。 */
 #define YAW_PID_DEADBAND 0.5f
+/* 航向角环输出每周期允许的最大变化量。 */
 #define YAW_PID_RATE_LIMIT 2.0f
 
 /* 默认进入蓝牙/手动模式，上电后不会自动驱动电机。 */
@@ -82,6 +109,8 @@ MPU6050 imu;
 static uint8_t speedLevel = SPEED_LEVEL_DEFAULT;
 static uint8_t lapTarget = TRACK_LAP_TARGET_DEFAULT;
 static uint8_t completedLaps = 0U;
+static appStopReason_t lastStopReason = stopReasonNone;
+static volatile uint8_t stopEventPending = 0U;
 static const float speedTable[SPEED_LEVEL_COUNT] = {
     SPEED_TABLE_G1_RPM,
     SPEED_TABLE_G2_RPM,
@@ -203,6 +232,45 @@ void appStateResetMotion(void)
     /* 同时关闭两路电机输出。 */
     Motor_SetSpeedA(0);
     Motor_SetSpeedB(0);
+}
+
+/**
+ * @brief  锁存一次运行中停车原因，等待串口发送。
+ * @param  reason 停车原因；stopReasonNone 会被忽略。
+ * @note   停车事件独立于运动状态，appStateResetMotion() 不会清除它。
+ */
+void appStateReportStop(appStopReason_t reason)
+{
+    if (reason == stopReasonNone) {
+        return;
+    }
+
+    lastStopReason = reason;
+    stopEventPending = 1U;
+}
+
+/**
+ * @brief  读取尚未发送的停车事件，不改变待发送状态。
+ * @param  reason 输出停车原因指针。
+ * @return 1 表示存在待发送事件，0 表示没有。
+ */
+uint8_t appStateGetStopEvent(appStopReason_t *reason)
+{
+    if ((stopEventPending == 0U) || (reason == 0)) {
+        return 0U;
+    }
+
+    *reason = lastStopReason;
+    return 1U;
+}
+
+/**
+ * @brief  清除停车事件和最近一次停车原因。
+ */
+void appStateClearStopEvent(void)
+{
+    lastStopReason = stopReasonNone;
+    stopEventPending = 0U;
 }
 
 /**

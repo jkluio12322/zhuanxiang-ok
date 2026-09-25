@@ -1,0 +1,24 @@
+{
+  "last_build": {
+    "provider": "keil",
+    "action": "build",
+    "project": "MDK-ARM/bluecar.uvprojx",
+    "target": "bluecar",
+    "log_dir": "MDK-ARM/codex-logs",
+    "artifacts": {
+      "axf_file": "MDK-ARM/bluecar/bluecar.axf",
+      "hex_file": "MDK-ARM/bluecar/bluecar.hex",
+      "flash_file": "MDK-ARM/bluecar/bluecar.hex",
+      "debug_file": "MDK-ARM/bluecar/bluecar.axf",
+      "output_dir": "MDK-ARM/bluecar",
+      "log_file": "MDK-ARM/codex-logs/bluecar-bluecar-build.log"
+    },
+    "axf_file": "MDK-ARM/bluecar/bluecar.axf",
+    "hex_file": "MDK-ARM/bluecar/bluecar.hex",
+    "flash_file": "MDK-ARM/bluecar/bluecar.hex",
+    "debug_file": "MDK-ARM/bluecar/bluecar.axf",
+    "output_dir": "MDK-ARM/bluecar",
+    "log_file": "MDK-ARM/codex-logs/bluecar-bluecar-build.log",
+    "timestamp": "2026-09-25T16:34:29+08:00"
+  }
+}

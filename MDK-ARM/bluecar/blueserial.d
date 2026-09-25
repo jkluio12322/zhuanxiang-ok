@@ -35,5 +35,7 @@ bluecar\blueserial.o: F:\kilv5\ARM\ARMCC\Bin\..\include\string.h
 bluecar\blueserial.o: F:\kilv5\ARM\ARMCC\Bin\..\include\stdlib.h
 bluecar\blueserial.o: F:\kilv5\ARM\ARMCC\Bin\..\include\stdio.h
 bluecar\blueserial.o: F:\kilv5\ARM\ARMCC\Bin\..\include\stdarg.h
+bluecar\blueserial.o: ../Core/Application/Communication/bytestream.h
 bluecar\blueserial.o: ../Core/Application/Communication/pid_tune.h
+bluecar\blueserial.o: ../Core/Hardware/Buffers/ringbuf.h
 bluecar\blueserial.o: ../Core/Application/Communication/serial.h

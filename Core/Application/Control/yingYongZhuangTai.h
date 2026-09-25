@@ -49,6 +49,24 @@ void appStateInit(void);
 void appStateResetMotion(void);
 
 /**
+ * @brief  锁存一次运行中停车原因，等待串口发送。
+ * @param  reason 停车原因；stopReasonNone 会被忽略。
+ */
+void appStateReportStop(appStopReason_t reason);
+
+/**
+ * @brief  读取尚未发送的停车事件，不改变待发送状态。
+ * @param  reason 输出停车原因指针。
+ * @return 1 表示存在待发送事件，0 表示没有。
+ */
+uint8_t appStateGetStopEvent(appStopReason_t *reason);
+
+/**
+ * @brief  清除停车事件和最近一次停车原因。
+ */
+void appStateClearStopEvent(void);
+
+/**
  * @brief  清除航向角环的历史状态，保留在线调参得到的增益。
  */
 void appStateResetYawPid(void);

@@ -3,7 +3,7 @@
  * @brief   Line-tracking control interface.
  */
 #ifndef __YING_YONG_XUN_JI_H
-#define __YING_YONG_XUN_JI_H
+#define __YING_YONG_XUN_JI_H  /* 头文件保护宏，防止循迹接口重复声明。 */
 
 #include <stdint.h>
 
@@ -19,7 +19,9 @@ typedef enum {
 } TrackControlState_t;
 
 /**
- * @brief  Line-tracking PD output phases.
+ * @brief  Line-tracking PID output phases.
+ * @note   FOLLOW and RECENTER use the same PID; RECENTER is only a
+ *         telemetry label for patterns without IR4/IR5.
  */
 typedef enum {
     TRACK_PHASE_FOLLOW = 0,
@@ -74,12 +76,12 @@ float appTrackingGetSteerRpmToPwmGain(void);
 float appTrackingGetTurnReverseLimitPwm(void);
 
 /**
- * @brief  Get the latest weighted error used by the tracking PD.
+ * @brief  Get the latest weighted error used by the tracking PID.
  */
 float appTrackingGetWeightedError(void);
 
 /**
- * @brief  Get the current tracking PD output phase.
+ * @brief  Get the current tracking PID output phase.
  */
 TrackTurnPhase_t appTrackingGetTurnPhase(void);
 

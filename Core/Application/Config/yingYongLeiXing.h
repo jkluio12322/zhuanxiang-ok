@@ -60,4 +60,18 @@ typedef enum {
     modeTrack     /* 8 路数字循迹模式。 */
 } workMode_t;
 
+/**
+ * @brief 运行中停车原因。
+ * @note  用于停车瞬间通过串口发送一次性诊断事件。
+ */
+typedef enum {
+    stopReasonNone = 0,
+    stopReasonUser = 1,
+    stopReasonTargetLaps = 2,
+    stopReasonAllWhite = 3,
+    stopReasonCornerTimeout = 4,
+    stopReasonMotorStall = 5,
+    stopReasonModeSwitch = 6
+} appStopReason_t;
+
 #endif

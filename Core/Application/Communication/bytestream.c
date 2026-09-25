@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <string.h>
 
+/* 字节流格式化输出临时缓冲区大小，单位字节。 */
 #define BYTE_STREAM_PRINTF_BUFFER_SIZE 128U
 
 /**

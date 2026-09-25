@@ -1,0 +1,7 @@
+{
+  "keil": {
+    "project": "MDK-ARM/bluecar.uvprojx",
+    "target": "bluecar",
+    "log_dir": "MDK-ARM/codex-logs"
+  }
+}

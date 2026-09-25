@@ -3,7 +3,7 @@
  * @brief   VOFA+ 遥测接口。
  */
 #ifndef __YING_YONG_YAO_CE_H
-#define __YING_YONG_YAO_CE_H
+#define __YING_YONG_YAO_CE_H  /* 头文件保护宏，防止遥测接口重复声明。 */
 
 #include <stdint.h>
 

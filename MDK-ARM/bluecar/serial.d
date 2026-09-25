@@ -32,6 +32,6 @@ bluecar\serial.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h
 bluecar\serial.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h
 bluecar\serial.o: ../Core/Application/Config/yingYongLeiXing.h
 bluecar\serial.o: F:\kilv5\ARM\ARMCC\Bin\..\include\stdio.h
-bluecar\serial.o: ../Core/Hardware/Buffers/ringbuf.h
+bluecar\serial.o: ../Core/Application/Communication/bytestream.h
 bluecar\serial.o: F:\kilv5\ARM\ARMCC\Bin\..\include\stdarg.h
-bluecar\serial.o: F:\kilv5\ARM\ARMCC\Bin\..\include\string.h
+bluecar\serial.o: ../Core/Hardware/Buffers/ringbuf.h

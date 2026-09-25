@@ -22,14 +22,17 @@
 
 /* 编码器一阶低通滤波权重。 */
 #define ENCODER_FILTER_PREVIOUS 0.75f
+/* 编码器当前采样在一阶低通滤波中的权重。 */
 #define ENCODER_FILTER_CURRENT 0.25f
 
 /* 电机 PWM 输出上下限，单位百分比。 */
 #define MOTOR_OUTPUT_MAX_PERCENT 100
+/* 电机 PWM 输出下限，允许反向驱动到 -100%。 */
 #define MOTOR_OUTPUT_MIN_PERCENT (-100)
 
 /* 低速目标下的最小 PWM 补偿。 */
 #define MOTOR_LOW_SPEED_THRESHOLD_RPM 20.0f
+/* 目标转速低于低速阈值时施加的最小 PWM 补偿值，单位百分比。 */
 #define MOTOR_LOW_SPEED_MIN_PWM 12
 
 /* Speeds below this value are treated as a zero-speed target. */
@@ -333,12 +336,16 @@ static void appControlHandleCommand(commandMessage_t message)
         }
         break;
     case commandStart:
+        appStateClearStopEvent();
         if ((workMode == modeTrack) && !runFlag) {
             appTrackingStart();
         }
         runFlag = 1;
         break;
     case commandStop:
+        if (runFlag) {
+            appStateReportStop(stopReasonUser);
+        }
         pwmDuty = 0;
         appControlResetControlState();
         break;
@@ -357,6 +364,9 @@ static void appControlHandleCommand(commandMessage_t message)
         break;
     case commandModeTrack:
         /* 切换循迹前清除运动状态、红外图案和丢线计数。 */
+        if (runFlag) {
+            appStateReportStop(stopReasonModeSwitch);
+        }
         appStateResetMotion();
         appControlResetSpeedFilter();
         pwmDuty = 0;
@@ -367,11 +377,17 @@ static void appControlHandleCommand(commandMessage_t message)
         }
         break;
     case commandModeRun:
+        if (runFlag) {
+            appStateReportStop(stopReasonModeSwitch);
+        }
         appControlResetControlState();
         pwmDuty = 0;
         workMode = modeRun;
         break;
     case commandModePwm:
+        if (runFlag) {
+            appStateReportStop(stopReasonModeSwitch);
+        }
         appControlResetControlState();
         workMode = modePwmSet;
         break;
@@ -738,6 +754,7 @@ void appControlTask50ms(void)
         }
 
         if (motorStallTicks >= MOTOR_STALL_CONFIRM_TICKS) {
+            appStateReportStop(stopReasonMotorStall);
             appControlExitStraightYawControl();
             appControlResetControlState();
             return;

@@ -207,9 +207,18 @@
 /* 循迹位置式 PID 兼容定义                                                   */
 /* ------------------------------------------------------------------------- */
 
-/* 循迹位置 PD 参数。 */
-#define TRACK_PID_KP                  0.8f
+/* 循迹位置 PID 参数。 */
+#define TRACK_PID_KP                  1.2f
+/* 循迹 PID 积分增益，用于消除持续位置偏差。 */
+#define TRACK_PID_KI                  0.5f
+/* 循迹 PID 微分增益，用于抑制误差快速变化。 */
 #define TRACK_PID_KD                  0.2f
+
+/* 循迹 PID 控制周期，与 appTrackingTask20ms() 的调用周期一致。 */
+#define TRACK_PID_PERIOD_SECONDS      0.02f
+
+/* 积分项折算到差速 RPM 后的限幅，防止长期偏差造成积分饱和。 */
+#define TRACK_PID_INTEGRAL_LIMIT_RPM  15.0f
 /* ------------------------------------------------------------------------- */
 /* 8 路数字循迹策略                                                          */
 /* ------------------------------------------------------------------------- */
@@ -223,26 +232,38 @@
 /* +1 保持当前逻辑转向方向，-1 可反向修正传感器或安装方向。 */
 #define TRACK_STEERING_SIGN           1.0f
 
-/* 八路加权误差分段阈值和限幅。 */
-#define TRACK_WEIGHTED_ERROR_SPLIT    35.0f
+/* 八路加权误差限幅。 */
 #define TRACK_WEIGHTED_ERROR_LIMIT    40.0f
 
 /* 普通循迹差速限制，单位 RPM。 */
-#define TRACK_FOLLOW_DIFF_LIMIT_RPM   50.0f
+#define TRACK_FOLLOW_DIFF_LIMIT_RPM   60.0f
 
-/* 普通循迹只允许中间 IR4/IR5 参与误差；外侧压线时按权重和快速回中。 */
+/* 弯道预降速开始生效的八路权重绝对误差，单位权重。 */
+#define TRACK_CURVE_SPEED_ERROR_START 6.0f
+
+/* 达到最低速度比例时对应的八路权重绝对误差，单位权重。 */
+#define TRACK_CURVE_SPEED_ERROR_FULL  40.0f
+
+/* 强误差时允许使用的最低基础速度，单位 RPM。 */
+#define TRACK_CURVE_SPEED_MIN_RPM     45.0f
+
+/* 强误差时基础速度相对当前档位速度的最低比例。 */
+#define TRACK_CURVE_SPEED_MIN_SCALE   0.35f
+
+/* 线路恢复居中后基础速度每 20 ms 周期允许的最大回升量，单位 RPM。 */
+#define TRACK_SPEED_RECOVERY_STEP_RPM 10.0f
+
+/* 线路确认丢失后允许使用的最高平均基础速度，单位 RPM。 */
+#define TRACK_LOST_LINE_MAX_BASE_RPM  45.0f
+
+/* 中间 IR4/IR5 掩码仅用于区分遥测阶段；误差统一由八路权重计算。 */
 #define TRACK_CENTER_LEFT_MASK        0x08U
+/* 中间右侧 IR5 的通道位掩码，对应 bit4。 */
 #define TRACK_CENTER_RIGHT_MASK       0x10U
+/* 中间两路 IR4/IR5 的组合位掩码。 */
 #define TRACK_CENTER_SENSOR_MASK      (TRACK_CENTER_LEFT_MASK | TRACK_CENTER_RIGHT_MASK)
-#define TRACK_CENTER_ERROR_WEIGHT     3.0f
-#define TRACK_FOLLOW_OUTER_GAIN       1.5f
-#define TRACK_FOLLOW_OUTER_FALLBACK_RPM 20.0f
 
-/* 转弯差速阶段限制，单位 RPM。 */
-
-/* 转弯正反阶段基础速度、差速限制和内侧反转下限，单位 RPM。 */
-
-/* 正反阶段进入、退出阈值及确认周期数。 */
+/* 急弯标记、内侧反转下限和八路位置完成确认参数。 */
 
 /* 普通有效线路图案必须包含 1~6 个黑线通道。 */
 #define TRACK_LINE_VALID_MAX_BLACK    7U
@@ -253,30 +274,45 @@
 /* 八路全白连续保持 50 个 20 ms 周期，即 1 秒后停车。 */
 #define TRACK_ALL_WHITE_STOP_TICKS 50U
 
-/* 急弯锁存后的最短持续时间，6 个 20 ms 周期约为 120 ms。 */
+/* 急弯标记后的最短持续时间，6 个 20 ms 周期约为 120 ms。 */
 #define TRACK_CORNER_MIN_TICKS        6U
 
-/* 打开居中完成门控前，需要累计的有效离线周期数，2 次约为 40 ms。 */
+/* 八路位置确认离开中心所需的连续周期数，2 次约为 40 ms。 */
 #define TRACK_CORNER_CENTER_CLEAR_TICKS 2U
 
-/* 新线路重新居中所需连续周期数，5 次约为 100 ms。 */
+/* 八路位置确认离开中心的最小绝对位置阈值。 */
+#define TRACK_CORNER_CENTER_CLEAR_POSITION_MIN 0.5f
+
+/* 八路位置重新居中所需连续周期数，5 次约为 100 ms。 */
 #define TRACK_CORNER_REACQUIRE_CENTER_TICKS 5U
 
-/* 判定新线路已经居中的最大归一化位置绝对值。 */
+/* 判定完整八路位置已经居中的最大归一化位置绝对值。 */
 #define TRACK_CORNER_REACQUIRE_POSITION_MAX 0.5f
 
 /* 急弯检测和转弯确认参数位于 yingYongXunJi.c 顶部。 */
 
-/* 全灭计圈、全亮丢线及左右摆头找线参数。 */
-#define TRACK_FINISH_BLACK_COUNT_MIN  8U
+/* 固定四弯赛道的终点计圈与丢线保护参数。 */
+
+/* 每圈完成终点计圈前必须通过的同向直角弯数量。 */
+#define TRACK_CORNERS_PER_LAP         4U
+
+/* 终点横线判定所需的最少压黑通道数，7 路用于容忍斜穿时未全部压线。 */
+#define TRACK_FINISH_BLACK_COUNT_MIN  7U
+
+/* 终点图案连续确认周期数，1 个周期约为 20 ms。 */
 #define TRACK_FINISH_CONFIRM_TICKS    1U
-#define TRACK_FINISH_CLEAR_TICKS      10U
+
 /* 非最终圈过终点后的短时丢线宽限，25 个 20 ms 周期约为 500 ms。 */
 #define TRACK_POST_LAP_LINE_GRACE_TICKS 25U
+/* 丢线扫描每个半程的方向保持周期数，10 个 20 ms 周期约为 200 ms。 */
 #define TRACK_SWEEP_HALF_TICKS        10U
+/* 丢线扫描左右摆头执行的完整轮数。 */
 #define TRACK_SWEEP_ROUNDS            3U
+/* 起步后直行保持的周期数，50 个 20 ms 周期约为 1 秒。 */
 #define TRACK_START_FORWARD_TICKS     50U
+/* 上电默认的目标完成圈数。 */
 #define TRACK_LAP_TARGET_DEFAULT      1U
+/* 在线设置目标圈数时允许的最大值。 */
 #define TRACK_LAP_TARGET_MAX          5U
 
 /* ------------------------------------------------------------------------- */
