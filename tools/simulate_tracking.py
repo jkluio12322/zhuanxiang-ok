@@ -51,6 +51,7 @@ PID_PERIOD = require(MACROS, "TRACK_PID_PERIOD_SECONDS")
 INTEGRAL_LIMIT = require(MACROS, "TRACK_PID_INTEGRAL_LIMIT_RPM")
 ERROR_LIMIT = require(MACROS, "TRACK_WEIGHTED_ERROR_LIMIT")
 DIFF_LIMIT = require(MACROS, "TRACK_FOLLOW_DIFF_LIMIT_RPM")
+STEERING_SIGN = require(MACROS, "TRACK_STEERING_SIGN")
 REVERSE_LIMIT_PWM = require(MACROS, "TRACK_TURN_REVERSE_LIMIT_PWM")
 ALL_WHITE_STOP_TICKS = int(require(MACROS, "TRACK_ALL_WHITE_STOP_TICKS"))
 INVALID_LINE_CONFIRM_TICKS = int(
@@ -62,6 +63,17 @@ CURVE_SPEED_MIN_RPM = require(MACROS, "TRACK_CURVE_SPEED_MIN_RPM")
 CURVE_SPEED_MIN_SCALE = require(MACROS, "TRACK_CURVE_SPEED_MIN_SCALE")
 SPEED_RECOVERY_STEP_RPM = require(MACROS, "TRACK_SPEED_RECOVERY_STEP_RPM")
 LOST_LINE_MAX_BASE_RPM = require(MACROS, "TRACK_LOST_LINE_MAX_BASE_RPM")
+CORNER_LOST_LINE_MIN_DIFF_RPM = require(
+    MACROS,
+    "TRACK_CORNER_LOST_LINE_MIN_DIFF_RPM",
+)
+CORNER_LOST_LINE_MAX_BASE_RPM = require(
+    MACROS,
+    "TRACK_CORNER_LOST_LINE_MAX_BASE_RPM",
+)
+CORNER_LOST_LINE_STOP_TICKS = int(
+    require(MACROS, "TRACK_CORNER_LOST_LINE_STOP_TICKS")
+)
 CORNER_MIN_TICKS = int(require(MACROS, "TRACK_CORNER_MIN_TICKS"))
 CLEAR_TICKS = int(require(MACROS, "TRACK_CORNER_CENTER_CLEAR_TICKS"))
 CLEAR_POSITION_MIN = require(MACROS, "TRACK_CORNER_CENTER_CLEAR_POSITION_MIN")
@@ -200,8 +212,12 @@ class TrackingPid:
         self.scheduled_base_rpm = next_base_rpm
         return next_base_rpm
 
-    def schedule_lost_line_base(self, selected_base_rpm: float) -> float:
-        limited_base_rpm = min(selected_base_rpm, LOST_LINE_MAX_BASE_RPM)
+    def schedule_lost_line_base(
+        self,
+        selected_base_rpm: float,
+        max_base_rpm: float = LOST_LINE_MAX_BASE_RPM,
+    ) -> float:
+        limited_base_rpm = min(selected_base_rpm, max_base_rpm)
 
         if self.scheduled_base_rpm <= 0.0:
             next_base_rpm = limited_base_rpm
@@ -213,7 +229,12 @@ class TrackingPid:
         self.scheduled_base_rpm = next_base_rpm
         return next_base_rpm
 
-    def apply(self, sample: SensorSample, base_speed: float) -> TrackingOutput:
+    def apply(
+        self,
+        sample: SensorSample,
+        base_speed: float,
+        turn_direction: int = 0,
+    ) -> TrackingOutput:
         if sample.valid:
             self.invalid_line_ticks = 0
             self.average_target = self.schedule_curve_base(
@@ -234,6 +255,20 @@ class TrackingPid:
                 -DIFF_LIMIT,
                 DIFF_LIMIT,
             )
+        elif turn_direction != 0:
+            self.average_target = self.schedule_lost_line_base(
+                base_speed,
+                CORNER_LOST_LINE_MAX_BASE_RPM,
+            )
+            locked_direction = float(turn_direction) * STEERING_SIGN
+            minimum_steer = (
+                locked_direction * CORNER_LOST_LINE_MIN_DIFF_RPM
+            )
+            if not (
+                self.steer * locked_direction > 0.0
+                and abs(self.steer) > abs(minimum_steer)
+            ):
+                self.steer = minimum_steer
         else:
             if self.invalid_line_ticks < INVALID_LINE_CONFIRM_TICKS:
                 self.invalid_line_ticks += 1
@@ -335,6 +370,40 @@ def limit_pwm(pwm: float, turn_marker_active: bool) -> float:
     if turn_marker_active:
         return max(pwm, -REVERSE_LIMIT_PWM)
     return max(pwm, 0.0)
+
+
+class LineLossMonitor:
+    def __init__(self) -> None:
+        self.all_white_ticks = 0
+        self.corner_lost_line_ticks = 0
+
+    def update(
+        self,
+        valid_line: bool,
+        all_white: bool,
+        corner_turn_active: bool,
+    ) -> str:
+        if corner_turn_active:
+            if valid_line:
+                self.corner_lost_line_ticks = 0
+                self.all_white_ticks = 0
+                return ""
+
+            if self.corner_lost_line_ticks < CORNER_LOST_LINE_STOP_TICKS:
+                self.corner_lost_line_ticks += 1
+            if self.corner_lost_line_ticks >= CORNER_LOST_LINE_STOP_TICKS:
+                return "CORNER_TIMEOUT"
+            return ""
+
+        self.corner_lost_line_ticks = 0
+        if all_white:
+            if self.all_white_ticks < ALL_WHITE_STOP_TICKS:
+                self.all_white_ticks += 1
+            if self.all_white_ticks >= ALL_WHITE_STOP_TICKS:
+                return "ALL_WHITE"
+        else:
+            self.all_white_ticks = 0
+        return ""
 
 
 def close(left: float, right: float, tolerance: float = 1e-6) -> bool:
@@ -523,14 +592,89 @@ def main() -> int:
     print("PASS non-contiguous line holds steer and enters loss protection")
 
     pid = TrackingPid()
-    pid.apply(sensor_sample("11000000"), G2_RPM)
+    output = pid.apply(centered, G6_RPM)
+    expect(close(output.steer, 0.0), "corner fallback setup must start centered")
+    output = pid.apply(all_white, G6_RPM, -1)
+    expect(
+        close(output.average_target, CORNER_LOST_LINE_MAX_BASE_RPM),
+        "corner line loss must cap the base at 45 RPM immediately",
+    )
+    expect(
+        close(output.steer, -CORNER_LOST_LINE_MIN_DIFF_RPM),
+        "corner line loss with zero history must apply minimum left steer",
+    )
+    expect(
+        close(output.target_left, 5.0) and close(output.target_right, 85.0),
+        "minimum corner fallback must produce the expected wheel targets",
+    )
+    print("PASS corner line loss applies its minimum steer immediately")
+
+    pid = TrackingPid()
+    output = pid.apply(strong_left_edge, G6_RPM)
+    held_corner_steer = output.steer
+    expect(
+        held_corner_steer < -CORNER_LOST_LINE_MIN_DIFF_RPM,
+        "test setup must produce a larger same-direction corner steer",
+    )
+    output = pid.apply(all_white, G6_RPM, -1)
+    expect(
+        close(output.steer, held_corner_steer),
+        "corner fallback must preserve a larger same-direction steer",
+    )
+    print("PASS corner line loss preserves a larger same-direction steer")
+
+    pid = TrackingPid()
+    pid.apply(sensor_sample("00000011"), G6_RPM)
+    output = pid.apply(all_white, G6_RPM, -1)
+    expect(
+        close(output.steer, -CORNER_LOST_LINE_MIN_DIFF_RPM),
+        "corner fallback must reverse a wrong-direction steering history",
+    )
+    print("PASS corner line loss corrects an opposite steering history")
+
+    pid = TrackingPid()
+    pid.apply(centered, G1_RPM)
+    output = pid.apply(all_white, G1_RPM, -1)
+    expect(
+        close(output.average_target, G1_RPM),
+        "corner line loss must not raise a low speed level to the 45 RPM cap",
+    )
+    print("PASS corner line loss never raises a lower base speed")
+
+    pid = TrackingPid()
+    pid.apply(centered, G6_RPM)
+    pid.apply(all_white, G6_RPM, -1)
+    output = pid.apply(strong_left_edge, G6_RPM, -1)
+    expect(
+        close(
+            output.average_target,
+            CORNER_LOST_LINE_MAX_BASE_RPM + SPEED_RECOVERY_STEP_RPM,
+        ),
+        "corner PID recovery must still limit speed to 10 RPM per tick",
+    )
+    print("PASS corner line recovery resumes PID with limited acceleration")
+
+    line_loss_monitor = LineLossMonitor()
     stop_reason = ""
     for _ in range(ALL_WHITE_STOP_TICKS):
-        output = pid.apply(all_white, G2_RPM)
-        if _ + 1 >= ALL_WHITE_STOP_TICKS:
-            stop_reason = "ALL_WHITE"
+        stop_reason = line_loss_monitor.update(False, True, False)
     expect(stop_reason == "ALL_WHITE", "50 all-white ticks must stop")
     print("PASS all-white stop after one second")
+
+    line_loss_monitor = LineLossMonitor()
+    stop_reason = ""
+    for _ in range(CORNER_LOST_LINE_STOP_TICKS - 1):
+        stop_reason = line_loss_monitor.update(False, True, True)
+    expect(
+        stop_reason == "",
+        "corner loss must not stop before the two-second timeout",
+    )
+    stop_reason = line_loss_monitor.update(False, True, True)
+    expect(
+        stop_reason == "CORNER_TIMEOUT",
+        "corner loss must stop at the two-second timeout",
+    )
+    print("PASS corner line loss times out at two seconds")
 
     marker = CornerMarker()
     pid = TrackingPid()

@@ -64,6 +64,7 @@ static int8_t trackPendingCornerDirection = 0;
 static uint8_t trackPendingCornerTicks = 0U;
 static uint8_t trackInvalidLineTicks = 0U;
 static uint8_t trackAllWhiteTicks = 0U;
+static uint8_t trackCornerLostLineTicks = 0U;
 static uint8_t trackCornerArmed = 0U;
 static uint8_t trackCornerCompleteTicks = 0U;
 static uint8_t trackCornerCenterSinceTurn = 0U;
@@ -194,6 +195,39 @@ static void appTrackingApplyTargets(float averageTargetRpm,
 }
 
 /**
+ * @brief  判断当前是否处于已经锁存方向的急弯标记阶段。
+ * @return 1 表示允许急弯丢线方向兜底，0 表示不处于有效急弯标记。
+ */
+static uint8_t appTrackingIsCornerTurnActive(void)
+{
+    return (uint8_t)(
+        ((trackControlState == TRACK_CONTROL_TURN_LEFT)
+         || (trackControlState == TRACK_CONTROL_TURN_RIGHT))
+        && (trackTurnDirection != 0));
+}
+
+/**
+ * @brief  生成急弯丢线期间使用的最低方向差速。
+ * @return 已应用 TRACK_STEERING_SIGN 的差速量，单位 RPM。
+ * @note   历史同向差速足够大时继续使用，否则回落到锁存方向的最低差速。
+ */
+static float appTrackingGetCornerLostLineSteer(void)
+{
+    float lockedDirection =
+        (float)trackTurnDirection * TRACK_STEERING_SIGN;
+    float minimumSteer =
+        lockedDirection * TRACK_CORNER_LOST_LINE_MIN_DIFF_RPM;
+
+    if ((trackTurnDirection != 0)
+        && ((trackSteerOutput * lockedDirection) > 0.0f)
+        && (fabsf(trackSteerOutput) > fabsf(minimumSteer))) {
+        return trackSteerOutput;
+    }
+
+    return minimumSteer;
+}
+
+/**
  * @brief  根据完整八路权重误差调度弯道基础速度。
  * @param  selectedBaseRpm 当前档位选择的基础速度，单位 RPM。
  * @return 本周期允许使用的基础速度，单位 RPM。
@@ -245,18 +279,20 @@ static float appTrackingScheduleCurveBaseSpeed(float selectedBaseRpm)
 }
 
 /**
- * @brief  在确认线路丢失后限制基础速度。
+ * @brief  在确认线路丢失后按指定上限限制基础速度。
  * @param  selectedBaseRpm 当前档位选择的基础速度，单位 RPM。
+ * @param  maxBaseRpm 丢线阶段允许的最高基础速度，单位 RPM。
  * @return 丢线保持阶段允许使用的基础速度，单位 RPM。
  * @note   只允许立即降速，不允许在丢线期间反向提速。
  */
-static float appTrackingScheduleLostLineBaseSpeed(float selectedBaseRpm)
+static float appTrackingScheduleLostLineBaseSpeedLimited(float selectedBaseRpm,
+                                                         float maxBaseRpm)
 {
     float limitedBaseRpm = selectedBaseRpm;
     float nextBaseRpm;
 
-    if (limitedBaseRpm > TRACK_LOST_LINE_MAX_BASE_RPM) {
-        limitedBaseRpm = TRACK_LOST_LINE_MAX_BASE_RPM;
+    if (limitedBaseRpm > maxBaseRpm) {
+        limitedBaseRpm = maxBaseRpm;
     }
 
     if (trackScheduledBaseRpm <= 0.0f) {
@@ -269,6 +305,30 @@ static float appTrackingScheduleLostLineBaseSpeed(float selectedBaseRpm)
 
     trackScheduledBaseRpm = nextBaseRpm;
     return nextBaseRpm;
+}
+
+/**
+ * @brief  限制普通丢线保持阶段的基础速度。
+ * @param  selectedBaseRpm 当前档位选择的基础速度，单位 RPM。
+ * @return 普通丢线保持阶段允许的基础速度，单位 RPM。
+ */
+static float appTrackingScheduleLostLineBaseSpeed(float selectedBaseRpm)
+{
+    return appTrackingScheduleLostLineBaseSpeedLimited(
+        selectedBaseRpm,
+        TRACK_LOST_LINE_MAX_BASE_RPM);
+}
+
+/**
+ * @brief  限制急弯丢线兜底阶段的基础速度。
+ * @param  selectedBaseRpm 当前档位选择的基础速度，单位 RPM。
+ * @return 急弯丢线兜底阶段允许的基础速度，单位 RPM。
+ */
+static float appTrackingScheduleCornerLostLineBaseSpeed(float selectedBaseRpm)
+{
+    return appTrackingScheduleLostLineBaseSpeedLimited(
+        selectedBaseRpm,
+        TRACK_CORNER_LOST_LINE_MAX_BASE_RPM);
 }
 
 /**
@@ -393,6 +453,16 @@ static void appTrackingApplyFollowTargetsInternal(float baseSpeed,
     float averageTarget;
 
     if (!appTrackingHasValidLine()) {
+        if (appTrackingIsCornerTurnActive() != 0U) {
+            trackTurnPhase = TRACK_PHASE_TURN;
+            averageTarget =
+                appTrackingScheduleCornerLostLineBaseSpeed(baseSpeed);
+            appTrackingApplySignedTargets(
+                averageTarget,
+                appTrackingGetCornerLostLineSteer());
+            return;
+        }
+
         trackTurnPhase = TRACK_PHASE_FOLLOW;
         if (trackInvalidLineTicks < TRACK_LINE_INVALID_CONFIRM_TICKS) {
             trackInvalidLineTicks++;
@@ -441,6 +511,8 @@ static void appTrackingClearTurnLatch(void)
     trackCornerCenterSinceTurn = 0U;
     trackCornerCenterCleared = 0U;
     trackCornerCenterClearTicks = 0U;
+    trackCornerLostLineTicks = 0U;
+    trackAllWhiteTicks = 0U;
     trackTurnPhase = TRACK_PHASE_FOLLOW;
 }
 
@@ -663,6 +735,7 @@ static uint8_t appTrackingStartCornerTurnDirection(int8_t direction)
     trackCornerCenterClearTicks = 0U;
     trackTurnPhase = TRACK_PHASE_TURN;
     trackInvalidLineTicks = 0U;
+    trackCornerLostLineTicks = 0U;
     trackCornerArmed = 0U;
     appTrackingClearPendingCorner();
     trackControlState = (direction > 0)
@@ -1018,6 +1091,7 @@ void appTrackingSetSteerRpmToPwmGain(float gain)
 void appTrackingTask20ms(void)
 {
     float baseSpeed;
+    uint8_t cornerTurnActive;
 
     if (workMode != modeTrack) {
         return;
@@ -1030,7 +1104,25 @@ void appTrackingTask20ms(void)
         return;
     }
 
-    if (zhanShuBaoDiuXian() != 0U) {
+    cornerTurnActive = appTrackingIsCornerTurnActive();
+
+    if (cornerTurnActive != 0U) {
+        if (appTrackingHasValidLine() == 0U) {
+            if (trackCornerLostLineTicks
+                < TRACK_CORNER_LOST_LINE_STOP_TICKS) {
+                trackCornerLostLineTicks++;
+            }
+
+            if (trackCornerLostLineTicks
+                >= TRACK_CORNER_LOST_LINE_STOP_TICKS) {
+                appTrackingStop(stopReasonCornerTimeout);
+                return;
+            }
+        } else {
+            trackCornerLostLineTicks = 0U;
+            trackAllWhiteTicks = 0U;
+        }
+    } else if (zhanShuBaoDiuXian() != 0U) {
         if (trackAllWhiteTicks < TRACK_ALL_WHITE_STOP_TICKS) {
             trackAllWhiteTicks++;
         }

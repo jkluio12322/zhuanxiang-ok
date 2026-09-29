@@ -256,6 +256,15 @@
 /* 线路确认丢失后允许使用的最高平均基础速度，单位 RPM。 */
 #define TRACK_LOST_LINE_MAX_BASE_RPM  45.0f
 
+/* 急弯标记期间确认线路丢失后要求的最低绝对差速，单位 RPM。 */
+#define TRACK_CORNER_LOST_LINE_MIN_DIFF_RPM 40.0f
+
+/* 急弯标记期间确认线路丢失后允许使用的最高平均基础速度，单位 RPM。 */
+#define TRACK_CORNER_LOST_LINE_MAX_BASE_RPM 45.0f
+
+/* 急弯标记期间连续无效线路达到该周期数后触发 CORNER_TIMEOUT。 */
+#define TRACK_CORNER_LOST_LINE_STOP_TICKS 100U
+
 /* 中间 IR4/IR5 掩码仅用于区分遥测阶段；误差统一由八路权重计算。 */
 #define TRACK_CENTER_LEFT_MASK        0x08U
 /* 中间右侧 IR5 的通道位掩码，对应 bit4。 */
