@@ -1,8 +1,3 @@
-/**
- * @file    yingYongXianShi.c
- * @brief   OLED 开机配置页和运行状态页。
- */
-
 #include "yingYongXianShi.h"
 #include "yingYongKongZhi.h"
 #include "yingYongMingLing.h"
@@ -17,232 +12,120 @@
 
 #include <stdio.h>
 
-/**
- * @brief  按 RUN、TRACK、PWM 的顺序循环开机工作模式。
- * @note   切换后复位运动状态和 PWM 测试输出，并限制循迹模式档位。
- */
 static void appDisplayCycleBootMode(void)
 {
-    if (workMode == modeRun) {
-        workMode = modeTrack;
-    } else if (workMode == modeTrack) {
-        workMode = modePwmSet;
-    } else {
-        workMode = modeRun;
-    }
+    if (workMode == modeTrack) workMode = modePwmSpeed;
+    else if (workMode == modePwmSpeed) workMode = modePwmTrack;
+    else workMode = modeTrack;
 
     appControlResetModeState();
-    pwmDuty = 0;
-
-    if (workMode == modeTrack
-        && appStateGetSpeedLevel() > TRACK_MAX_SPEED_LEVEL) {
-        appStateSetSpeedLevel(TRACK_MAX_SPEED_LEVEL);
-    }
 }
 
-/**
- * @brief  显示系统开机页。
- * @note   开机页显示车辆名称、模块化固件说明、通信方式和启动按键提示。
- */
 void appDisplayShowBootScreen(void)
 {
     char buffer[OLED_TEXT_BUFFER_SIZE];
-    const char *modeName;
+    const char *name;
 
-    /* 开机页显示固件名称、通信方案和启动按键提示。 */
     OLED_Clear();
-    OLED_ShowStringSmall(1, 1, "[BlueCar Init]");
-    switch (workMode) {
-    case modeTrack:
-        modeName = "TRACK";
-        break;
-    case modePwmSet:
-        modeName = "PWM";
-        break;
-    case modeRun:
-    default:
-        modeName = "RUN";
-        break;
-    }
-
-    snprintf(buffer, sizeof(buffer), "Mode:%s G:%d",
-             modeName, appStateGetSpeedLevel());
+    OLED_ShowStringSmall(1, 1, "[BlueCar]");
+    if (workMode == modePwmSpeed) name = "PWM-SPEED";
+    else if (workMode == modePwmTrack) name = "PWM-TRACK";
+    else name = "TRACK";
+    snprintf(buffer, sizeof(buffer), "Mode:%s G:%d", name, appStateGetSpeedLevel());
     OLED_ShowStringSmall(2, 1, buffer);
-
-    snprintf(buffer, sizeof(buffer), "Y:%+05.1f", imu.yaw);
-    OLED_ShowStringSmall(3, 1, buffer);
-    OLED_ShowStringSmall(4, 1, "C8 Mode C9 Speed");
-    OLED_ShowStringSmall(5, 1, "C6/C7 EXIT");
+    OLED_ShowStringSmall(4, 1, "KEY1 Mode");
+    OLED_ShowStringSmall(5, 1, "KEY2/3 Exit");
     OLED_Flush();
 }
 
-/**
- * @brief  运行开机配置页，等待用户选择模式和启动按键。
- * @note   该函数在初始化阶段阻塞执行；退出时再次复位运动状态并清空旧命令。
- */
 void appBootConfigRun(void)
 {
-    uint64_t lastDisplayTick = milliseconds;
     uint8_t exitRequested = 0;
+    uint64_t lastTick = milliseconds;
 
     appStateResetMotion();
-    pwmDuty = 0;
     appDisplayShowBootScreen();
 
     while (!exitRequested) {
         if (Key_CheckSingleOrLong(KEY_1)) {
             appDisplayCycleBootMode();
             appDisplayShowBootScreen();
-            lastDisplayTick = milliseconds;
+            lastTick = milliseconds;
         }
-
-        if (Key_Check(KEY_4, KEY_SINGLE)) {
-            appStateStepSpeedLevel(1);
-            appDisplayShowBootScreen();
-            lastDisplayTick = milliseconds;
-        }
-
-        if (Key_Check(KEY_4, KEY_LONG)) {
-            appStateStepSpeedLevel(-1);
-            appDisplayShowBootScreen();
-            lastDisplayTick = milliseconds;
-        }
-
-        if (Key_Check(KEY_2, KEY_SINGLE)
-            || Key_Check(KEY_3, KEY_SINGLE)) {
+        if (Key_Check(KEY_2, KEY_SINGLE) || Key_Check(KEY_3, KEY_SINGLE)) {
             exitRequested = 1;
         }
-
-        if ((milliseconds - lastDisplayTick) >= 100U) {
-            lastDisplayTick = milliseconds;
+        if ((milliseconds - lastTick) >= 100U) {
+            lastTick = milliseconds;
             appDisplayShowBootScreen();
         }
-
         OLED_Flush();
     }
 
-    appStateResetMotion();
-    pwmDuty = 0;
     appControlResetModeState();
     appCommandInit();
     Key_Clear();
 }
 
-/**
- * @brief  根据当前工作模式刷新 OLED 运行状态页。
- * @note   循迹模式显示图案和状态；PWM 模式显示开环测试信息；
- *         蓝牙模式显示目标转速、实际转速和航向角。
- */
 void appDisplayUpdate(void)
 {
-    OLED_Clear();
-
-    /* 将 8 路红外原始电平转换为一行 0/1 字符串。 */
     char buffer[OLED_TEXT_BUFFER_SIZE];
     char irBits[IRTRACK_CHANNELS + 1U];
+    uint8_t i;
 
-    for (uint8_t i = 0; i < IRTRACK_CHANNELS; i++) {
+    OLED_Clear();
+    for (i = 0; i < IRTRACK_CHANNELS; i++) {
         irBits[i] = ir_data.raw[i] ? '1' : '0';
     }
     irBits[IRTRACK_CHANNELS] = '\0';
 
-    /* 根据当前模式选择循迹、PWM 测试或蓝牙状态页面。 */
     if (workMode == modeTrack) {
-        const char *trackStateName;
-
-        switch (appTrackingGetState()) {
-        case TRACK_CONTROL_TURN_LEFT:
-            trackStateName = "TURN_L";
-            break;
-        case TRACK_CONTROL_TURN_RIGHT:
-            trackStateName = "TURN_R";
-            break;
-        case TRACK_CONTROL_LOST:
-            trackStateName = "LOST";
-            break;
-        case TRACK_CONTROL_FINISH:
-            trackStateName = "FINISH";
-            break;
-        case TRACK_CONTROL_FOLLOW:
-        default:
-            trackStateName = "FOLLOW";
-            break;
-        }
-
-        if (appTrackingGetTurnPhase() == TRACK_PHASE_RECENTER) {
-            trackStateName = "RECEN";
-        }
-
         snprintf(buffer, sizeof(buffer), "TRK %s G%d L%u/%u",
-                 runFlag ? "RUN" : "STOP",
-                 appStateGetSpeedLevel(),
+                 runFlag ? "RUN" : "STOP", appStateGetSpeedLevel(),
                  (unsigned int)appStateGetCompletedLaps(),
                  (unsigned int)appStateGetLapTarget());
         OLED_ShowStringSmall(1, 1, buffer);
-
         snprintf(buffer, sizeof(buffer), "IR:%s", irBits);
         OLED_ShowStringSmall(2, 1, buffer);
-
-        /* S 显示 FOLLOW/TURN_L/TURN_R/LOST/FINISH/REACQ，P 显示八路图案。 */
-        snprintf(buffer, sizeof(buffer), "S:%s P:%02X",
-                 trackStateName, (unsigned int)ir_data.pattern);
+        snprintf(buffer, sizeof(buffer), "STR:%+05.1f", appTrackingGetSteer());
         OLED_ShowStringSmall(3, 1, buffer);
-
-        snprintf(buffer, sizeof(buffer), "TL:%+03.0f TR:%+03.0f",
-                 telemetryData.targetLeftRpm, telemetryData.targetRightRpm);
+        snprintf(buffer, sizeof(buffer), "V L:%+.2f R:%+.2f",
+                 telemetryData.commandVoltageLeft,
+                 telemetryData.commandVoltageRight);
         OLED_ShowStringSmall(4, 1, buffer);
-
-        snprintf(buffer, sizeof(buffer), "Y:%+05.1f STR:%+05.1f",
-                 imu.yaw,
-                 appTrackingGetSteer());
-        OLED_ShowStringSmall(5, 1, buffer);
-
-        snprintf(buffer, sizeof(buffer), "RPM L:%+04.0f R:%+04.0f",
-                 telemetryData.filteredLeftRpm,
-                 telemetryData.filteredRightRpm);
-        OLED_ShowStringSmall(6, 1, buffer);
-
-        snprintf(buffer, sizeof(buffer), "ACT L:%+04.0f R:%+04.0f",
-                 telemetryData.actualLeftRpm,
-                 telemetryData.actualRightRpm);
-        OLED_ShowStringSmall(7, 1, buffer);
-        return;
-    } else if (workMode == modePwmSet) {
-        snprintf(buffer, sizeof(buffer), "[PWM] %s",
-                 runFlag ? "RUN" : "STOP");
-        OLED_ShowString(1, 1, buffer);
-
-        snprintf(buffer, sizeof(buffer), "RPM L:%+04.0f R:%+04.0f",
-                 telemetryData.filteredLeftRpm,
-                 telemetryData.filteredRightRpm);
-        OLED_ShowString(2, 1, buffer);
-
-        snprintf(buffer, sizeof(buffer), "ACT L:%+04.0f R:%+04.0f",
-                 telemetryData.actualLeftRpm,
-                 telemetryData.actualRightRpm);
-        OLED_ShowString(3, 1, buffer);
-
-        snprintf(buffer, sizeof(buffer), "Y:%+05.1f", imu.yaw);
-        OLED_ShowString(4, 1, buffer);
-        return;
-    } else {
-        snprintf(buffer, sizeof(buffer), "[BT] %s G%d",
-                 runFlag ? "RUN" : "STOP", appStateGetSpeedLevel());
-        OLED_ShowString(1, 1, buffer);
-
-        snprintf(buffer, sizeof(buffer), "T L:%+04.0f R:%+04.0f",
-                 telemetryData.targetLeftRpm,
-                 telemetryData.targetRightRpm);
-        OLED_ShowString(2, 1, buffer);
-
-        snprintf(buffer, sizeof(buffer), "RPM L:%+04.0f R:%+04.0f",
-                 telemetryData.actualLeftRpm,
-                 telemetryData.actualRightRpm);
-        OLED_ShowString(3, 1, buffer);
-
-        snprintf(buffer, sizeof(buffer), "Y:%+05.1f", imu.yaw);
-        OLED_ShowString(4, 1, buffer);
         return;
     }
 
+    if (workMode == modePwmSpeed) {
+        float target = appStateGetSpeedRpm();
+        if (appControlGetPwmSpeedPhase() == PWM_TEST_PHASE_REVERSE) target = -target;
+        snprintf(buffer, sizeof(buffer), "[PWM-SPD] %s G%d",
+                 runFlag ? "RUN" : "STOP", appStateGetSpeedLevel());
+        OLED_ShowStringSmall(1, 1, buffer);
+        snprintf(buffer, sizeof(buffer), "PH:%s TGT:%+05.0f",
+                 appControlGetPwmSpeedPhase() == PWM_TEST_PHASE_REVERSE
+                 ? "REVERSE" : "FORWARD", target);
+        OLED_ShowStringSmall(2, 1, buffer);
+        snprintf(buffer, sizeof(buffer), "V L:%+.2f R:%+.2f",
+                 telemetryData.commandVoltageLeft,
+                 telemetryData.commandVoltageRight);
+        OLED_ShowStringSmall(3, 1, buffer);
+        return;
+    }
+
+    snprintf(buffer, sizeof(buffer), "[PWM-TRK] %s A:%u",
+             runFlag ? "RUN" : "STOP",
+             (unsigned int)appControlPwmTrackGetAngle());
+    OLED_ShowStringSmall(1, 1, buffer);
+    snprintf(buffer, sizeof(buffer), "PH:%s SRC:%s",
+             appControlPwmTrackGetPhase() == PWM_TEST_PHASE_RIGHT ? "RIGHT" : "LEFT",
+             appControlPwmTrackGetSimEnabled() ? "SIM" : "IR");
+    OLED_ShowStringSmall(2, 1, buffer);
+    snprintf(buffer, sizeof(buffer), "BASE:%d%% ERR:%+05.1f",
+             appControlGetPwmTrackBasePwm(), telemetryData.trackError);
+    OLED_ShowStringSmall(3, 1, buffer);
+    snprintf(buffer, sizeof(buffer), "V L:%+.2f R:%+.2f",
+             telemetryData.commandVoltageLeft,
+             telemetryData.commandVoltageRight);
+    OLED_ShowStringSmall(4, 1, buffer);
 }

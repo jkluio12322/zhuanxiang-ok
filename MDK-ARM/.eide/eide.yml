@@ -40,6 +40,20 @@ virtualFolder:
           files:
             - path: ../Core/Application/Display/yingYongXianShi.c
           folders: []
+        - name: User
+          files: []
+          folders:
+            - name: Core
+              files:
+                - path: ../Core/Src/main.c
+                - path: ../Core/Src/gpio.c
+                - path: ../Core/Src/dma.c
+                - path: ../Core/Src/i2c.c
+                - path: ../Core/Src/tim.c
+                - path: ../Core/Src/usart.c
+                - path: ../Core/Src/stm32f1xx_it.c
+                - path: ../Core/Src/stm32f1xx_hal_msp.c
+              folders: []
     - name: Hardware
       files: []
       folders:
@@ -76,17 +90,6 @@ virtualFolder:
           files:
             - path: ../Core/Hardware/System/timer.c
           folders: []
-    - name: Core
-      files:
-        - path: ../Core/Src/main.c
-        - path: ../Core/Src/gpio.c
-        - path: ../Core/Src/dma.c
-        - path: ../Core/Src/i2c.c
-        - path: ../Core/Src/tim.c
-        - path: ../Core/Src/usart.c
-        - path: ../Core/Src/stm32f1xx_it.c
-        - path: ../Core/Src/stm32f1xx_hal_msp.c
-      folders: []
     - name: Drivers
       files: []
       folders:
@@ -165,6 +168,7 @@ targets:
             c99-mode: true
             one-elf-section-per-function: true
             optimization: level-3
+            optimize-for-time: true
             warnings: all-warnings
           global:
             output-debug-info: enable

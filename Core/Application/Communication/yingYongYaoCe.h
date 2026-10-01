@@ -26,6 +26,8 @@ typedef struct {
     int16_t runFlag;              /* 1 表示运行，0 表示停车。 */
     int16_t gear;                 /* 当前速度档位。 */
     int16_t turnPhase;            /* TrackTurnPhase_t 整数。 */
+    float commandVoltageLeft;     /* 左轮最终命令电压，单位 V。 */
+    float commandVoltageRight;    /* 右轮最终命令电压，单位 V。 */
     int16_t fresh;                /* 1 表示有尚未发送的新数据。 */
 } telemetryData_t;
 

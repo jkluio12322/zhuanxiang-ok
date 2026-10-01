@@ -103,7 +103,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         /* 每 20 ms 生成循迹目标，供后续 50 ms 速度控制任务使用。 */
         if (++trackingTick >= APP_TRACK_PERIOD_MS) {
             trackingTick = 0;
-            appTrackingTask20ms();
+            if (workMode == modePwmTrack) appControlPwmTrackTask20ms();
+            else appTrackingTask20ms();
         }
 
         if (++controlTick >= APP_CONTROL_PERIOD_MS) {

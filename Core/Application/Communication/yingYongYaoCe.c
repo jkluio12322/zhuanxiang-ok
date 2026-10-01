@@ -30,8 +30,6 @@ static const char *appTelemetryStopReasonName(appStopReason_t reason)
         return "ALL_WHITE";
     case stopReasonCornerTimeout:
         return "CORNER_TIMEOUT";
-    case stopReasonMotorStall:
-        return "MOTOR_STALL";
     case stopReasonModeSwitch:
         return "MODE_SWITCH";
     case stopReasonNone:
@@ -99,18 +97,19 @@ void appTelemetrySend(void)
 
     /*
      * CSV order and units:
-     * tgtRpmL,rpmFL,rpmL,tgtRpmR,rpmFR,rpmR,
-     * steerRpm,diffRpm,yawDeg,trackError,mode,run,gear,turnPhase
+     * tgtRpmL,rpmFL,voltL,tgtRpmR,rpmFR,voltR,
+     * steerRpm,diffRpm,yawDeg,trackError,mode,run,gear,turnPhase,
+     * rpmL,rpmR
      */
     length = snprintf(buffer, sizeof(buffer),
         "%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,"
-        "%d,%d,%d,%d\r\n",
+        "%d,%d,%d,%d,%.1f,%.1f\r\n",
         telemetryData.targetLeftRpm,
         telemetryData.filteredLeftRpm,
-        telemetryData.actualLeftRpm,
+        telemetryData.commandVoltageLeft,
         telemetryData.targetRightRpm,
         telemetryData.filteredRightRpm,
-        telemetryData.actualRightRpm,
+        telemetryData.commandVoltageRight,
         telemetryData.steerRpm,
         telemetryData.actualDiffRpm,
         telemetryData.yawAngleDeg,
@@ -118,7 +117,9 @@ void appTelemetrySend(void)
         (int)telemetryData.mode,
         (int)telemetryData.runFlag,
         (int)telemetryData.gear,
-        (int)telemetryData.turnPhase);
+        (int)telemetryData.turnPhase,
+        telemetryData.actualLeftRpm,
+        telemetryData.actualRightRpm);
 
     if (length > 0 && length < (int)sizeof(buffer)) {
         Serial_Write((const uint8_t *)buffer, (uint16_t)length);

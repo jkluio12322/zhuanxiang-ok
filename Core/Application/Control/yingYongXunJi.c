@@ -6,6 +6,7 @@
 #include "yingYongXunJi.h"
 #include "yingYongPeiZhi.h"
 #include "yingYongZhuangTai.h"
+#include "pid.h"
 #include "irtrack.h"
 
 #include <math.h>
@@ -53,11 +54,6 @@ static uint8_t trackStartupTicks = 0U;
 static uint8_t trackLineAcquired = 0U;
 static uint8_t trackLapCornerCount = 0U;
 static int8_t trackLapTurnDirection = 0;
-#if 0
-static uint8_t trackLostSweepTicks = 0U;
-static uint8_t trackLostSweepPhase = 0U;
-static int8_t trackLostSweepStartDirection = -1;
-#endif
 static int8_t trackCornerCandidateDirection = 0;
 static uint8_t trackCornerCandidateTicks = 0U;
 static int8_t trackPendingCornerDirection = 0;
@@ -77,10 +73,8 @@ static float trackAverageTargetRpm = 0.0f;
 static float trackScheduledBaseRpm = 0.0f;
 static float trackSteerRpmToPwmGain = TRACK_STEER_RPM_TO_PWM_DEFAULT;
 static float trackWeightedError = 0.0f;
-static float trackWeightedErrorPrevious = 0.0f;
-static float trackIntegralRpm = 0.0f;
 static TrackTurnPhase_t trackTurnPhase = TRACK_PHASE_FOLLOW;
-
+static TrackPid_t trackPid = {TRACK_PID_KP, TRACK_PID_KI, TRACK_PID_KD, 0.0f, 0.0f};
 /**
  * @brief  将浮点数限制在指定范围内。
  * @param  value 待限制的值。
@@ -336,24 +330,6 @@ static float appTrackingScheduleCornerLostLineBaseSpeed(float selectedBaseRpm)
  * @param  nominalSide 搜索偏向，正值向右，负值向左。
  * @note   外轮使用 35 RPM、内轮使用 10 RPM，只允许正向运动。
  */
-#if 0
-static void appTrackingSetSearchTargets(int8_t nominalSide)
-{
-    float nominalLeft;
-    float nominalRight;
-
-    if (nominalSide > 0) {
-        nominalLeft = TRACK_SWEEP_OUTER_RPM;
-        nominalRight = TRACK_SWEEP_INNER_RPM;
-    } else {
-        nominalLeft = TRACK_SWEEP_INNER_RPM;
-        nominalRight = TRACK_SWEEP_OUTER_RPM;
-    }
-
-    appTrackingApplyTargets((nominalLeft + nominalRight) * 0.5f,
-                            (nominalLeft - nominalRight) * 0.5f);
-}
-#endif
 
 /**
  * @brief  停止循迹运动并清除状态机状态。
@@ -364,7 +340,6 @@ static void appTrackingSetSearchTargets(int8_t nominalSide)
 static void appTrackingStop(appStopReason_t reason)
 {
     appStateReportStop(reason);
-    pwmDuty = 0;
     appStateResetMotion();
     appTrackingResetState();
 }
@@ -388,16 +363,15 @@ static uint8_t appTrackingHasValidLine(void)
 static void appTrackingResetLinePid(void)
 {
     trackWeightedError = 0.0f;
-    trackWeightedErrorPrevious = 0.0f;
-    trackIntegralRpm = 0.0f;
     trackSteerOutput = 0.0f;
+    TrackPid_Reset(&trackPid);
 }
 
 /**
  * @brief  根据八路权重计算用于 PID 的连续误差。
  * @return 负值偏左、正值偏右，范围限制在正负误差上限内。
  */
-static float appTrackingComputeWeightedError(void)
+static float appTrackingComputeWeightedErrorInternal(void)
 {
     float weightSum = (float)ir_data.weight_sum;
 
@@ -416,27 +390,10 @@ static float appTrackingComputeWeightedError(void)
  * @param  diffLimit 本次允许的最大差速，单位 RPM。
  * @return 限幅后的 PID 差速输出，单位 RPM。
  */
-static float appTrackingUpdateLinePid(float error, float diffLimit)
+static float appTrackingUpdateLinePidInternal(float error, float diffLimit)
 {
-    float derivative = error - trackWeightedErrorPrevious;
-    float turn;
-
-    trackIntegralRpm += TRACK_PID_KI
-                        * error
-                        * TRACK_PID_PERIOD_SECONDS;
-    trackIntegralRpm = appTrackingClampValue(
-        trackIntegralRpm,
-        -TRACK_PID_INTEGRAL_LIMIT_RPM,
-        TRACK_PID_INTEGRAL_LIMIT_RPM);
-
-    turn = (TRACK_PID_KP * error)
-           + trackIntegralRpm
-           + (TRACK_PID_KD * derivative);
-
     trackWeightedError = error;
-    trackWeightedErrorPrevious = error;
-    turn = appTrackingClampValue(turn, -diffLimit, diffLimit);
-    return turn;
+    return TrackPid_Update(&trackPid, error, TRACK_PID_PERIOD_SECONDS, diffLimit);
 }
 
 /**
@@ -482,13 +439,13 @@ static void appTrackingApplyFollowTargetsInternal(float baseSpeed,
         trackTurnPhase = (centerBits == 0U)
                          ? TRACK_PHASE_RECENTER
                          : TRACK_PHASE_FOLLOW;
-        error = appTrackingComputeWeightedError();
+        error = appTrackingComputeWeightedErrorInternal();
 
         if (immediate != 0U) {
-            trackWeightedErrorPrevious = error;
+            trackPid.ErrorPrevious = error;
         }
 
-        turn = appTrackingUpdateLinePid(error,
+        turn = appTrackingUpdateLinePidInternal(error,
                                         TRACK_FOLLOW_DIFF_LIMIT_RPM);
     }
 
@@ -501,7 +458,7 @@ static void appTrackingApplyFollowTargets(float baseSpeed)
 }
 
 /**
- * @brief  清除一次急弯锁存及其完成确认计数。
+ * @brief  复位 PWM-TRACK 相位计时到左偏阶段。
  */
 static void appTrackingClearTurnLatch(void)
 {
@@ -539,18 +496,6 @@ static void appTrackingClearPendingCorner(void)
  * @brief  进入丢线搜索状态。
  * @param  preferredSide 首选搜索方向，正值向右，负值向左，0 表示使用最后检测侧。
  */
-#if 0
-static void appTrackingBeginLineSearch(int8_t preferredSide)
-{
-    trackControlState = TRACK_CONTROL_LOST;
-    trackLostSweepTicks = 0U;
-    trackLostSweepPhase = 0U;
-    trackLostSweepStartDirection =
-        (preferredSide != 0) ? preferredSide : ((ir_data.last_side > 0) ? 1 : -1);
-    appTrackingClearCornerCandidate();
-    appTrackingClearPendingCorner();
-}
-#endif
 
 /**
  * @brief  更新急弯边缘候选。
@@ -979,53 +924,6 @@ static uint8_t appTrackingUpdateFinish(void)
  * @param  baseSpeed 恢复线路后使用的循迹基准速度，单位 RPM。
  * @note   搜索超过规定往返次数仍找不到线路时立即停车。
  */
-#if 0
-static void appTrackingUpdateLineSearch(float baseSpeed)
-{
-    int8_t direction;
-
-    if (appTrackingHasValidLine()) {
-        trackControlState = TRACK_CONTROL_FOLLOW;
-        trackLostSweepTicks = 0U;
-        trackLostSweepPhase = 0U;
-
-        /*
-         * 第一次转弯可能由编码器先完成，但最中间两路没有连续确认三次，
-         * 随后会进入丢线搜索。搜索重新找到线时必须重新布防急弯检测，
-         * 否则 trackCornerArmed 会一直为 0，后续所有弯都不会再触发。
-         */
-        appTrackingClearTurnLatch();
-        appTrackingClearCornerCandidate();
-        trackCornerArmed = 1U;
-
-        appTrackingApplyFollowTargets(baseSpeed);
-        return;
-    }
-
-    if (trackLostSweepPhase >= (TRACK_SWEEP_ROUNDS * 2U)) {
-        appTrackingStop();
-        return;
-    }
-
-    if (trackLostSweepTicks >= TRACK_SWEEP_HALF_TICKS) {
-        trackLostSweepTicks = 0U;
-        trackLostSweepPhase++;
-
-        if (trackLostSweepPhase >= (TRACK_SWEEP_ROUNDS * 2U)) {
-            appTrackingStop();
-            return;
-        }
-    }
-
-    direction = trackLostSweepStartDirection;
-    if ((trackLostSweepPhase & 1U) != 0U) {
-        direction = (int8_t)-direction;
-    }
-
-    appTrackingSetSearchTargets(direction);
-    trackLostSweepTicks++;
-}
-#endif
 
 /**
  * @brief  复位循迹状态机、急弯状态、滤波器和红外数据。
@@ -1041,11 +939,6 @@ void appTrackingResetState(void)
     trackLineAcquired = 0U;
     trackLapCornerCount = 0U;
     trackLapTurnDirection = 0;
-#if 0
-    trackLostSweepTicks = 0U;
-    trackLostSweepPhase = 0U;
-    trackLostSweepStartDirection = -1;
-#endif
     trackInvalidLineTicks = 0U;
     trackAllWhiteTicks = 0U;
     appTrackingClearTurnLatch();
@@ -1075,7 +968,16 @@ void appTrackingStart(void)
 {
     appStateResetLapProgress();
     appTrackingResetState();
-    pwmDuty = 0;
+}
+
+void appTrackingSetPidGains(float kp, float ki, float kd)
+{
+    TrackPid_SetGains(&trackPid, kp, ki, kd);
+}
+
+void appTrackingGetPidGains(float *kp, float *ki, float *kd)
+{
+    TrackPid_GetGains(&trackPid, kp, ki, kd);
 }
 
 void appTrackingSetSteerRpmToPwmGain(float gain)
@@ -1243,4 +1145,19 @@ float appTrackingGetWeightedError(void)
 TrackTurnPhase_t appTrackingGetTurnPhase(void)
 {
     return trackTurnPhase;
+}
+
+float appTrackingComputeWeightedError(void)
+{
+    return appTrackingComputeWeightedErrorInternal();
+}
+
+float appTrackingUpdatePidForError(float error, float diffLimit)
+{
+    return appTrackingUpdateLinePidInternal(error, diffLimit);
+}
+
+void appTrackingSetPwmSteer(float steerRpm)
+{
+    appTrackingApplyTargets(0.0f, steerRpm);
 }

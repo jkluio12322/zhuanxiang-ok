@@ -61,6 +61,21 @@
 /* PWM 测试模式允许的最小占空比百分比。 */
 #define PWM_TEST_MIN_PERCENT          (-100)
 
+/* PWM-SPEED 和 PWM-TRACK 自动测试的单方向持续时间，单位毫秒。 */
+#define PWM_SPEED_TEST_PHASE_MS       5000U
+#define PWM_TRACK_TEST_PHASE_MS       5000U
+
+/* PWM-TRACK 默认基础 PWM 与 KEY4 每次调整的百分比。 */
+#define PWM_TRACK_BASE_DEFAULT_PERCENT 50
+#define PWM_TRACK_BASE_STEP_PERCENT    10
+
+/* PWM-TRACK 模拟角度到循迹加权误差的线性满量程映射。 */
+#define PWM_TRACK_ERROR_FULL_SCALE     40.0f
+#define PWM_TRACK_ANGLE_FULL_SCALE     90.0f
+
+/* 电机电源固定标称电压，用于 VOFA 最终命令电压换算。 */
+#define MOTOR_SUPPLY_VOLTAGE           12.0f
+
 /* ------------------------------------------------------------------------- */
 /* 电机堵转保护                                                              */
 /* ------------------------------------------------------------------------- */
@@ -329,7 +344,7 @@
 /* ------------------------------------------------------------------------- */
 
 /* VOFA CSV 发送缓冲区大小，单位字节。 */
-#define TELEMETRY_BUFFER_SIZE         192U
+#define TELEMETRY_BUFFER_SIZE         224U
 
 /* 判断车辆已经停稳的转速误差阈值，单位 RPM。 */
 #define TELEMETRY_STOP_RPM_EPSILON    0.5f
