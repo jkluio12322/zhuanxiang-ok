@@ -1,8 +1,8 @@
 bluecar\yingyongkongzhi.o: ../Core/Application/Control/yingYongKongZhi.c
 bluecar\yingyongkongzhi.o: ../Core/Application/Control/yingYongKongZhi.h
-bluecar\yingyongkongzhi.o: ../Core/Application/Communication/yingYongMingLing.h
-bluecar\yingyongkongzhi.o: ../Core/Application/Config/yingYongLeiXing.h
 bluecar\yingyongkongzhi.o: F:\kilv5\ARM\ARMCC\Bin\..\include\stdint.h
+bluecar\yingyongkongzhi.o: ../Core/Application/Config/yingYongLeiXing.h
+bluecar\yingyongkongzhi.o: ../Core/Application/Communication/yingYongMingLing.h
 bluecar\yingyongkongzhi.o: ../Core/Application/Config/yingYongPeiZhi.h
 bluecar\yingyongkongzhi.o: ../Core/Inc/main.h
 bluecar\yingyongkongzhi.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h
@@ -40,4 +40,4 @@ bluecar\yingyongkongzhi.o: ../Core/Application/Control/pid.h
 bluecar\yingyongkongzhi.o: ../Core/Application/Communication/yingYongYaoCe.h
 bluecar\yingyongkongzhi.o: ../Core/Application/Control/yingYongXunJi.h
 bluecar\yingyongkongzhi.o: ../Core/Hardware/Peripherals/Motion/motor.h
-bluecar\yingyongkongzhi.o: F:\kilv5\ARM\ARMCC\Bin\..\include\math.h
+bluecar\yingyongkongzhi.o: ../Core/Hardware/Peripherals/Sensors/irtrack.h

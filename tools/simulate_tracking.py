@@ -52,7 +52,6 @@ INTEGRAL_LIMIT = require(MACROS, "TRACK_PID_INTEGRAL_LIMIT_RPM")
 ERROR_LIMIT = require(MACROS, "TRACK_WEIGHTED_ERROR_LIMIT")
 DIFF_LIMIT = require(MACROS, "TRACK_FOLLOW_DIFF_LIMIT_RPM")
 STEERING_SIGN = require(MACROS, "TRACK_STEERING_SIGN")
-REVERSE_LIMIT_PWM = require(MACROS, "TRACK_TURN_REVERSE_LIMIT_PWM")
 ALL_WHITE_STOP_TICKS = int(require(MACROS, "TRACK_ALL_WHITE_STOP_TICKS"))
 INVALID_LINE_CONFIRM_TICKS = int(
     require(MACROS, "TRACK_LINE_INVALID_CONFIRM_TICKS")
@@ -367,8 +366,10 @@ def can_start_corner(sample: SensorSample) -> bool:
 
 
 def limit_pwm(pwm: float, turn_marker_active: bool) -> float:
-    if turn_marker_active:
-        return max(pwm, -REVERSE_LIMIT_PWM)
+    """循迹模式下所有负 PWM 都夹到 0（对应 yingYongKongZhi.c:434-435）。
+
+    当前代码没有「急弯期间允许 -20% 反转」这个特例，参数保留只为兼容调用点。
+    """
     return max(pwm, 0.0)
 
 
@@ -421,8 +422,7 @@ def main() -> int:
     print(
         "config: "
         f"Kp={PID_KP:.3f} Ki={PID_KI:.3f} Kd={PID_KD:.3f} "
-        f"error_limit={ERROR_LIMIT:.1f} diff_limit={DIFF_LIMIT:.1f} "
-        f"reverse_limit={REVERSE_LIMIT_PWM:.1f}%"
+        f"error_limit={ERROR_LIMIT:.1f} diff_limit={DIFF_LIMIT:.1f}"
     )
     print(f"weights: {IR_WEIGHTS}")
     print()
@@ -730,8 +730,8 @@ def main() -> int:
 
     expect(close(limit_pwm(-35.0, False), 0.0), "normal phase must clamp negative")
     expect(
-        close(limit_pwm(-35.0, True), -REVERSE_LIMIT_PWM),
-        "corner marker must clamp reverse PWM to -20%",
+        close(limit_pwm(-35.0, True), 0.0),
+        "corner phase also clamps reverse PWM to 0",
     )
     expect(close(limit_pwm(35.0, True), 35.0), "positive PWM must be unchanged")
     print("PASS phase-specific negative PWM limits")

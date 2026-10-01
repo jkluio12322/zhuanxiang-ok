@@ -19,7 +19,6 @@ typedef struct {
     float     position;                 /* 归一化位置，范围约为 -7...+7。 */
     uint8_t   black_count;              /* 检测到黑线的通道数量。 */
     uint8_t   pattern;                  /* 黑线掩码，bit0 对应 IR1。 */
-    int8_t    last_side;                /* 最后偏线方向：-1 左、0 未知、+1 右。 */
 } IRTrack_Data_t;
 
 /* 最新一次循迹采样结果。 */

@@ -328,10 +328,6 @@
 
 /* 非最终圈过终点后的短时丢线宽限，25 个 20 ms 周期约为 500 ms。 */
 #define TRACK_POST_LAP_LINE_GRACE_TICKS 25U
-/* 丢线扫描每个半程的方向保持周期数，10 个 20 ms 周期约为 200 ms。 */
-#define TRACK_SWEEP_HALF_TICKS        10U
-/* 丢线扫描左右摆头执行的完整轮数。 */
-#define TRACK_SWEEP_ROUNDS            3U
 /* 起步后直行保持的周期数，50 个 20 ms 周期约为 1 秒。 */
 #define TRACK_START_FORWARD_TICKS     50U
 /* 上电默认的目标完成圈数。 */

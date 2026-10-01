@@ -29,7 +29,6 @@ TrackControlState_t appTrackingGetState(void);
 float appTrackingGetSteer(void);
 float appTrackingGetAverageTargetRpm(void);
 float appTrackingGetSteerRpmToPwmGain(void);
-float appTrackingGetTurnReverseLimitPwm(void);
 float appTrackingGetWeightedError(void);
 TrackTurnPhase_t appTrackingGetTurnPhase(void);
 float appTrackingComputeWeightedError(void);

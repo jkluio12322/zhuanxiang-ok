@@ -36,11 +36,5 @@ bluecar\yingyongmingling.o: ../Core/Application/Control/yingYongZhuangTai.h
 bluecar\yingyongmingling.o: ../Core/Hardware/Peripherals/Motion/encoder.h
 bluecar\yingyongmingling.o: ../Core/Hardware/Peripherals/Sensors/mpu6050.h
 bluecar\yingyongmingling.o: ../Core/Application/Control/pid.h
-bluecar\yingyongmingling.o: ../Core/Application/Communication/blueserial.h
-bluecar\yingyongmingling.o: F:\kilv5\ARM\ARMCC\Bin\..\include\string.h
-bluecar\yingyongmingling.o: F:\kilv5\ARM\ARMCC\Bin\..\include\stdlib.h
-bluecar\yingyongmingling.o: F:\kilv5\ARM\ARMCC\Bin\..\include\stdio.h
-bluecar\yingyongmingling.o: F:\kilv5\ARM\ARMCC\Bin\..\include\stdarg.h
 bluecar\yingyongmingling.o: ../Core/Hardware/Peripherals/IO/key.h
 bluecar\yingyongmingling.o: ../Core/Application/Communication/pid_tune.h
-bluecar\yingyongmingling.o: ../Core/Hardware/System/timer.h

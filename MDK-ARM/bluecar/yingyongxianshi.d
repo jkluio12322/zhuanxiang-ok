@@ -1,9 +1,9 @@
 bluecar\yingyongxianshi.o: ../Core/Application/Display/yingYongXianShi.c
 bluecar\yingyongxianshi.o: ../Core/Application/Display/yingYongXianShi.h
 bluecar\yingyongxianshi.o: ../Core/Application/Control/yingYongKongZhi.h
-bluecar\yingyongxianshi.o: ../Core/Application/Communication/yingYongMingLing.h
-bluecar\yingyongxianshi.o: ../Core/Application/Config/yingYongLeiXing.h
 bluecar\yingyongxianshi.o: F:\kilv5\ARM\ARMCC\Bin\..\include\stdint.h
+bluecar\yingyongxianshi.o: ../Core/Application/Config/yingYongLeiXing.h
+bluecar\yingyongxianshi.o: ../Core/Application/Communication/yingYongMingLing.h
 bluecar\yingyongxianshi.o: ../Core/Application/Config/yingYongPeiZhi.h
 bluecar\yingyongxianshi.o: ../Core/Inc/main.h
 bluecar\yingyongxianshi.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h

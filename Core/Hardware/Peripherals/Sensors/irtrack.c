@@ -109,12 +109,4 @@ void IRTrack_Compute(void)
     }
 
     ir_data.position = (float)positionTimes100 / 100.0f;
-
-    if ((count > 0U) && (count < IRTRACK_CHANNELS)) {
-        if (ir_data.position < 0.0f) {
-            ir_data.last_side = -1;
-        } else if (ir_data.position > 0.0f) {
-            ir_data.last_side = 1;
-        }
-    }
 }

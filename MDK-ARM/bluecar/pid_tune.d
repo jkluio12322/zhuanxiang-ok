@@ -38,7 +38,8 @@ bluecar\pid_tune.o: ../Core/Hardware/Peripherals/Motion/encoder.h
 bluecar\pid_tune.o: ../Core/Hardware/Peripherals/Sensors/mpu6050.h
 bluecar\pid_tune.o: ../Core/Application/Control/pid.h
 bluecar\pid_tune.o: ../Core/Application/Control/yingYongXunJi.h
-bluecar\pid_tune.o: ../Core/Hardware/Peripherals/Motion/motor.h
+bluecar\pid_tune.o: ../Core/Application/Control/yingYongKongZhi.h
+bluecar\pid_tune.o: ../Core/Application/Communication/yingYongYaoCe.h
 bluecar\pid_tune.o: ../Core/Application/Communication/serial.h
 bluecar\pid_tune.o: F:\kilv5\ARM\ARMCC\Bin\..\include\stdio.h
 bluecar\pid_tune.o: F:\kilv5\ARM\ARMCC\Bin\..\include\stdarg.h

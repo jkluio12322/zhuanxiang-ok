@@ -1,6 +1,6 @@
 /**
  * @file    yingYongXunJi.c
- * @brief   八路数字循迹、急弯确认和丢线搜索状态机。
+ * @brief   八路数字循迹、急弯确认状态机。
  */
 
 #include "yingYongXunJi.h"
@@ -30,13 +30,6 @@
 /* 下一个弯需要连续确认的次数，避免单帧噪声触发连续转向。 */
 #define TRACK_CORNER_PENDING_CONFIRM_TICKS 2U
 
-/* 丢线搜索只使用正向差速，不允许车轮反转。 */
-#define TRACK_SWEEP_OUTER_RPM 35.0f
-/* 丢线搜索时内侧轮的目标转速，单位 RPM。 */
-#define TRACK_SWEEP_INNER_RPM 10.0f
-
-/* 急弯内轮反转 PWM 的绝对值上限，单位百分比。 */
-#define TRACK_TURN_REVERSE_LIMIT_PWM 20.0f
 /* 差速 RPM 换算为 PWM 百分比时使用的默认增益。 */
 #define TRACK_STEER_RPM_TO_PWM_DEFAULT 1.0f
 
@@ -326,15 +319,7 @@ static float appTrackingScheduleCornerLostLineBaseSpeed(float selectedBaseRpm)
 }
 
 /**
- * @brief  生成丢线搜索时的左右轮正转目标。
- * @param  nominalSide 搜索偏向，正值向右，负值向左。
- * @note   外轮使用 35 RPM、内轮使用 10 RPM，只允许正向运动。
- */
-
-/**
  * @brief  停止循迹运动并清除状态机状态。
- * @note   急弯阶段允许内侧轮反转，反转 PWM 下限由
- *         TRACK_TURN_REVERSE_LIMIT_PWM 控制。该入口用于停车和重新启动。
  * @param  reason 本次停车原因。
  */
 static void appTrackingStop(appStopReason_t reason)
@@ -491,11 +476,6 @@ static void appTrackingClearPendingCorner(void)
     trackPendingCornerDirection = 0;
     trackPendingCornerTicks = 0U;
 }
-
-/**
- * @brief  进入丢线搜索状态。
- * @param  preferredSide 首选搜索方向，正值向右，负值向左，0 表示使用最后检测侧。
- */
 
 /**
  * @brief  更新急弯边缘候选。
@@ -920,12 +900,6 @@ static uint8_t appTrackingUpdateFinish(void)
 }
 
 /**
- * @brief  更新丢线搜索状态并生成摆头找线目标。
- * @param  baseSpeed 恢复线路后使用的循迹基准速度，单位 RPM。
- * @note   搜索超过规定往返次数仍找不到线路时立即停车。
- */
-
-/**
  * @brief  复位循迹状态机、急弯状态、滤波器和红外数据。
  * @note   停车、重新启动或切换模式时调用；不会修改 PID 参数。
  */
@@ -957,7 +931,6 @@ void appTrackingResetState(void)
     ir_data.position = 0.0f;
     ir_data.black_count = 0U;
     ir_data.pattern = 0U;
-    ir_data.last_side = 0;
 }
 
 /**
@@ -1075,11 +1048,6 @@ void appTrackingTask20ms(void)
             trackPostLapLineGraceTicks--;
         }
 
-        /*
-         * 暂时禁用丢线搜索。
-         * appTrackingBeginLineSearch(ir_data.last_side);
-         * appTrackingUpdateLineSearch(baseSpeed);
-         */
         return;
     }
 
@@ -1122,11 +1090,6 @@ float appTrackingGetAverageTargetRpm(void)
 float appTrackingGetSteerRpmToPwmGain(void)
 {
     return trackSteerRpmToPwmGain;
-}
-
-float appTrackingGetTurnReverseLimitPwm(void)
-{
-    return TRACK_TURN_REVERSE_LIMIT_PWM;
 }
 
 /**
