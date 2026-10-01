@@ -1,6 +1,8 @@
 bluecar\app_scheduler.o: ../Core/Application/Scheduler/app_scheduler.c
 bluecar\app_scheduler.o: ../Core/Application/Scheduler/app_scheduler.h
 bluecar\app_scheduler.o: F:\kilv5\ARM\ARMCC\Bin\..\include\stdint.h
+bluecar\app_scheduler.o: ../Core/Application/Communication/app_cmd.h
+bluecar\app_scheduler.o: ../Core/Application/Config/app_types.h
 bluecar\app_scheduler.o: ../Core/Application/Config/app_config.h
 bluecar\app_scheduler.o: ../Core/Application/State/app_imu.h
 bluecar\app_scheduler.o: ../Core/Hardware/Peripherals/Sensors/mpu6050.h
@@ -33,7 +35,6 @@ bluecar\app_scheduler.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h
 bluecar\app_scheduler.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h
 bluecar\app_scheduler.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h
 bluecar\app_scheduler.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h
-bluecar\app_scheduler.o: ../Core/Application/Config/app_types.h
 bluecar\app_scheduler.o: ../Core/Application/Motion/app_speedloop.h
 bluecar\app_scheduler.o: ../Core/Application/Control/app_pid.h
 bluecar\app_scheduler.o: ../Core/Application/State/app_state.h
@@ -41,4 +42,4 @@ bluecar\app_scheduler.o: ../Core/Application/Control/app_testmode.h
 bluecar\app_scheduler.o: ../Core/Hardware/Peripherals/IO/key.h
 bluecar\app_scheduler.o: ../Core/Application/Display/yingYongXianShi.h
 bluecar\app_scheduler.o: ../Core/Application/Control/app_tracking.h
-bluecar\app_scheduler.o: ../Core/Application/Communication/yingYongYaoCe.h
+bluecar\app_scheduler.o: ../Core/Application/Communication/app_telemetry.h

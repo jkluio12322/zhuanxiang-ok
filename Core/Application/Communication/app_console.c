@@ -1,13 +1,13 @@
-#include "pid_tune.h"
-#include "yingYongMingLing.h"
+#include "app_console.h"
+#include "app_cmd.h"
 #include "app_config.h"
 #include "app_state.h"
 #include "app_tracking.h"
 #include "app_speedloop.h"
 #include "app_testmode.h"
-#include "yingYongYaoCe.h"
+#include "app_telemetry.h"
 #include "app_pid.h"
-#include "serial.h"
+#include "app_serial.h"
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -77,16 +77,13 @@ static const TuneCommand_t tuneTable[] = {
     {"?", 0, TUNE_HELP}
 };
 
-extern UART_HandleTypeDef huart1;
-volatile uint8_t pidTuneRxByte;
-
 static volatile uint8_t tuneResponsePending = 0;
 static volatile uint8_t tuneLineReady = 0;
 static char tuneResponseBuffer[PID_TUNE_RESPONSE_BUFFER_SIZE];
 static char tuneLine[PID_TUNE_LINE_BUFFER_SIZE];
 static uint8_t tuneRxIndex = 0;
 
-static void pidTuneRespond(const char *format, ...)
+static void consoleRespond(const char *format, ...)
 {
     va_list arguments;
     if (tuneResponsePending) return;
@@ -96,15 +93,15 @@ static void pidTuneRespond(const char *format, ...)
     tuneResponsePending = 1;
 }
 
-void pidTuneInit(void)
+void AppConsole_Init(void)
 {
     tuneRxIndex = 0;
     tuneResponsePending = 0;
     tuneLineReady = 0;
-    HAL_UART_Receive_IT(&huart1, (uint8_t *)&pidTuneRxByte, 1);
+    /* 接收中断由 app_serial.c 的 Serial_Init() 启动。 */
 }
 
-void pidTuneRxCallback(uint8_t byte)
+void AppConsole_RxByte(uint8_t byte)
 {
     if (byte == '\r' || byte == '\n') {
         if (tuneRxIndex > 0) {
@@ -117,7 +114,7 @@ void pidTuneRxCallback(uint8_t byte)
     }
 }
 
-static const TuneCommand_t *pidTuneFind(const char *name)
+static const TuneCommand_t *consoleFind(const char *name)
 {
     uint8_t i;
     for (i = 0; i < sizeof(tuneTable) / sizeof(tuneTable[0]); i++) {
@@ -126,7 +123,7 @@ static const TuneCommand_t *pidTuneFind(const char *name)
     return 0;
 }
 
-static const char *pidTunePhaseName(void)
+static const char *consolePhaseName(void)
 {
     if (AppState()->mode == modePwmSpeed) {
         return (AppTestMode_GetSpeedPhase() == PWM_TEST_PHASE_REVERSE)
@@ -139,14 +136,14 @@ static const char *pidTunePhaseName(void)
     return "TRACK";
 }
 
-static const char *pidTuneModeName(void)
+static const char *consoleModeName(void)
 {
     if (AppState()->mode == modePwmSpeed) return "PWM-SPEED";
     if (AppState()->mode == modePwmTrack) return "PWM-TRACK";
     return "TRACK";
 }
 
-void pidTuneProcess(void)
+void AppConsole_Process(void)
 {
     char token[PID_TUNE_TOKEN_BUFFER_SIZE];
     char argument[PID_TUNE_TOKEN_BUFFER_SIZE];
@@ -167,14 +164,14 @@ void pidTuneProcess(void)
         return;
     }
 
-    entry = pidTuneFind(token);
+    entry = consoleFind(token);
     if (entry == 0) {
-        pidTuneRespond("? '%s' (type 'help')\r\n", token);
+        consoleRespond("? '%s' (type 'help')\r\n", token);
         tuneLineReady = 0;
         return;
     }
     if (entry->needsArg && count < 2) {
-        pidTuneRespond("? %s needs a value\r\n", token);
+        consoleRespond("? %s needs a value\r\n", token);
         tuneLineReady = 0;
         return;
     }
@@ -225,45 +222,45 @@ void pidTuneProcess(void)
         AppTracking_SetSteerRpmToPwmGain(value);
         break;
     case TUNE_START:
-        appCommandPushValue(commandStart, 0.0f);
+        AppCmd_PushValue(commandStart, 0.0f);
         break;
     case TUNE_STOP:
-        appCommandPushValue(commandStop, 0.0f);
+        AppCmd_PushValue(commandStop, 0.0f);
         break;
     case TUNE_SPDGEAR:
         if (value < 1.0f || value > 6.0f) {
-            pidTuneRespond("[PWM-SPEED] invalid gear 1..6\r\n");
+            consoleRespond("[PWM-SPEED] invalid gear 1..6\r\n");
         } else {
-            appCommandPushValue(commandSetSpeedGear, value);
+            AppCmd_PushValue(commandSetSpeedGear, value);
         }
         break;
     case TUNE_SIMLEVEL: {
         int level = (int)value;
         if ((level != 5) && (level != 10) && (level != 45) && (level != 90)) {
-            pidTuneRespond("[PWM-TRACK] invalid simlevel\r\n");
+            consoleRespond("[PWM-TRACK] invalid simlevel\r\n");
         } else {
-            appCommandPushValue(commandPwmTrackSetAngle, (float)level);
+            AppCmd_PushValue(commandPwmTrackSetAngle, (float)level);
         }
         break;
     }
     case TUNE_BASE:
-        appCommandPushValue(commandPwmTrackBaseStep,
+        AppCmd_PushValue(commandPwmTrackBaseStep,
                             value - (float)AppTestMode_GetBasePwm());
         break;
     case TUNE_SIM:
         if (strcmp(argument, "on") == 0) {
-            appCommandPushValue(commandPwmTrackSim, 1.0f);
+            AppCmd_PushValue(commandPwmTrackSim, 1.0f);
         } else if (strcmp(argument, "off") == 0) {
-            appCommandPushValue(commandPwmTrackSim, 0.0f);
+            AppCmd_PushValue(commandPwmTrackSim, 0.0f);
         } else {
-            pidTuneRespond("[PWM-TRACK] use sim on/off\r\n");
+            consoleRespond("[PWM-TRACK] use sim on/off\r\n");
         }
         break;
     case TUNE_QUIET:
-        appCommandPushValue(commandQuiet, 0.0f);
+        AppCmd_PushValue(commandQuiet, 0.0f);
         break;
     case TUNE_LOG:
-        appCommandPushValue(commandLog, 0.0f);
+        AppCmd_PushValue(commandLog, 0.0f);
         break;
     case TUNE_SHOW: {
         SpeedPidInfo_t infoL;
@@ -273,13 +270,13 @@ void pidTuneProcess(void)
         float kd = AppTracking_GetGain(PID_FIELD_KD);
         AppSpeedLoop_GetInfo(SPEED_CH_LEFT, &infoL);
         AppSpeedLoop_GetInfo(SPEED_CH_RIGHT, &infoR);
-        pidTuneRespond(
+        consoleRespond(
             "Mode=%s Run=%d Phase=%s Gear=%d Base=%d%%\r\n"
             "SpeedL Kp=%.2f Ki=%.2f Kd=%.2f Tgt=%.1f Out=%.1f\r\n"
             "SpeedR Kp=%.2f Ki=%.2f Kd=%.2f Tgt=%.1f Out=%.1f\r\n"
             "Track Kp=%.2f Ki=%.2f Kd=%.2f tkg=%.2f\r\n"
             "VoltL=%.2fV VoltR=%.2fV\r\n",
-            pidTuneModeName(), AppState()->running, pidTunePhaseName(),
+            consoleModeName(), AppState()->running, consolePhaseName(),
             AppState()->gear, (int)AppTestMode_GetBasePwm(),
             infoL.kp, infoL.ki, infoL.kd, infoL.target, infoL.out,
             infoR.kp, infoR.ki, infoR.kd, infoR.target, infoR.out,
@@ -289,7 +286,7 @@ void pidTuneProcess(void)
         break;
     }
     case TUNE_HELP:
-        pidTuneRespond(
+        consoleRespond(
             "Commands: start stop spdgear simlevel base sim on|off\r\n"
             "Speed: skp/ski/skd lkp/lki/lkd rkp/rki/rkd\r\n"
             "Track: tkp/tki/tkd/tkg\r\n"
@@ -300,7 +297,7 @@ void pidTuneProcess(void)
     tuneLineReady = 0;
 }
 
-void pidTuneProcessResponse(void)
+void AppConsole_Flush(void)
 {
     if (!tuneResponsePending) return;
     __disable_irq();

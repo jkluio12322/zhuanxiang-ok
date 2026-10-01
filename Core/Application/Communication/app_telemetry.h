@@ -1,9 +1,9 @@
 /**
- * @file    yingYongYaoCe.h
+ * @file    app_telemetry.h
  * @brief   VOFA+ 遥测接口。
  */
-#ifndef __YING_YONG_YAO_CE_H
-#define __YING_YONG_YAO_CE_H  /* 头文件保护宏，防止遥测接口重复声明。 */
+#ifndef __APP_TELEMETRY_H
+#define __APP_TELEMETRY_H  /* 头文件保护宏，防止遥测接口重复声明。 */
 
 #include <stdint.h>
 
@@ -36,11 +36,18 @@ extern telemetryData_t telemetryData;
 /**
  * @brief  清零遥测快照。
  */
-void appTelemetryInit(void);
+void AppTelemetry_Init(void);
+
+/**
+ * @brief  发送开机横幅和 VOFA CSV 表头。
+ * @note   表头字段顺序必须和 AppTelemetry_Send() 里的格式串一致；
+ *         这里是表头的唯一来源，不要在别处硬编码。
+ */
+void AppTelemetry_BootHeader(void);
 
 /**
  * @brief  将最新遥测快照格式化为 VOFA CSV 并发送。
  */
-void appTelemetrySend(void);
+void AppTelemetry_Send(void);
 
 #endif

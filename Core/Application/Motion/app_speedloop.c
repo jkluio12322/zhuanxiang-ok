@@ -9,9 +9,9 @@
 #include "app_motion.h"
 #include "app_state.h"
 #include "app_testmode.h"
-#include "yingYongMingLing.h"
+#include "app_cmd.h"
 #include "app_tracking.h"
-#include "yingYongYaoCe.h"
+#include "app_telemetry.h"
 
 /* 左右各一个增量式速度环，参数来自配置，可以在线整定。 */
 static Pid_t pidLeft;
@@ -241,9 +241,9 @@ void AppSpeedLoop_Task50ms(void)
 
     AppMotion_Update();
 
-    while (appCommandQueueAvailable()) {
+    while (AppCmd_Available()) {
         commandMessage_t message;
-        if (appCommandQueuePop(&message) < 0) {
+        if (AppCmd_Pop(&message) < 0) {
             break;
         }
         handleCommand(message);

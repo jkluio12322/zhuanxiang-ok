@@ -7,9 +7,9 @@ bluecar\yingyongxianshi.o: ../Core/Application/Control/app_pid.h
 bluecar\yingyongxianshi.o: ../Core/Application/State/app_state.h
 bluecar\yingyongxianshi.o: ../Core/Application/Config/app_types.h
 bluecar\yingyongxianshi.o: ../Core/Application/Control/app_testmode.h
-bluecar\yingyongxianshi.o: ../Core/Application/Communication/yingYongMingLing.h
+bluecar\yingyongxianshi.o: ../Core/Application/Communication/app_cmd.h
 bluecar\yingyongxianshi.o: ../Core/Application/Control/app_tracking.h
-bluecar\yingyongxianshi.o: ../Core/Application/Communication/yingYongYaoCe.h
+bluecar\yingyongxianshi.o: ../Core/Application/Communication/app_telemetry.h
 bluecar\yingyongxianshi.o: ../Core/Hardware/Peripherals/Sensors/irtrack.h
 bluecar\yingyongxianshi.o: ../Core/Inc/main.h
 bluecar\yingyongxianshi.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h

@@ -15,7 +15,7 @@
 #include "usart.h"
 
 /* USER CODE BEGIN Includes */
-#include "yingYongMingLing.h"
+#include "app_cmd.h"
 #include "app_config.h"
 #include "app_imu.h"
 #include "app_motion.h"
@@ -25,8 +25,7 @@
 #include "app_testmode.h"
 #include "app_tracking.h"
 #include "yingYongXianShi.h"
-#include "yingYongYaoCe.h"
-#include "blueserial.h"
+#include "app_telemetry.h"
 #include "buzzer.h"
 #include "encoder.h"
 #include "irtrack.h"
@@ -34,8 +33,8 @@
 #include "motor.h"
 #include "mpu6050.h"
 #include "oled.h"
-#include "pid_tune.h"
-#include "serial.h"
+#include "app_console.h"
+#include "app_serial.h"
 #include "timer.h"
 /* USER CODE END Includes */
 
@@ -87,16 +86,14 @@ int main(void)
   TIM5_Init();
   Key_Init();
   Serial_Init(&huart1);
-  Serial_Printf("BOOT OK\r\n");
-  Serial_Printf("#tgtRpmL,rpmFL,voltL,tgtRpmR,rpmFR,voltR,steerRpm,diffRpm,yawDeg,trackError,mode,run,gear,turnPhase,rpmL,rpmR\r\n");
-  pidTuneInit();
+  AppTelemetry_BootHeader();
+  AppConsole_Init();
   Buzzer_Init();
-  BlueSerial_Init();
 
     /* 初始化应用层状态和命令队列。 */
   AppState_Init();
-  appCommandInit();
-  appTelemetryInit();
+  AppCmd_Init();
+  AppTelemetry_Init();
 
   /* 所有模块都初始化完了才放行中断任务，避免中断改到未初始化的对象。 */
   AppScheduler_Init();
@@ -121,12 +118,9 @@ int main(void)
        中断里不做 snprintf 和 I2C，避免压住串口接收。 */
     AppDeferred_Run();
 
-    /* 处理串口调参响应、蓝牙命令和按键事件。 */
-    pidTuneProcessResponse();
-
-    appCommandProcessBluetooth();
-    appCommandProcessKeys();
-    appCommandProcessTune();
+    /* 串口命令行的解析与响应。 */
+    AppConsole_Process();
+    AppConsole_Flush();
 
     /* OLED 缓冲写入。 */
     OLED_Flush();

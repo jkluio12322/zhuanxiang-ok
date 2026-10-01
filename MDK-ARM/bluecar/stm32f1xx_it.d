@@ -31,5 +31,5 @@ bluecar\stm32f1xx_it.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex
 bluecar\stm32f1xx_it.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h
 bluecar\stm32f1xx_it.o: ../Core/Application/Config/app_types.h
 bluecar\stm32f1xx_it.o: ../Core/Inc/stm32f1xx_it.h
-bluecar\stm32f1xx_it.o: ../Core/Application/Communication/serial.h
+bluecar\stm32f1xx_it.o: ../Core/Application/Communication/app_serial.h
 bluecar\stm32f1xx_it.o: F:\kilv5\ARM\ARMCC\Bin\..\include\stdio.h

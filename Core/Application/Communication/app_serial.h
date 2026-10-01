@@ -12,8 +12,8 @@
  *             3. 确保 USART_IRQHandler 调用了 HAL_UART_IRQHandler
  */
 
-#ifndef __BSP_SERIAL_H
-#define __BSP_SERIAL_H  /* 头文件保护宏，防止串口接口重复声明。 */
+#ifndef __APP_SERIAL_H
+#define __APP_SERIAL_H  /* 头文件保护宏，防止串口接口重复声明。 */
 #include "main.h"
 #include <stdio.h>
 

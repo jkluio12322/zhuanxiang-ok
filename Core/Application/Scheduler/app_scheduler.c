@@ -4,6 +4,7 @@
  */
 
 #include "app_scheduler.h"
+#include "app_cmd.h"
 #include "app_config.h"
 #include "app_imu.h"
 #include "app_speedloop.h"
@@ -12,7 +13,7 @@
 #include "key.h"
 #include "yingYongXianShi.h"
 #include "app_tracking.h"
-#include "yingYongYaoCe.h"
+#include "app_telemetry.h"
 
 /* TIM6 的 1 ms 计数，用于任务分频。 */
 static uint32_t tickCount = 0U;
@@ -79,10 +80,11 @@ void AppScheduler_OnTick(void)
 
     tickCount++;
 
-    /* 每 10 ms 采样姿态；按键固定 20 ms 一次，顺序与原先一致（先按键后采样）。 */
+    /* 每 10 ms 采样姿态；按键固定 20 ms 一次，先跑状态机再产生命令。 */
     if ((tickCount % APP_SENSOR_PERIOD_MS) == 0U) {
         if ((tickCount % APP_KEY_TICK_PERIOD_MS) == 0U) {
             Key_Tick();
+            AppCmd_Task20ms();
         }
 
         AppImu_Task10ms();
@@ -112,7 +114,7 @@ void AppScheduler_OnTick(void)
 void AppDeferred_Run(void)
 {
     if (AppScheduler_TakeDeferred(DEFERRED_TELEMETRY) != 0U) {
-        appTelemetrySend();
+        AppTelemetry_Send();
     }
 
     if (AppScheduler_TakeDeferred(DEFERRED_DISPLAY) != 0U) {

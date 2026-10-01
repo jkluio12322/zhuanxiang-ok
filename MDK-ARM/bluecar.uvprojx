@@ -392,29 +392,24 @@
           <GroupName>Application/Communication</GroupName>
           <Files>
             <File>
-              <FileName>yingYongMingLing.c</FileName>
+              <FileName>app_cmd.c</FileName>
               <FileType>1</FileType>
-              <FilePath>../Core/Application/Communication/yingYongMingLing.c</FilePath>
+              <FilePath>../Core/Application/Communication/app_cmd.c</FilePath>
             </File>
             <File>
-              <FileName>yingYongYaoCe.c</FileName>
+              <FileName>app_telemetry.c</FileName>
               <FileType>1</FileType>
-              <FilePath>../Core/Application/Communication/yingYongYaoCe.c</FilePath>
+              <FilePath>../Core/Application/Communication/app_telemetry.c</FilePath>
             </File>
             <File>
-              <FileName>pid_tune.c</FileName>
+              <FileName>app_console.c</FileName>
               <FileType>1</FileType>
-              <FilePath>../Core/Application/Communication/pid_tune.c</FilePath>
+              <FilePath>../Core/Application/Communication/app_console.c</FilePath>
             </File>
             <File>
-              <FileName>serial.c</FileName>
+              <FileName>app_serial.c</FileName>
               <FileType>1</FileType>
-              <FilePath>../Core/Application/Communication/serial.c</FilePath>
-            </File>
-            <File>
-              <FileName>blueserial.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>../Core/Application/Communication/blueserial.c</FilePath>
+              <FilePath>../Core/Application/Communication/app_serial.c</FilePath>
             </File>
             <File>
               <FileName>bytestream.c</FileName>

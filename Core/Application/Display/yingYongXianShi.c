@@ -3,9 +3,9 @@
 #include "app_speedloop.h"
 #include "app_state.h"
 #include "app_testmode.h"
-#include "yingYongMingLing.h"
+#include "app_cmd.h"
 #include "app_tracking.h"
-#include "yingYongYaoCe.h"
+#include "app_telemetry.h"
 #include "irtrack.h"
 #include "key.h"
 #include "oled.h"
@@ -68,7 +68,7 @@ void appBootConfigRun(void)
     }
 
     AppSpeedLoop_ResetModeState();
-    appCommandInit();
+    AppCmd_Init();
     Key_Clear();
 }
 

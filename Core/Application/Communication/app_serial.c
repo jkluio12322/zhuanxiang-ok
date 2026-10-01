@@ -12,12 +12,16 @@
  *          环形缓冲区满时静默丢弃剩余字节，保证控制循环不被串口阻塞。
  */
 
-#include "serial.h"
+#include "app_serial.h"
+#include "app_console.h"
 #include "bytestream.h"
 #include "ringbuf.h"
 #include <stdarg.h>
 
 static UART_HandleTypeDef *serial_uart = NULL;
+
+/* 单字节接收中断的落点，由 HAL_UART_RxCpltCallback 转交给命令行模块。 */
+static uint8_t serialRxByte = 0U;
 
 /* TX 环形缓冲区 (生产者: 主循环/任务, 消费者: UART TX Complete ISR)。 */
 /* 串口发送环形缓冲区容量，单位字节。 */
@@ -96,8 +100,8 @@ static void Serial_StartTransmit(void)
 }
 
 /**
- * @brief  串口初始化: 初始化 TX 环形缓冲区
- * @param  huart 用于发送的 UART 句柄。
+ * @brief  串口初始化: 初始化 TX 环形缓冲区并启动单字节接收中断
+ * @param  huart 用于收发的 UART 句柄。
  */
 void Serial_Init(UART_HandleTypeDef *huart)
 {
@@ -105,6 +109,35 @@ void Serial_Init(UART_HandleTypeDef *huart)
     serialByteStream.write = Serial_ByteStreamWrite;
     RingBuf_Init(&tx_ring, tx_ring_buf, TX_RING_SIZE);
     txBusy = 0;
+
+    /* 中断里只缓存一个字节，解析在主循环里做。 */
+    HAL_UART_Receive_IT(serial_uart, &serialRxByte, 1);
+}
+
+/**
+ * @brief  UART 接收完成回调（中断上下文）
+ * @param  huart 触发回调的 UART 句柄。
+ * @note   本工程只用 USART1；USART2 保留给蓝牙但应用未使用。
+ *         回调里只把字节转交给命令行模块并重新装填，不做任何解析。
+ */
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+    if (huart->Instance == USART1) {
+        AppConsole_RxByte(serialRxByte);
+        HAL_UART_Receive_IT(huart, &serialRxByte, 1);
+    }
+}
+
+/**
+ * @brief  UART 发送完成回调（中断上下文）
+ * @param  huart 触发回调的 UART 句柄。
+ * @note   TX 完成后接力发送环形缓冲区里剩下的数据。
+ */
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
+{
+    if (huart->Instance == USART1) {
+        Serial_TX_Done();
+    }
 }
 
 /**

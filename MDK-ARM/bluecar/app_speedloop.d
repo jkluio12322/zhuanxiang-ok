@@ -38,6 +38,6 @@ bluecar\app_speedloop.o: ../Core/Application/Config/app_types.h
 bluecar\app_speedloop.o: ../Core/Application/Motion/app_motion.h
 bluecar\app_speedloop.o: ../Core/Application/State/app_state.h
 bluecar\app_speedloop.o: ../Core/Application/Control/app_testmode.h
-bluecar\app_speedloop.o: ../Core/Application/Communication/yingYongMingLing.h
+bluecar\app_speedloop.o: ../Core/Application/Communication/app_cmd.h
 bluecar\app_speedloop.o: ../Core/Application/Control/app_tracking.h
-bluecar\app_speedloop.o: ../Core/Application/Communication/yingYongYaoCe.h
+bluecar\app_speedloop.o: ../Core/Application/Communication/app_telemetry.h

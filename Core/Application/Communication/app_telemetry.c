@@ -1,12 +1,12 @@
 /**
- * @file    yingYongYaoCe.c
+ * @file    app_telemetry.c
  * @brief   VOFA+ CSV 遥测快照与发送。
  */
 
-#include "yingYongYaoCe.h"
+#include "app_telemetry.h"
 #include "app_config.h"
 #include "app_state.h"
-#include "serial.h"
+#include "app_serial.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -19,7 +19,7 @@ telemetryData_t telemetryData;
  * @param  reason 停车原因。
  * @return 固定字符串名称；未知值返回 UNKNOWN。
  */
-static const char *appTelemetryStopReasonName(appStopReason_t reason)
+static const char *telemetryStopReasonName(appStopReason_t reason)
 {
     switch (reason) {
     case stopReasonUser:
@@ -42,7 +42,7 @@ static const char *appTelemetryStopReasonName(appStopReason_t reason)
  * @brief  初始化 VOFA 遥测数据结构。
  * @note   将全部遥测字段清零，保证首次发送前数据有效。
  */
-void appTelemetryInit(void)
+void AppTelemetry_Init(void)
 {
     memset(&telemetryData, 0, sizeof(telemetryData));
 }
@@ -52,7 +52,16 @@ void appTelemetryInit(void)
  * @note   无新数据、VOFA 被关闭或车辆停车且转速接近 0 时不发送；
  *         PWM 百分比会换算为近似电压后输出。
  */
-void appTelemetrySend(void)
+void AppTelemetry_BootHeader(void)
+{
+    /* 字段顺序与下面 Send 里的 snprintf 格式串一致，共 16 项。 */
+    Serial_Printf("BOOT OK\r\n");
+    Serial_Printf("#tgtRpmL,rpmFL,voltL,tgtRpmR,rpmFR,voltR,"
+                  "steerRpm,diffRpm,yawDeg,trackError,"
+                  "mode,run,gear,turnPhase,rpmL,rpmR\r\n");
+}
+
+void AppTelemetry_Send(void)
 {
     appStopReason_t stopReason;
 
@@ -67,7 +76,7 @@ void appTelemetrySend(void)
         int stopLength = snprintf(stopBuffer,
                                   sizeof(stopBuffer),
                                   "[STOP] reason=%s code=%d\r\n",
-                                  appTelemetryStopReasonName(stopReason),
+                                  telemetryStopReasonName(stopReason),
                                   (int)stopReason);
 
         if ((stopLength > 0) && (stopLength < (int)sizeof(stopBuffer))) {
