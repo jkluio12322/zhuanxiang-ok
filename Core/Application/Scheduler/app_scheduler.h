@@ -18,6 +18,29 @@ typedef enum {
 } AppDeferredId_t;
 
 /**
+ * @brief  「连续 N 次成立」的确认计数器。
+ * @note   取代原来散落的裸 tick 计数器：调用方不再自己 ++ / -- / 比较阈值。
+ */
+typedef struct {
+    uint16_t need;   /* 需要的连续次数。 */
+    uint16_t count;  /* 当前已连续次数。 */
+} ConfirmCounter;
+
+/**
+ * @brief  复位确认计数器并设定需要的连续次数。
+ */
+void Confirm_Reset(ConfirmCounter *c, uint16_t need);
+
+/**
+ * @brief  推进一次确认。
+ * @param  c               计数器。
+ * @param  condition_true  本次条件是否成立。
+ * @return 1 表示已经连续成立 need 次。
+ * @note   条件不成立时计数清零；到达 need 后保持在 need。
+ */
+uint8_t Confirm_Update(ConfirmCounter *c, uint8_t condition_true);
+
+/**
  * @brief  初始化调度器并放行中断分发。
  * @note   必须在所有模块的 *_Init() 之后、Timer_Init() 之前调用。
  */

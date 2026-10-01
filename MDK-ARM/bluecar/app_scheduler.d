@@ -34,11 +34,11 @@ bluecar\app_scheduler.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h
 bluecar\app_scheduler.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h
 bluecar\app_scheduler.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h
 bluecar\app_scheduler.o: ../Core/Application/Config/app_types.h
+bluecar\app_scheduler.o: ../Core/Application/Motion/app_speedloop.h
+bluecar\app_scheduler.o: ../Core/Application/Control/app_pid.h
+bluecar\app_scheduler.o: ../Core/Application/State/app_state.h
+bluecar\app_scheduler.o: ../Core/Application/Control/app_testmode.h
 bluecar\app_scheduler.o: ../Core/Hardware/Peripherals/IO/key.h
-bluecar\app_scheduler.o: ../Core/Application/Control/yingYongKongZhi.h
 bluecar\app_scheduler.o: ../Core/Application/Display/yingYongXianShi.h
-bluecar\app_scheduler.o: ../Core/Application/Control/yingYongXunJi.h
+bluecar\app_scheduler.o: ../Core/Application/Control/app_tracking.h
 bluecar\app_scheduler.o: ../Core/Application/Communication/yingYongYaoCe.h
-bluecar\app_scheduler.o: ../Core/Application/Control/yingYongZhuangTai.h
-bluecar\app_scheduler.o: ../Core/Hardware/Peripherals/Motion/encoder.h
-bluecar\app_scheduler.o: ../Core/Application/Control/pid.h

@@ -18,9 +18,13 @@
 #include "yingYongMingLing.h"
 #include "app_config.h"
 #include "app_imu.h"
+#include "app_motion.h"
 #include "app_scheduler.h"
+#include "app_speedloop.h"
+#include "app_state.h"
+#include "app_testmode.h"
+#include "app_tracking.h"
 #include "yingYongXianShi.h"
-#include "yingYongZhuangTai.h"
 #include "yingYongYaoCe.h"
 #include "blueserial.h"
 #include "buzzer.h"
@@ -75,6 +79,10 @@ int main(void)
   IRTrack_Init();
   AppImu_Init();
   Encoder_Init_TIM_All();
+  AppMotion_Init();
+  AppSpeedLoop_Init();
+  AppTestMode_Init();
+  AppTracking_Init();
   Timer_Init();
   TIM5_Init();
   Key_Init();
@@ -86,7 +94,7 @@ int main(void)
   BlueSerial_Init();
 
     /* 初始化应用层状态和命令队列。 */
-  appStateInit();
+  AppState_Init();
   appCommandInit();
   appTelemetryInit();
 

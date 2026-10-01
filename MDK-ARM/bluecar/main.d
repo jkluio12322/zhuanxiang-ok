@@ -39,11 +39,14 @@ bluecar\main.o: ../Core/Application/Communication/yingYongMingLing.h
 bluecar\main.o: ../Core/Application/Config/app_config.h
 bluecar\main.o: ../Core/Application/State/app_imu.h
 bluecar\main.o: ../Core/Hardware/Peripherals/Sensors/mpu6050.h
+bluecar\main.o: ../Core/Application/Motion/app_motion.h
 bluecar\main.o: ../Core/Application/Scheduler/app_scheduler.h
+bluecar\main.o: ../Core/Application/Motion/app_speedloop.h
+bluecar\main.o: ../Core/Application/Control/app_pid.h
+bluecar\main.o: ../Core/Application/State/app_state.h
+bluecar\main.o: ../Core/Application/Control/app_testmode.h
+bluecar\main.o: ../Core/Application/Control/app_tracking.h
 bluecar\main.o: ../Core/Application/Display/yingYongXianShi.h
-bluecar\main.o: ../Core/Application/Control/yingYongZhuangTai.h
-bluecar\main.o: ../Core/Hardware/Peripherals/Motion/encoder.h
-bluecar\main.o: ../Core/Application/Control/pid.h
 bluecar\main.o: ../Core/Application/Communication/yingYongYaoCe.h
 bluecar\main.o: ../Core/Application/Communication/blueserial.h
 bluecar\main.o: F:\kilv5\ARM\ARMCC\Bin\..\include\string.h
@@ -51,6 +54,7 @@ bluecar\main.o: F:\kilv5\ARM\ARMCC\Bin\..\include\stdlib.h
 bluecar\main.o: F:\kilv5\ARM\ARMCC\Bin\..\include\stdio.h
 bluecar\main.o: F:\kilv5\ARM\ARMCC\Bin\..\include\stdarg.h
 bluecar\main.o: ../Core/Hardware/Peripherals/IO/buzzer.h
+bluecar\main.o: ../Core/Hardware/Peripherals/Motion/encoder.h
 bluecar\main.o: ../Core/Hardware/Peripherals/Sensors/irtrack.h
 bluecar\main.o: ../Core/Hardware/Peripherals/IO/key.h
 bluecar\main.o: ../Core/Hardware/Peripherals/Motion/motor.h

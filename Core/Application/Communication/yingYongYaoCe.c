@@ -5,7 +5,7 @@
 
 #include "yingYongYaoCe.h"
 #include "app_config.h"
-#include "yingYongZhuangTai.h"
+#include "app_state.h"
 #include "serial.h"
 
 #include <math.h>
@@ -56,13 +56,13 @@ void appTelemetrySend(void)
 {
     appStopReason_t stopReason;
 
-    if (!vofaEnabled) return;
+    if (!AppState()->vofa) return;
 
     /*
      * 停车事件优先于普通 CSV，并且绕过停车后零转速抑制。
      * 只有完整写入发送缓冲区后才清除事件；否则下个周期重试。
      */
-    if (appStateGetStopEvent(&stopReason)) {
+    if (AppState_TakeStopEvent(&stopReason)) {
         char stopBuffer[TELEMETRY_BUFFER_SIZE];
         int stopLength = snprintf(stopBuffer,
                                   sizeof(stopBuffer),
@@ -75,7 +75,7 @@ void appTelemetrySend(void)
                                        (uint16_t)stopLength);
 
             if (written == stopLength) {
-                appStateClearStopEvent();
+                AppState_ClearStopEvent();
             }
         }
 
@@ -84,7 +84,7 @@ void appTelemetrySend(void)
 
     /* 无新数据或停车且转速接近 0 时不发送普通遥测。 */
     if (!telemetryData.fresh) return;
-    if (!runFlag
+    if (!AppState()->running
         && fabsf(telemetryData.actualRightRpm) < TELEMETRY_STOP_RPM_EPSILON
         && fabsf(telemetryData.actualLeftRpm) < TELEMETRY_STOP_RPM_EPSILON) {
         return;

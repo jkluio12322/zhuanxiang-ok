@@ -1,5 +1,14 @@
 #!/usr/bin/env python3
-"""Deterministic host-side simulation for the eight-channel line tracker."""
+"""八路循迹的离线仿真。
+
+模型对齐 app_tracking.c：
+  - e_y 取归一化质心 (sum / count) * 0.28，居中被控量为 0
+  - 单个位置式 PD 输出差速 RPM
+  - 计圈用「|e_y| 持续超过阈值」的事件计数，起点横线因 e_y≈0 天然不计
+
+参数全部从 Core/Application/Config/app_config.h 解析，改宏后直接重跑，
+不需要重新编译固件。
+"""
 
 from __future__ import annotations
 
@@ -22,11 +31,8 @@ def parse_macros(*paths: Path) -> dict[str, float]:
             match = DEFINE_RE.match(line)
             if not match:
                 continue
-
             name, raw_value = match.groups()
-            value = raw_value.strip()
-            value = re.sub(r"[uUlLfF]+$", "", value)
-            value = value.strip("()")
+            value = re.sub(r"[uUlLfF]+$", "", raw_value.strip()).strip("()")
             try:
                 macros[name] = float(value)
             except ValueError:
@@ -34,744 +40,313 @@ def parse_macros(*paths: Path) -> dict[str, float]:
     return macros
 
 
-def require(macros: dict[str, float], name: str) -> float:
-    if name not in macros:
-        raise RuntimeError(f"missing numeric macro: {name}")
-    return macros[name]
-
-
 MACROS = parse_macros(CONFIG_PATH, IRTRACK_PATH)
 
-PID_KP = require(MACROS, "TRACK_PID_KP")
-PID_KI = require(MACROS, "TRACK_PID_KI")
-PID_KD = require(MACROS, "TRACK_PID_KD")
-PID_PERIOD = require(MACROS, "TRACK_PID_PERIOD_SECONDS")
-ERROR_LIMIT = require(MACROS, "TRACK_WEIGHTED_ERROR_LIMIT")
-DIFF_LIMIT = require(MACROS, "TRACK_FOLLOW_DIFF_LIMIT_RPM")
-STEERING_SIGN = require(MACROS, "TRACK_STEERING_SIGN")
-ALL_WHITE_STOP_TICKS = int(require(MACROS, "TRACK_ALL_WHITE_STOP_TICKS"))
-INVALID_LINE_CONFIRM_TICKS = int(
-    require(MACROS, "TRACK_LINE_INVALID_CONFIRM_TICKS")
-)
-CURVE_SPEED_ERROR_START = require(MACROS, "TRACK_CURVE_SPEED_ERROR_START")
-CURVE_SPEED_ERROR_FULL = require(MACROS, "TRACK_CURVE_SPEED_ERROR_FULL")
-CURVE_SPEED_MIN_RPM = require(MACROS, "TRACK_CURVE_SPEED_MIN_RPM")
-CURVE_SPEED_MIN_SCALE = require(MACROS, "TRACK_CURVE_SPEED_MIN_SCALE")
-SPEED_RECOVERY_STEP_RPM = require(MACROS, "TRACK_SPEED_RECOVERY_STEP_RPM")
-LOST_LINE_MAX_BASE_RPM = require(MACROS, "TRACK_LOST_LINE_MAX_BASE_RPM")
-CORNER_LOST_LINE_MIN_DIFF_RPM = require(
-    MACROS,
-    "TRACK_CORNER_LOST_LINE_MIN_DIFF_RPM",
-)
-CORNER_LOST_LINE_MAX_BASE_RPM = require(
-    MACROS,
-    "TRACK_CORNER_LOST_LINE_MAX_BASE_RPM",
-)
-CORNER_LOST_LINE_STOP_TICKS = int(
-    require(MACROS, "TRACK_CORNER_LOST_LINE_STOP_TICKS")
-)
-CORNER_MIN_TICKS = int(require(MACROS, "TRACK_CORNER_MIN_TICKS"))
-CLEAR_TICKS = int(require(MACROS, "TRACK_CORNER_CENTER_CLEAR_TICKS"))
-CLEAR_POSITION_MIN = require(MACROS, "TRACK_CORNER_CENTER_CLEAR_POSITION_MIN")
-REACQUIRE_TICKS = int(require(MACROS, "TRACK_CORNER_REACQUIRE_CENTER_TICKS"))
-REACQUIRE_POSITION_MAX = require(MACROS, "TRACK_CORNER_REACQUIRE_POSITION_MAX")
-FINISH_BLACK_COUNT_MIN = int(require(MACROS, "TRACK_FINISH_BLACK_COUNT_MIN"))
-G1_RPM = require(MACROS, "SPEED_TABLE_G1_RPM")
-G2_RPM = require(MACROS, "SPEED_TABLE_G2_RPM")
-G3_RPM = require(MACROS, "SPEED_TABLE_G3_RPM")
-G6_RPM = require(MACROS, "SPEED_TABLE_G6_RPM")
 
-IR_WEIGHTS = tuple(
-    int(require(MACROS, f"IR_WEIGHT_CH{channel}"))
-    for channel in range(1, 9)
-)
+def require(name: str) -> float:
+    if name not in MACROS:
+        raise RuntimeError(f"missing numeric macro: {name}")
+    return MACROS[name]
 
 
-def pattern_is_contiguous(pattern: int) -> bool:
-    black_bits = [bit for bit in range(8) if pattern & (1 << bit)]
-    if not black_bits:
-        return False
+CHANNELS = 8
 
-    first_black = black_bits[0]
-    last_black = black_bits[-1]
-    return all(pattern & (1 << bit) for bit in range(first_black, last_black + 1))
+# 与 irtrack.c 的权重表一致：负值偏左，正值偏右。
+WEIGHTS = [require(f"IR_WEIGHT_CH{i}") for i in range(1, CHANNELS + 1)]
 
+# 归一化系数：position = (sum / count) * 0.28。
+POSITION_SCALE = 0.28
 
-@dataclass(frozen=True)
-class SensorSample:
-    pattern: int
-    weight_sum: int
-    position: float
-    black_count: int
+PID_KP = require("TRACK_PID_KP")
+PID_KI = require("TRACK_PID_KI")
+PID_KD = require("TRACK_PID_KD")
+PID_DT = require("TRACK_PID_PERIOD_SECONDS")
+DIFF_LIMIT = require("TRACK_FOLLOW_DIFF_LIMIT_RPM")
 
-    @property
-    def valid(self) -> bool:
-        return 1 <= self.black_count <= 7 and pattern_is_contiguous(self.pattern)
+LINE_VALID_MAX_BLACK = int(require("TRACK_LINE_VALID_MAX_BLACK"))
+INVALID_CONFIRM_TICKS = int(require("TRACK_LINE_INVALID_CONFIRM_TICKS"))
+ALL_WHITE_STOP_TICKS = int(require("TRACK_ALL_WHITE_STOP_TICKS"))
+LOST_STOP_TICKS = int(require("TRACK_LINE_LOST_STOP_TICKS"))
+START_FORWARD_TICKS = int(require("TRACK_START_FORWARD_TICKS"))
 
-    @property
-    def left_count(self) -> int:
-        return sum(1 for bit in range(4) if self.pattern & (1 << bit))
-
-    @property
-    def right_count(self) -> int:
-        return sum(1 for bit in range(4, 8) if self.pattern & (1 << bit))
+CORNER_E_Y_MIN = require("TRACK_CORNER_E_Y_MIN")
+CORNER_CONFIRM_TICKS = int(require("TRACK_CORNER_CONFIRM_TICKS"))
+CORNER_GAP_TICKS = int(require("TRACK_CORNER_GAP_TICKS"))
+CORNERS_PER_LAP = int(require("TRACK_CORNERS_PER_LAP"))
 
 
-def sensor_sample(pattern_text: str) -> SensorSample:
-    if len(pattern_text) != 8 or any(char not in "01" for char in pattern_text):
-        raise ValueError(f"invalid pattern: {pattern_text!r}")
-
-    pattern = 0
-    weight_sum = 0
-    black_count = 0
-    for index, char in enumerate(pattern_text):
-        if char == "1":
-            pattern |= 1 << index
-            weight_sum += IR_WEIGHTS[index]
-            black_count += 1
-
-    position = 0.0
-    if black_count:
-        position = int(weight_sum * 28 / black_count) / 100.0
-
-    return SensorSample(pattern, weight_sum, position, black_count)
+def clamp(value: float, low: float, high: float) -> float:
+    return max(low, min(high, value))
 
 
-def clamp(value: float, lower: float, upper: float) -> float:
-    return max(lower, min(upper, value))
+def close(a: float, b: float, tol: float = 1e-6) -> bool:
+    return abs(a - b) <= tol
 
 
 @dataclass
-class TrackingOutput:
-    error: float
-    integral: float
-    steer: float
-    average_target: float
-    target_left: float
-    target_right: float
+class LineSample:
+    pattern: int
+    black_count: int
+    contiguous: bool
+    valid: bool
+    all_white: bool
+    e_y: float
 
 
-class TrackingPid:
-    def __init__(self) -> None:
-        self.weighted_error = 0.0
-        self.previous_error = 0.0
+def classify(pattern: int) -> LineSample:
+    """按 app_tracking.c 的规则判定线路。"""
+    black = [i for i in range(CHANNELS) if (pattern >> i) & 1]
+    count = len(black)
+
+    if count == 0:
+        contiguous = False
+    else:
+        contiguous = all(((pattern >> i) & 1) for i in range(black[0], black[-1] + 1))
+
+    total = sum(WEIGHTS[i] for i in black)
+    e_y = (total / count) * POSITION_SCALE if count else 0.0
+
+    valid = 1 <= count <= LINE_VALID_MAX_BLACK and contiguous
+
+    return LineSample(pattern, count, contiguous, valid, count == 0, e_y)
+
+
+class Confirm:
+    """对应 app_scheduler.h 的 ConfirmCounter。"""
+
+    def __init__(self, need: int):
+        self.need = need
+        self.count = 0
+
+    def reset(self, need: int | None = None) -> None:
+        if need is not None:
+            self.need = need
+        self.count = 0
+
+    def update(self, condition: bool) -> bool:
+        if condition:
+            if self.count < self.need:
+                self.count += 1
+        else:
+            self.count = 0
+        return self.count >= self.need
+
+
+class Tracker:
+    """对应 app_tracking.c 的静态状态。"""
+
+    def __init__(self):
+        self.state = "ACQUIRE"
+        self.e0 = self.e1 = 0.0
         self.integral = 0.0
-        self.average_target = 0.0
         self.steer = 0.0
-        self.scheduled_base_rpm = 0.0
-        self.invalid_line_ticks = 0
+        self.invalid = Confirm(INVALID_CONFIRM_TICKS)
+        self.all_white = Confirm(ALL_WHITE_STOP_TICKS)
+        self.lost_stop = Confirm(LOST_STOP_TICKS)
+        self.corner = Confirm(CORNER_CONFIRM_TICKS)
+        self.corner_gap = 0
+        self.lap_corners = 0
+        self.laps = 0
+        self.startup = 0
+        self.stop_reason: str | None = None
 
-    def reset(self) -> None:
-        self.weighted_error = 0.0
-        self.previous_error = 0.0
-        self.integral = 0.0
-        self.average_target = 0.0
-        self.steer = 0.0
-        self.scheduled_base_rpm = 0.0
-        self.invalid_line_ticks = 0
+    def pid(self, error: float) -> float:
+        self.integral += PID_KI * error * PID_DT
+        self.integral = clamp(self.integral, -DIFF_LIMIT, DIFF_LIMIT)
+        out = PID_KP * error + self.integral + PID_KD * (error - self.e1)
+        self.e1 = self.e0
+        self.e0 = error
+        return clamp(out, -DIFF_LIMIT, DIFF_LIMIT)
 
-    def schedule_curve_base(
-        self,
-        selected_base_rpm: float,
-        weight_sum: int,
-    ) -> float:
-        absolute_error = abs(float(weight_sum))
-        if absolute_error <= CURVE_SPEED_ERROR_START:
-            speed_scale = 1.0
-        elif absolute_error >= CURVE_SPEED_ERROR_FULL:
-            speed_scale = CURVE_SPEED_MIN_SCALE
-        else:
-            speed_scale = 1.0 - (
-                (1.0 - CURVE_SPEED_MIN_SCALE)
-                * (
-                    (absolute_error - CURVE_SPEED_ERROR_START)
-                    / (CURVE_SPEED_ERROR_FULL - CURVE_SPEED_ERROR_START)
-                )
-            )
+    def step(self, pattern: int) -> float:
+        s = classify(pattern)
 
-        minimum_base_rpm = min(selected_base_rpm, CURVE_SPEED_MIN_RPM)
-        curve_base_rpm = max(
-            minimum_base_rpm,
-            selected_base_rpm * speed_scale,
-        )
+        if s.valid:
+            self.invalid.reset(INVALID_CONFIRM_TICKS)
+            self.lost_stop.reset(LOST_STOP_TICKS)
+            if self.state == "LOST":
+                self.state = "FOLLOW"
+        elif self.invalid.update(True):
+            self.state = "LOST"
 
-        if self.scheduled_base_rpm <= 0.0:
-            next_base_rpm = curve_base_rpm
-        elif curve_base_rpm < self.scheduled_base_rpm:
-            next_base_rpm = curve_base_rpm
-        else:
-            next_base_rpm = min(
-                curve_base_rpm,
-                self.scheduled_base_rpm + SPEED_RECOVERY_STEP_RPM,
-            )
+        if self.all_white.update(s.all_white):
+            self.stop_reason = "ALL_WHITE"
+            return self.steer
 
-        self.scheduled_base_rpm = next_base_rpm
-        return next_base_rpm
+        if self.state == "LOST" and self.lost_stop.update(True):
+            self.stop_reason = "LINE_LOST_TIMEOUT"
+            return self.steer
 
-    def schedule_lost_line_base(
-        self,
-        selected_base_rpm: float,
-        max_base_rpm: float = LOST_LINE_MAX_BASE_RPM,
-    ) -> float:
-        limited_base_rpm = min(selected_base_rpm, max_base_rpm)
+        if self.state == "ACQUIRE":
+            self.startup += 1
+            if self.startup >= START_FORWARD_TICKS:
+                self.state = "FOLLOW"
+        elif self.state == "FOLLOW" and s.valid:
+            self.steer = self.pid(s.e_y)
 
-        if self.scheduled_base_rpm <= 0.0:
-            next_base_rpm = limited_base_rpm
-        elif limited_base_rpm < self.scheduled_base_rpm:
-            next_base_rpm = limited_base_rpm
-        else:
-            next_base_rpm = self.scheduled_base_rpm
+            if self.corner_gap > 0:
+                self.corner_gap -= 1
+            elif self.corner.update(abs(s.e_y) >= CORNER_E_Y_MIN):
+                self.corner.reset(CORNER_CONFIRM_TICKS)
+                self.corner_gap = CORNER_GAP_TICKS
+                self.lap_corners += 1
+                if self.lap_corners >= CORNERS_PER_LAP:
+                    self.lap_corners = 0
+                    self.laps += 1
 
-        self.scheduled_base_rpm = next_base_rpm
-        return next_base_rpm
-
-    def apply(
-        self,
-        sample: SensorSample,
-        base_speed: float,
-        turn_direction: int = 0,
-    ) -> TrackingOutput:
-        if sample.valid:
-            self.invalid_line_ticks = 0
-            self.average_target = self.schedule_curve_base(
-                base_speed,
-                sample.weight_sum,
-            )
-            error = clamp(float(sample.weight_sum), -ERROR_LIMIT, ERROR_LIMIT)
-            derivative = error - self.previous_error
-            # 代码里积分项和输出项都由 diffLimit 限幅（pid.c TrackPid_Update），
-            # 不是单独的积分限。
-            self.integral = clamp(
-                self.integral + PID_KI * error * PID_PERIOD,
-                -DIFF_LIMIT,
-                DIFF_LIMIT,
-            )
-            self.weighted_error = error
-            self.previous_error = error
-            self.steer = clamp(
-                PID_KP * error + self.integral + PID_KD * derivative,
-                -DIFF_LIMIT,
-                DIFF_LIMIT,
-            )
-        elif turn_direction != 0:
-            self.average_target = self.schedule_lost_line_base(
-                base_speed,
-                CORNER_LOST_LINE_MAX_BASE_RPM,
-            )
-            locked_direction = float(turn_direction) * STEERING_SIGN
-            minimum_steer = (
-                locked_direction * CORNER_LOST_LINE_MIN_DIFF_RPM
-            )
-            if not (
-                self.steer * locked_direction > 0.0
-                and abs(self.steer) > abs(minimum_steer)
-            ):
-                self.steer = minimum_steer
-        else:
-            if self.invalid_line_ticks < INVALID_LINE_CONFIRM_TICKS:
-                self.invalid_line_ticks += 1
-
-            if self.invalid_line_ticks >= INVALID_LINE_CONFIRM_TICKS:
-                self.average_target = self.schedule_lost_line_base(base_speed)
-
-        return TrackingOutput(
-            error=self.weighted_error,
-            integral=self.integral,
-            steer=self.steer,
-            average_target=self.average_target,
-            target_left=self.average_target + self.steer,
-            target_right=self.average_target - self.steer,
-        )
+        return self.steer
 
 
-class CornerMarker:
-    def __init__(self) -> None:
-        self.active = False
-        self.direction = 0
-        self.ticks = 0
-        self.clear_ticks = 0
-        self.cleared = False
-        self.complete_ticks = 0
-        self.completed = False
-
-    def start(self, direction: int) -> None:
-        self.active = True
-        self.direction = direction
-        self.ticks = 0
-        self.clear_ticks = 0
-        self.cleared = False
-        self.complete_ticks = 0
-        self.completed = False
-
-    def update(self, sample: SensorSample) -> bool:
-        if not self.active:
-            return False
-
-        self.ticks += 1
-        recentered = (
-            sample.valid and abs(sample.position) <= REACQUIRE_POSITION_MAX
-        )
-
-        if not self.cleared:
-            if sample.valid and abs(sample.position) > CLEAR_POSITION_MIN:
-                self.clear_ticks += 1
-                if self.clear_ticks >= CLEAR_TICKS:
-                    self.cleared = True
-            elif recentered:
-                self.clear_ticks = 0
-
-        if self.ticks >= CORNER_MIN_TICKS and self.cleared and recentered:
-            self.complete_ticks += 1
-            if self.complete_ticks >= REACQUIRE_TICKS:
-                self.active = False
-                self.completed = True
-                return True
-        else:
-            self.complete_ticks = 0
-
-        return False
+def pattern_of(*channels: int) -> int:
+    """通道号从 1 开始，返回对应的压黑掩码。"""
+    mask = 0
+    for ch in channels:
+        mask |= 1 << (ch - 1)
+    return mask
 
 
-def direct_corner_direction(sample: SensorSample) -> int:
-    if not pattern_is_contiguous(sample.pattern):
-        return 0
-    if sample.black_count < 3 or sample.black_count > 7:
-        return 0
-    if sample.left_count >= 3 and sample.left_count >= sample.right_count + 2:
-        return -1
-    if sample.right_count >= 3 and sample.right_count >= sample.left_count + 2:
-        return 1
-    return 0
+FAILURES: list[str] = []
 
 
-def edge_candidate_direction(sample: SensorSample) -> int:
-    if not pattern_is_contiguous(sample.pattern):
-        return 0
-    if sample.black_count == 0 or sample.black_count > 7:
-        return 0
-    if sample.left_count >= 2 and sample.left_count >= sample.right_count + 2:
-        return -1
-    if sample.right_count >= 2 and sample.right_count >= sample.left_count + 2:
-        return 1
-    if abs(sample.position) >= require(MACROS, "TRACK_CORNER_EDGE_POSITION_MIN"):
-        return 1 if sample.position > 0.0 else -1
-    return 0
+def expect(condition: bool, label: str) -> None:
+    if condition:
+        print(f"PASS {label}")
+    else:
+        print(f"FAIL {label}")
+        FAILURES.append(label)
 
 
-def can_start_corner(sample: SensorSample) -> bool:
-    if sample.black_count >= int(require(MACROS, "TRACK_FINISH_BLACK_COUNT_MIN")):
-        return False
-    return direct_corner_direction(sample) != 0
+def run_tracking() -> None:
+    print(f"Kp={PID_KP:.3f} Ki={PID_KI:.3f} Kd={PID_KD:.3f} "
+          f"diff_limit={DIFF_LIMIT:.1f} corner_e_y={CORNER_E_Y_MIN:.1f}")
+    print(f"weights: {WEIGHTS}")
+    print()
 
+    # ---- 线路判定 ----
+    s = classify(pattern_of(4, 5))
+    expect(s.valid and close(s.e_y, 0.0), "centered pair is valid and centered")
 
-def limit_pwm(pwm: float, turn_marker_active: bool) -> float:
-    """循迹模式下所有负 PWM 都夹到 0（对应 yingYongKongZhi.c:434-435）。
+    s = classify(pattern_of(1, 8))
+    expect(not s.valid, "IR1+IR8 with a white gap is invalid")
 
-    当前代码没有「急弯期间允许 -20% 反转」这个特例，参数保留只为兼容调用点。
-    """
-    return max(pwm, 0.0)
+    s = classify(pattern_of(1, 2, 3, 4, 5, 6, 7, 8))
+    expect(not s.valid, "all eight black is invalid")
 
+    s = classify(0)
+    expect(s.all_white and not s.valid, "all white is invalid")
 
-class LineLossMonitor:
-    def __init__(self) -> None:
-        self.all_white_ticks = 0
-        self.corner_lost_line_ticks = 0
+    # ---- 单路压黑的量化取值与方向 ----
+    for ch, expected in ((1, -7.0), (4, -0.84), (5, 0.84), (8, 7.0)):
+        s = classify(pattern_of(ch))
+        expect(close(s.e_y, expected, 0.01),
+               f"single channel IR{ch} gives e_y {expected:+.2f}")
 
-    def update(
-        self,
-        valid_line: bool,
-        all_white: bool,
-        corner_turn_active: bool,
-    ) -> str:
-        if corner_turn_active:
-            if valid_line:
-                self.corner_lost_line_ticks = 0
-                self.all_white_ticks = 0
-                return ""
+    # ---- 转向方向：e_y 为正（线在右）时输出正差速 ----
+    t = Tracker()
+    t.state = "FOLLOW"
+    left_bias = t.step(pattern_of(6, 7))
+    expect(left_bias > 0.0, "line to the right steers positive")
 
-            if self.corner_lost_line_ticks < CORNER_LOST_LINE_STOP_TICKS:
-                self.corner_lost_line_ticks += 1
-            if self.corner_lost_line_ticks >= CORNER_LOST_LINE_STOP_TICKS:
-                return "CORNER_TIMEOUT"
-            return ""
+    t = Tracker()
+    t.state = "FOLLOW"
+    right_bias = t.step(pattern_of(2, 3))
+    expect(right_bias < 0.0, "line to the left steers negative")
 
-        self.corner_lost_line_ticks = 0
-        if all_white:
-            if self.all_white_ticks < ALL_WHITE_STOP_TICKS:
-                self.all_white_ticks += 1
-            if self.all_white_ticks >= ALL_WHITE_STOP_TICKS:
-                return "ALL_WHITE"
-        else:
-            self.all_white_ticks = 0
-        return ""
+    # ---- 最外侧单路压黑时，输出稳定在 Kp * e_y_max ----
+    t = Tracker()
+    t.state = "FOLLOW"
+    for _ in range(5):
+        out = t.step(pattern_of(8))
+    expect(close(out, PID_KP * 7.0, 1.0),
+           "extreme error settles at Kp * e_y_max")
+    expect(out < DIFF_LIMIT,
+           "normal operation stays below the diff limit (it is only a safety clamp)")
 
+    # ---- 丢线确认与保持 ----
+    t = Tracker()
+    t.state = "FOLLOW"
+    t.step(pattern_of(4, 5))
+    held = t.steer
+    t.step(0)          # 1 次全白
+    expect(t.state == "FOLLOW", "a single blank tick does not drop to LOST")
+    expect(close(t.steer, held), "short blank holds the previous steer")
 
-def close(left: float, right: float, tolerance: float = 1e-6) -> bool:
-    return abs(left - right) <= tolerance
+    # ---- 全白一秒停车 ----
+    t = Tracker()
+    t.state = "FOLLOW"
+    for _ in range(ALL_WHITE_STOP_TICKS):
+        t.step(0)
+    expect(t.stop_reason == "ALL_WHITE", "all white for one second stops the car")
+
+    # ---- 丢线超时停车 ----
+    t = Tracker()
+    t.state = "FOLLOW"
+    for _ in range(LOST_STOP_TICKS + 5):
+        t.step(pattern_of(1, 8))   # 断续图案 → 持续无效
+    expect(t.stop_reason == "LINE_LOST_TIMEOUT", "sustained invalid line times out")
+
+    # ---- 计圈：正对起点横线不计 ----
+    t = Tracker()
+    t.state = "FOLLOW"
+    for _ in range(20):
+        t.step(pattern_of(1, 2, 3, 4, 5, 6, 7, 8))   # 全压，e_y≈0，但被判无效
+    expect(t.lap_corners == 0, "a straight-on start bar never counts a corner")
+
+    # ---- 计圈：斜穿起点横线（单侧 4 路）也不计 ----
+    t = Tracker()
+    t.state = "FOLLOW"
+    for _ in range(CORNER_CONFIRM_TICKS - 1):
+        t.step(pattern_of(1, 2, 3, 4))   # e_y = -3.78，超过阈值
+    expect(t.lap_corners == 0,
+           "a slanted start bar shorter than the confirm window never counts")
+
+    # ---- 计圈：持续偏在一侧才算一个弯 ----
+    t = Tracker()
+    t.state = "FOLLOW"
+    for _ in range(CORNER_CONFIRM_TICKS):
+        t.step(pattern_of(1, 2, 3))
+    expect(t.lap_corners == 1, "a sustained one-sided excursion counts one corner")
+
+    # ---- 一个弯只计一次（间隔生效） ----
+    t = Tracker()
+    t.state = "FOLLOW"
+    for _ in range(CORNER_CONFIRM_TICKS + CORNER_GAP_TICKS):
+        t.step(pattern_of(1, 2, 3))
+    expect(t.lap_corners == 1, "the gap prevents one corner counting twice")
+
+    # ---- 四个弯计一圈 ----
+    t = Tracker()
+    t.state = "FOLLOW"
+    for _ in range(CORNERS_PER_LAP):
+        for _ in range(CORNER_CONFIRM_TICKS):
+            t.step(pattern_of(1, 2, 3))
+        for _ in range(CORNER_GAP_TICKS + 1):
+            t.step(pattern_of(4, 5))
+    expect(t.laps == 1, f"{CORNERS_PER_LAP} corners count one lap")
+
+    # ---- 连续四圈报四圈，不是五圈 ----
+    t = Tracker()
+    t.state = "FOLLOW"
+    for _ in range(4):
+        for _ in range(CORNERS_PER_LAP):
+            for _ in range(CORNER_CONFIRM_TICKS):
+                t.step(pattern_of(1, 2, 3))
+            for _ in range(CORNER_GAP_TICKS + 1):
+                t.step(pattern_of(4, 5))
+        # 每圈末尾正对一次起点横线
+        for _ in range(5):
+            t.step(pattern_of(1, 2, 3, 4, 5, 6, 7, 8))
+    expect(t.laps == 4, "four laps report four laps, not five")
 
 
 def main() -> int:
-    failures: list[str] = []
-
-    def expect(condition: bool, message: str) -> None:
-        if not condition:
-            failures.append(message)
-
-    print("Eight-channel tracking simulation")
-    print(
-        "config: "
-        f"Kp={PID_KP:.3f} Ki={PID_KI:.3f} Kd={PID_KD:.3f} "
-        f"error_limit={ERROR_LIMIT:.1f} diff_limit={DIFF_LIMIT:.1f}"
-    )
-    print(f"weights: {IR_WEIGHTS}")
+    run_tracking()
     print()
-
-    centered = sensor_sample("00011000")
-    pid = TrackingPid()
-    output = pid.apply(centered, G2_RPM)
-    expect(close(output.error, 0.0), "centered line must produce zero error")
-    expect(close(output.steer, 0.0), "centered line must produce zero steer")
-    expect(close(output.target_left, G2_RPM), "left target must stay at G2")
-    expect(close(output.target_right, G2_RPM), "right target must stay at G2")
-    print("PASS centered straight")
-
-    pid = TrackingPid()
-    output = pid.apply(centered, G6_RPM)
-    expect(
-        close(output.average_target, G6_RPM),
-        "centered G6 straight must keep the selected 170 RPM base",
-    )
-    print("PASS centered G6 straight keeps full speed")
-
-    strong_left_edge = sensor_sample("11110000")
-    pid = TrackingPid()
-    output = pid.apply(strong_left_edge, G6_RPM)
-    expected_g6_curve_rpm = max(
-        CURVE_SPEED_MIN_RPM,
-        G6_RPM * CURVE_SPEED_MIN_SCALE,
-    )
-    expect(
-        close(output.average_target, expected_g6_curve_rpm),
-        "G6 strong error must reduce the base to about 60 RPM",
-    )
-    print("PASS G6 strong curve error pre-slows to about 60 RPM")
-
-    pid = TrackingPid()
-    output = pid.apply(strong_left_edge, G3_RPM)
-    expect(
-        close(output.average_target, CURVE_SPEED_MIN_RPM),
-        "G3 strong error must reduce the base to the 45 RPM floor",
-    )
-    print("PASS G3 strong curve error pre-slows to 45 RPM")
-
-    pid = TrackingPid()
-    output = pid.apply(strong_left_edge, G1_RPM)
-    expect(
-        close(output.average_target, G1_RPM),
-        "G1 strong error must not be accelerated by the 45 RPM floor",
-    )
-    print("PASS G1 curve slowdown never raises the selected base")
-
-    for pattern in (
-        "11100000",
-        "00011100",
-        "00011000",
-        "10000000",
-    ):
-        sample = sensor_sample(pattern)
-        expect(sample.valid, f"contiguous pattern {pattern} must be valid")
-
-    for pattern in (
-        "10000001",
-        "10010000",
-        "00100100",
-        "11100111",
-    ):
-        sample = sensor_sample(pattern)
-        expect(not sample.valid, f"non-contiguous pattern {pattern} must be invalid")
-    print("PASS only one contiguous black segment is accepted as a valid line")
-
-    left_of_line = sensor_sample("00001100")
-    pid = TrackingPid()
-    output = pid.apply(left_of_line, G2_RPM)
-    expect(output.error > 0.0, "car left of line must create positive error")
-    expect(output.steer > 0.0, "car left of line must steer right")
-    expect(
-        output.target_left > output.target_right,
-        "positive correction must speed up the left wheel",
-    )
-    print("PASS straight with car offset left")
-
-    pid = TrackingPid()
-    output = pid.apply(sensor_sample("11000000"), G2_RPM)
-    expect(output.error < 0.0, "left outer line must create negative error")
-    expect(output.steer < 0.0, "left outer line must keep steering left")
-    expect(
-        abs(output.steer) > 0.0,
-        "IR4/IR5 being white must not zero outer-channel steering",
-    )
-    print("PASS center pair white, left outer line active")
-
-    pid = TrackingPid()
-    output = pid.apply(sensor_sample("00000011"), G2_RPM)
-    expect(output.error > 0.0, "right outer line must create positive error")
-    expect(output.steer > 0.0, "right outer line must keep steering right")
-    expect(
-        abs(output.steer) > 0.0,
-        "IR4/IR5 being white must not zero outer-channel steering",
-    )
-    print("PASS center pair white, right outer line active")
-
-    for pattern, expected_sign in (("00010000", -1), ("00001000", 1)):
-        pid = TrackingPid()
-        output = pid.apply(sensor_sample(pattern), G2_RPM)
-        expect(
-            output.steer * expected_sign > 0.0,
-            f"single center channel {pattern} must keep PID steering active",
-        )
-    print("PASS one center channel white while the other remains active")
-
-    pid = TrackingPid()
-    output = pid.apply(sensor_sample("11000000"), G2_RPM)
-    held_steer = output.steer
-    all_white_ticks = 0
-    stopped = False
-    for _ in range(10):
-        all_white_ticks += 1
-        output = pid.apply(sensor_sample("00000000"), G2_RPM)
-    expect(close(output.steer, held_steer), "short all-white must hold steer")
-    expect(not stopped, "short all-white must not stop the tracker")
-    print("PASS short all-white holds the previous steering target")
-
-    all_white = sensor_sample("00000000")
-    pid = TrackingPid()
-    output = pid.apply(strong_left_edge, G6_RPM)
-    held_steer = output.steer
-    for _ in range(INVALID_LINE_CONFIRM_TICKS):
-        output = pid.apply(all_white, G6_RPM)
-    expect(
-        close(output.average_target, LOST_LINE_MAX_BASE_RPM),
-        "confirmed lost line must cap the base at 45 RPM",
-    )
-    expect(
-        close(output.steer, held_steer),
-        "confirmed lost line must hold the last steering difference",
-    )
-    print("PASS confirmed line loss holds steer and caps speed at 45 RPM")
-
-    output = pid.apply(strong_left_edge, G6_RPM)
-    expect(
-        close(
-            output.average_target,
-            LOST_LINE_MAX_BASE_RPM + SPEED_RECOVERY_STEP_RPM,
-        ),
-        "the first recovered line tick may increase speed by at most 10 RPM",
-    )
-    output = pid.apply(strong_left_edge, G6_RPM)
-    expect(
-        close(output.average_target, expected_g6_curve_rpm),
-        "speed recovery must continue until the curve target is reached",
-    )
-    print("PASS recovered speed is limited to 10 RPM per 20 ms tick")
-
-    non_contiguous = sensor_sample("10000001")
-    pid = TrackingPid()
-    output = pid.apply(strong_left_edge, G6_RPM)
-    held_steer = output.steer
-    for _ in range(INVALID_LINE_CONFIRM_TICKS):
-        output = pid.apply(non_contiguous, G6_RPM)
-    expect(
-        close(output.average_target, LOST_LINE_MAX_BASE_RPM),
-        "non-contiguous line must use the confirmed-loss speed cap",
-    )
-    expect(
-        close(output.steer, held_steer),
-        "non-contiguous line must not update or clear the steering difference",
-    )
-    print("PASS non-contiguous line holds steer and enters loss protection")
-
-    pid = TrackingPid()
-    output = pid.apply(centered, G6_RPM)
-    expect(close(output.steer, 0.0), "corner fallback setup must start centered")
-    output = pid.apply(all_white, G6_RPM, -1)
-    expect(
-        close(output.average_target, CORNER_LOST_LINE_MAX_BASE_RPM),
-        "corner line loss must cap the base at 45 RPM immediately",
-    )
-    expect(
-        close(output.steer, -CORNER_LOST_LINE_MIN_DIFF_RPM),
-        "corner line loss with zero history must apply minimum left steer",
-    )
-    expect(
-        close(output.target_left, 5.0) and close(output.target_right, 85.0),
-        "minimum corner fallback must produce the expected wheel targets",
-    )
-    print("PASS corner line loss applies its minimum steer immediately")
-
-    pid = TrackingPid()
-    output = pid.apply(strong_left_edge, G6_RPM)
-    held_corner_steer = output.steer
-    expect(
-        held_corner_steer < -CORNER_LOST_LINE_MIN_DIFF_RPM,
-        "test setup must produce a larger same-direction corner steer",
-    )
-    output = pid.apply(all_white, G6_RPM, -1)
-    expect(
-        close(output.steer, held_corner_steer),
-        "corner fallback must preserve a larger same-direction steer",
-    )
-    print("PASS corner line loss preserves a larger same-direction steer")
-
-    pid = TrackingPid()
-    pid.apply(sensor_sample("00000011"), G6_RPM)
-    output = pid.apply(all_white, G6_RPM, -1)
-    expect(
-        close(output.steer, -CORNER_LOST_LINE_MIN_DIFF_RPM),
-        "corner fallback must reverse a wrong-direction steering history",
-    )
-    print("PASS corner line loss corrects an opposite steering history")
-
-    pid = TrackingPid()
-    pid.apply(centered, G1_RPM)
-    output = pid.apply(all_white, G1_RPM, -1)
-    expect(
-        close(output.average_target, G1_RPM),
-        "corner line loss must not raise a low speed level to the 45 RPM cap",
-    )
-    print("PASS corner line loss never raises a lower base speed")
-
-    pid = TrackingPid()
-    pid.apply(centered, G6_RPM)
-    pid.apply(all_white, G6_RPM, -1)
-    output = pid.apply(strong_left_edge, G6_RPM, -1)
-    expect(
-        close(
-            output.average_target,
-            CORNER_LOST_LINE_MAX_BASE_RPM + SPEED_RECOVERY_STEP_RPM,
-        ),
-        "corner PID recovery must still limit speed to 10 RPM per tick",
-    )
-    print("PASS corner line recovery resumes PID with limited acceleration")
-
-    line_loss_monitor = LineLossMonitor()
-    stop_reason = ""
-    for _ in range(ALL_WHITE_STOP_TICKS):
-        stop_reason = line_loss_monitor.update(False, True, False)
-    expect(stop_reason == "ALL_WHITE", "50 all-white ticks must stop")
-    print("PASS all-white stop after one second")
-
-    line_loss_monitor = LineLossMonitor()
-    stop_reason = ""
-    for _ in range(CORNER_LOST_LINE_STOP_TICKS - 1):
-        stop_reason = line_loss_monitor.update(False, True, True)
-    expect(
-        stop_reason == "",
-        "corner loss must not stop before the two-second timeout",
-    )
-    stop_reason = line_loss_monitor.update(False, True, True)
-    expect(
-        stop_reason == "CORNER_TIMEOUT",
-        "corner loss must stop at the two-second timeout",
-    )
-    print("PASS corner line loss times out at two seconds")
-
-    marker = CornerMarker()
-    pid = TrackingPid()
-    marker.start(-1)
-    for _ in range(2):
-        sample = sensor_sample("11000000")
-        pid.apply(sample, G2_RPM)
-        marker.update(sample)
-
-    center_line = sensor_sample("00011000")
-    expect(center_line.valid, "corner completion pattern must be a contiguous line")
-    completed = False
-    for _ in range(REACQUIRE_TICKS + CORNER_MIN_TICKS):
-        pid.apply(center_line, G2_RPM)
-        completed = marker.update(center_line)
-        if completed:
-            break
-    expect(completed, "corner must complete using a contiguous centered line")
-    print("PASS corner completion with a contiguous centered line")
-
-    marker = CornerMarker()
-    marker.start(-1)
-    for _ in range(2):
-        marker.update(sensor_sample("11000000"))
-
-    non_contiguous_center = sensor_sample("00100100")
-    completed = False
-    for _ in range(REACQUIRE_TICKS + CORNER_MIN_TICKS):
-        completed = marker.update(non_contiguous_center)
-        if completed:
-            break
-    expect(
-        not completed,
-        "non-contiguous center pattern must not complete corner recentering",
-    )
-    print("PASS non-contiguous center pattern cannot complete a corner")
-
-    seven_black = sensor_sample("01111111")
-    slanted_seven_black = sensor_sample("10111111")
-    eight_black = sensor_sample("11111111")
-    expect(not can_start_corner(seven_black), "seven black channels must not start")
-    expect(
-        not can_start_corner(slanted_seven_black),
-        "non-contiguous seven black channels must not start",
-    )
-    expect(not can_start_corner(eight_black), "eight black channels must not start")
-    expect(not eight_black.valid, "eight black channels must be invalid for PID")
-    expect(
-        slanted_seven_black.black_count >= FINISH_BLACK_COUNT_MIN,
-        "slanted seven-channel finish line must remain finish-eligible",
-    )
-    print("PASS endpoint line patterns do not start a corner marker")
-
-    expect(close(limit_pwm(-35.0, False), 0.0), "normal phase must clamp negative")
-    expect(
-        close(limit_pwm(-35.0, True), 0.0),
-        "corner phase also clamps reverse PWM to 0",
-    )
-    expect(close(limit_pwm(35.0, True), 35.0), "positive PWM must be unchanged")
-    print("PASS phase-specific negative PWM limits")
-
-    sample = sensor_sample("11110000")
-    candidate = edge_candidate_direction(sample)
-    expect(candidate == -1, "left edge pattern must create a left candidate")
-    sample = sensor_sample("00001110")
-    candidate = edge_candidate_direction(sample)
-    expect(candidate == 1, "right edge pattern must create a right candidate")
-
-    sample = sensor_sample("11100001")
-    expect(not sample.valid, "non-contiguous left-heavy pattern must be invalid")
-    expect(
-        direct_corner_direction(sample) == 0,
-        "non-contiguous left-heavy pattern must not start a corner",
-    )
-    expect(
-        edge_candidate_direction(sample) == 0,
-        "non-contiguous left-heavy pattern must not refresh a candidate",
-    )
-
-    sample = sensor_sample("10000111")
-    expect(not sample.valid, "non-contiguous right-heavy pattern must be invalid")
-    expect(
-        direct_corner_direction(sample) == 0,
-        "non-contiguous right-heavy pattern must not start a corner",
-    )
-    expect(
-        edge_candidate_direction(sample) == 0,
-        "non-contiguous right-heavy pattern must not refresh a candidate",
-    )
-    print("PASS edge candidate directions")
-
-    print()
-    if failures:
-        print(f"FAILED: {len(failures)} scenario(s)")
-        for failure in failures:
-            print(f"  - {failure}")
+    if FAILURES:
+        print(f"{len(FAILURES)} scenario(s) failed:")
+        for name in FAILURES:
+            print(f"  - {name}")
         return 1
-
     print("All tracking scenarios passed.")
     return 0
 

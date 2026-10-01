@@ -26,10 +26,9 @@ virtualFolder:
           folders: []
         - name: Control
           files:
-            - path: ../Core/Application/Control/yingYongKongZhi.c
-            - path: ../Core/Application/Control/yingYongXunJi.c
-            - path: ../Core/Application/Control/yingYongZhuangTai.c
-            - path: ../Core/Application/Control/pid.c
+            - path: ../Core/Application/Control/app_tracking.c
+            - path: ../Core/Application/Control/app_pid.c
+            - path: ../Core/Application/Control/app_testmode.c
           folders: []
         - name: Scheduler
           files:
@@ -37,7 +36,13 @@ virtualFolder:
           folders: []
         - name: State
           files:
+            - path: ../Core/Application/State/app_state.c
             - path: ../Core/Application/State/app_imu.c
+          folders: []
+        - name: Motion
+          files:
+            - path: ../Core/Application/Motion/app_motion.c
+            - path: ../Core/Application/Motion/app_speedloop.c
           folders: []
         - name: Config
           files:
@@ -143,6 +148,7 @@ targets:
         - ../Core/Application/Control
         - ../Core/Application/Config
         - ../Core/Application/Display
+        - ../Core/Application/Motion
         - ../Core/Application/Scheduler
         - ../Core/Application/State
         - ../Core/Hardware/Buffers

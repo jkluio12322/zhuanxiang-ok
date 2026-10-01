@@ -1,9 +1,10 @@
 #include "yingYongXianShi.h"
-#include "yingYongKongZhi.h"
-#include "yingYongMingLing.h"
 #include "app_config.h"
-#include "yingYongZhuangTai.h"
-#include "yingYongXunJi.h"
+#include "app_speedloop.h"
+#include "app_state.h"
+#include "app_testmode.h"
+#include "yingYongMingLing.h"
+#include "app_tracking.h"
 #include "yingYongYaoCe.h"
 #include "irtrack.h"
 #include "key.h"
@@ -14,11 +15,15 @@
 
 static void appDisplayCycleBootMode(void)
 {
-    if (workMode == modeTrack) workMode = modePwmSpeed;
-    else if (workMode == modePwmSpeed) workMode = modePwmTrack;
-    else workMode = modeTrack;
+    if (AppState()->mode == modeTrack) {
+        AppState_SetMode(modePwmSpeed);
+    } else if (AppState()->mode == modePwmSpeed) {
+        AppState_SetMode(modePwmTrack);
+    } else {
+        AppState_SetMode(modeTrack);
+    }
 
-    appControlResetModeState();
+    AppSpeedLoop_ResetModeState();
 }
 
 void appDisplayShowBootScreen(void)
@@ -28,10 +33,10 @@ void appDisplayShowBootScreen(void)
 
     OLED_Clear();
     OLED_ShowStringSmall(1, 1, "[BlueCar]");
-    if (workMode == modePwmSpeed) name = "PWM-SPEED";
-    else if (workMode == modePwmTrack) name = "PWM-TRACK";
+    if (AppState()->mode == modePwmSpeed) name = "PWM-SPEED";
+    else if (AppState()->mode == modePwmTrack) name = "PWM-TRACK";
     else name = "TRACK";
-    snprintf(buffer, sizeof(buffer), "Mode:%s G:%d", name, appStateGetSpeedLevel());
+    snprintf(buffer, sizeof(buffer), "Mode:%s G:%d", name, AppState()->gear);
     OLED_ShowStringSmall(2, 1, buffer);
     OLED_ShowStringSmall(4, 1, "KEY1 Mode");
     OLED_ShowStringSmall(5, 1, "KEY2/3 Exit");
@@ -43,7 +48,7 @@ void appBootConfigRun(void)
     uint8_t exitRequested = 0;
     uint64_t lastTick = milliseconds;
 
-    appStateResetMotion();
+    AppSpeedLoop_ResetMotion();
     appDisplayShowBootScreen();
 
     while (!exitRequested) {
@@ -62,7 +67,7 @@ void appBootConfigRun(void)
         OLED_Flush();
     }
 
-    appControlResetModeState();
+    AppSpeedLoop_ResetModeState();
     appCommandInit();
     Key_Clear();
 }
@@ -79,15 +84,15 @@ void appDisplayUpdate(void)
     }
     irBits[IRTRACK_CHANNELS] = '\0';
 
-    if (workMode == modeTrack) {
+    if (AppState()->mode == modeTrack) {
         snprintf(buffer, sizeof(buffer), "TRK %s G%d L%u/%u",
-                 runFlag ? "RUN" : "STOP", appStateGetSpeedLevel(),
-                 (unsigned int)appStateGetCompletedLaps(),
-                 (unsigned int)appStateGetLapTarget());
+                 AppState()->running ? "RUN" : "STOP", AppState()->gear,
+                 (unsigned int)AppState()->laps_done,
+                 (unsigned int)AppState()->lap_target);
         OLED_ShowStringSmall(1, 1, buffer);
         snprintf(buffer, sizeof(buffer), "IR:%s", irBits);
         OLED_ShowStringSmall(2, 1, buffer);
-        snprintf(buffer, sizeof(buffer), "STR:%+05.1f", appTrackingGetSteer());
+        snprintf(buffer, sizeof(buffer), "STR:%+05.1f", AppTracking_GetSteer());
         OLED_ShowStringSmall(3, 1, buffer);
         snprintf(buffer, sizeof(buffer), "V L:%+.2f R:%+.2f",
                  telemetryData.commandVoltageLeft,
@@ -96,14 +101,14 @@ void appDisplayUpdate(void)
         return;
     }
 
-    if (workMode == modePwmSpeed) {
-        float target = appStateGetSpeedRpm();
-        if (appControlGetPwmSpeedPhase() == PWM_TEST_PHASE_REVERSE) target = -target;
+    if (AppState()->mode == modePwmSpeed) {
+        float target = AppState()->gear_rpm;
+        if (AppTestMode_GetSpeedPhase() == PWM_TEST_PHASE_REVERSE) target = -target;
         snprintf(buffer, sizeof(buffer), "[PWM-SPD] %s G%d",
-                 runFlag ? "RUN" : "STOP", appStateGetSpeedLevel());
+                 AppState()->running ? "RUN" : "STOP", AppState()->gear);
         OLED_ShowStringSmall(1, 1, buffer);
         snprintf(buffer, sizeof(buffer), "PH:%s TGT:%+05.0f",
-                 appControlGetPwmSpeedPhase() == PWM_TEST_PHASE_REVERSE
+                 AppTestMode_GetSpeedPhase() == PWM_TEST_PHASE_REVERSE
                  ? "REVERSE" : "FORWARD", target);
         OLED_ShowStringSmall(2, 1, buffer);
         snprintf(buffer, sizeof(buffer), "V L:%+.2f R:%+.2f",
@@ -114,15 +119,15 @@ void appDisplayUpdate(void)
     }
 
     snprintf(buffer, sizeof(buffer), "[PWM-TRK] %s A:%u",
-             runFlag ? "RUN" : "STOP",
-             (unsigned int)appControlPwmTrackGetAngle());
+             AppState()->running ? "RUN" : "STOP",
+             (unsigned int)AppTestMode_GetAngle());
     OLED_ShowStringSmall(1, 1, buffer);
     snprintf(buffer, sizeof(buffer), "PH:%s SRC:%s",
-             appControlPwmTrackGetPhase() == PWM_TEST_PHASE_RIGHT ? "RIGHT" : "LEFT",
-             appControlPwmTrackGetSimEnabled() ? "SIM" : "IR");
+             AppTestMode_GetTrackPhase() == PWM_TEST_PHASE_RIGHT ? "RIGHT" : "LEFT",
+             AppTestMode_GetSimEnabled() ? "SIM" : "IR");
     OLED_ShowStringSmall(2, 1, buffer);
     snprintf(buffer, sizeof(buffer), "BASE:%d%% ERR:%+05.1f",
-             appControlGetPwmTrackBasePwm(), telemetryData.trackError);
+             (int)AppTestMode_GetBasePwm(), telemetryData.trackError);
     OLED_ShowStringSmall(3, 1, buffer);
     snprintf(buffer, sizeof(buffer), "V L:%+.2f R:%+.2f",
              telemetryData.commandVoltageLeft,

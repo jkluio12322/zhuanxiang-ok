@@ -3,7 +3,8 @@ bluecar\yingyongmingling.o: ../Core/Application/Communication/yingYongMingLing.h
 bluecar\yingyongmingling.o: ../Core/Application/Config/app_types.h
 bluecar\yingyongmingling.o: F:\kilv5\ARM\ARMCC\Bin\..\include\stdint.h
 bluecar\yingyongmingling.o: ../Core/Application/Config/app_config.h
-bluecar\yingyongmingling.o: ../Core/Application/Control/yingYongZhuangTai.h
+bluecar\yingyongmingling.o: ../Core/Application/State/app_state.h
+bluecar\yingyongmingling.o: ../Core/Hardware/Peripherals/IO/key.h
 bluecar\yingyongmingling.o: ../Core/Inc/main.h
 bluecar\yingyongmingling.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h
 bluecar\yingyongmingling.o: ../Core/Inc/stm32f1xx_hal_conf.h
@@ -33,7 +34,4 @@ bluecar\yingyongmingling.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pw
 bluecar\yingyongmingling.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h
 bluecar\yingyongmingling.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h
 bluecar\yingyongmingling.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h
-bluecar\yingyongmingling.o: ../Core/Hardware/Peripherals/Motion/encoder.h
-bluecar\yingyongmingling.o: ../Core/Application/Control/pid.h
-bluecar\yingyongmingling.o: ../Core/Hardware/Peripherals/IO/key.h
 bluecar\yingyongmingling.o: ../Core/Application/Communication/pid_tune.h

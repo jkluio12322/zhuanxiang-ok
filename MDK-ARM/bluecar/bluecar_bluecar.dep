@@ -1,49 +1,13 @@
 Dependencies for Project 'bluecar', Target 'bluecar': (DO NOT MODIFY !)
 CompilerVersion: 5060528::V5.06 update 5 (build 528)::ARMCC
 F (startup_stm32f103xe.s)(0x6A5DF3E7)(--cpu Cortex-M3 -g --apcs=interwork -I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include--pd "__UVISION_VERSION SETA 543" --pd "STM32F10X_HD SETA 1" --pd "_RTE_ SETA 1"--list startup_stm32f103xe.lst --xref -o bluecar\startup_stm32f103xe.o --depend bluecar\startup_stm32f103xe.d)
-F (../Core/Application/Communication/yingYongMingLing.c)(0x6ABE8E8B)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\yingyongmingling.o --omf_browse bluecar\yingyongmingling.crf --depend bluecar\yingyongmingling.d)
-I (../Core/Application/Communication/yingYongMingLing.h)(0x6ABE8E8C)
-I (../Core/Application/Config/app_types.h)(0x6ABE8E80)
+F (../Core/Application/Communication/yingYongMingLing.c)(0x6ABE91A1)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Motion -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\yingyongmingling.o --omf_browse bluecar\yingyongmingling.crf --depend bluecar\yingyongmingling.d)
+I (../Core/Application/Communication/yingYongMingLing.h)(0x6ABE9142)
+I (../Core/Application/Config/app_types.h)(0x6ABE9143)
 I (F:\kilv5\ARM\ARMCC\include\stdint.h)(0x588B8344)
-I (../Core/Application/Config/app_config.h)(0x6ABE8E6E)
-I (../Core/Application/Control/yingYongZhuangTai.h)(0x6ABE8F79)
-I (../Core/Inc/main.h)(0x6ABE8E8C)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x69E0DCD7)
-I (../Core/Inc/stm32f1xx_hal_conf.h)(0x6A1EF420)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x69E0DCD7)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_def.h)(0x69E0DCD7)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h)(0x69E0DCD8)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xe.h)(0x69E0DCD8)
-I (../Drivers/CMSIS/Include/core_cm3.h)(0x69E0DCCC)
-I (../Drivers/CMSIS/Include/cmsis_version.h)(0x69E0DCCC)
-I (../Drivers/CMSIS/Include/cmsis_compiler.h)(0x69E0DCCC)
-I (../Drivers/CMSIS/Include/cmsis_armcc.h)(0x69E0DCCC)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h)(0x69E0DCD8)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h)(0x69E0DCD7)
-I (F:\kilv5\ARM\ARMCC\include\stddef.h)(0x588B8344)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc_ex.h)(0x69E0DCD7)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio.h)(0x69E0DCD7)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio_ex.h)(0x69E0DCD7)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_exti.h)(0x69E0DCD7)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma.h)(0x69E0DCD7)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma_ex.h)(0x69E0DCD7)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_cortex.h)(0x69E0DCD7)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash.h)(0x69E0DCD7)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h)(0x69E0DCD7)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_i2c.h)(0x69E0DCD7)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x69E0DCD7)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h)(0x69E0DCD7)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h)(0x69E0DCD7)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x69E0DCD7)
-I (../Core/Hardware/Peripherals/Motion/encoder.h)(0x6AB2895F)
-I (../Core/Application/Control/pid.h)(0x6ABE6467)
+I (../Core/Application/Config/app_config.h)(0x6ABE91FA)
+I (../Core/Application/State/app_state.h)(0x6ABE923B)
 I (../Core/Hardware/Peripherals/IO/key.h)(0x6AB56948)
-I (../Core/Application/Communication/pid_tune.h)(0x6AAA4F29)
-F (../Core/Application/Communication/yingYongYaoCe.c)(0x6ABE8E8B)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\yingyongyaoce.o --omf_browse bluecar\yingyongyaoce.crf --depend bluecar\yingyongyaoce.d)
-I (../Core/Application/Communication/yingYongYaoCe.h)(0x6ABE5615)
-I (F:\kilv5\ARM\ARMCC\include\stdint.h)(0x588B8344)
-I (../Core/Application/Config/app_config.h)(0x6ABE8E6E)
-I (../Core/Application/Control/yingYongZhuangTai.h)(0x6ABE8F79)
 I (../Core/Inc/main.h)(0x6ABE8E8C)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x69E0DCD7)
 I (../Core/Inc/stm32f1xx_hal_conf.h)(0x6A1EF420)
@@ -72,15 +36,47 @@ I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x69E0DCD7)
-I (../Core/Application/Config/app_types.h)(0x6ABE8E80)
-I (../Core/Hardware/Peripherals/Motion/encoder.h)(0x6AB2895F)
-I (../Core/Application/Control/pid.h)(0x6ABE6467)
-I (../Core/Application/Communication/serial.h)(0x6AB56935)
+I (../Core/Application/Communication/pid_tune.h)(0x6ABE9141)
+F (../Core/Application/Communication/yingYongYaoCe.c)(0x6ABE91A1)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Motion -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\yingyongyaoce.o --omf_browse bluecar\yingyongyaoce.crf --depend bluecar\yingyongyaoce.d)
+I (../Core/Application/Communication/yingYongYaoCe.h)(0x6ABE91D6)
+I (F:\kilv5\ARM\ARMCC\include\stdint.h)(0x588B8344)
+I (../Core/Application/Config/app_config.h)(0x6ABE91FA)
+I (../Core/Application/State/app_state.h)(0x6ABE923B)
+I (../Core/Application/Config/app_types.h)(0x6ABE9143)
+I (../Core/Application/Communication/serial.h)(0x6ABE9142)
+I (../Core/Inc/main.h)(0x6ABE8E8C)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x69E0DCD7)
+I (../Core/Inc/stm32f1xx_hal_conf.h)(0x6A1EF420)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_def.h)(0x69E0DCD7)
+I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h)(0x69E0DCD8)
+I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xe.h)(0x69E0DCD8)
+I (../Drivers/CMSIS/Include/core_cm3.h)(0x69E0DCCC)
+I (../Drivers/CMSIS/Include/cmsis_version.h)(0x69E0DCCC)
+I (../Drivers/CMSIS/Include/cmsis_compiler.h)(0x69E0DCCC)
+I (../Drivers/CMSIS/Include/cmsis_armcc.h)(0x69E0DCCC)
+I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h)(0x69E0DCD8)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h)(0x69E0DCD7)
+I (F:\kilv5\ARM\ARMCC\include\stddef.h)(0x588B8344)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc_ex.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio_ex.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_exti.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma_ex.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_cortex.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_i2c.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x69E0DCD7)
 I (F:\kilv5\ARM\ARMCC\include\stdio.h)(0x588B8344)
 I (F:\kilv5\ARM\ARMCC\include\math.h)(0x588B8344)
 I (F:\kilv5\ARM\ARMCC\include\string.h)(0x588B8344)
-F (../Core/Application/Communication/pid_tune.c)(0x6ABE8E8B)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\pid_tune.o --omf_browse bluecar\pid_tune.crf --depend bluecar\pid_tune.d)
-I (../Core/Application/Communication/pid_tune.h)(0x6AAA4F29)
+F (../Core/Application/Communication/pid_tune.c)(0x6ABE9265)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Motion -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\pid_tune.o --omf_browse bluecar\pid_tune.crf --depend bluecar\pid_tune.d)
+I (../Core/Application/Communication/pid_tune.h)(0x6ABE9141)
 I (../Core/Inc/main.h)(0x6ABE8E8C)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x69E0DCD7)
 I (../Core/Inc/stm32f1xx_hal_conf.h)(0x6A1EF420)
@@ -110,22 +106,22 @@ I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x69E0DCD7)
-I (../Core/Application/Config/app_types.h)(0x6ABE8E80)
-I (../Core/Application/Communication/yingYongMingLing.h)(0x6ABE8E8C)
-I (../Core/Application/Config/app_config.h)(0x6ABE8E6E)
-I (../Core/Application/Control/yingYongZhuangTai.h)(0x6ABE8F79)
-I (../Core/Hardware/Peripherals/Motion/encoder.h)(0x6AB2895F)
-I (../Core/Application/Control/pid.h)(0x6ABE6467)
-I (../Core/Application/Control/yingYongXunJi.h)(0x6ABE8E8C)
-I (../Core/Application/Control/yingYongKongZhi.h)(0x6ABE8E8C)
-I (../Core/Application/Communication/yingYongYaoCe.h)(0x6ABE5615)
-I (../Core/Application/Communication/serial.h)(0x6AB56935)
+I (../Core/Application/Config/app_types.h)(0x6ABE9143)
+I (../Core/Application/Communication/yingYongMingLing.h)(0x6ABE9142)
+I (../Core/Application/Config/app_config.h)(0x6ABE91FA)
+I (../Core/Application/State/app_state.h)(0x6ABE923B)
+I (../Core/Application/Control/app_tracking.h)(0x6ABE9203)
+I (../Core/Application/Control/app_pid.h)(0x6ABE9096)
+I (../Core/Application/Motion/app_speedloop.h)(0x6ABE9113)
+I (../Core/Application/Control/app_testmode.h)(0x6ABE90EB)
+I (../Core/Application/Communication/yingYongYaoCe.h)(0x6ABE91D6)
+I (../Core/Application/Communication/serial.h)(0x6ABE9142)
 I (F:\kilv5\ARM\ARMCC\include\stdio.h)(0x588B8344)
 I (F:\kilv5\ARM\ARMCC\include\stdarg.h)(0x588B8344)
 I (F:\kilv5\ARM\ARMCC\include\stdlib.h)(0x588B8344)
 I (F:\kilv5\ARM\ARMCC\include\string.h)(0x588B8344)
-F (../Core/Application/Communication/serial.c)(0x6AB56DA0)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\serial.o --omf_browse bluecar\serial.crf --depend bluecar\serial.d)
-I (../Core/Application/Communication/serial.h)(0x6AB56935)
+F (../Core/Application/Communication/serial.c)(0x6ABE9142)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Motion -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\serial.o --omf_browse bluecar\serial.crf --depend bluecar\serial.d)
+I (../Core/Application/Communication/serial.h)(0x6ABE9142)
 I (../Core/Inc/main.h)(0x6ABE8E8C)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x69E0DCD7)
 I (../Core/Inc/stm32f1xx_hal_conf.h)(0x6A1EF420)
@@ -155,13 +151,13 @@ I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x69E0DCD7)
-I (../Core/Application/Config/app_types.h)(0x6ABE8E80)
+I (../Core/Application/Config/app_types.h)(0x6ABE9143)
 I (F:\kilv5\ARM\ARMCC\include\stdio.h)(0x588B8344)
-I (../Core/Application/Communication/bytestream.h)(0x6AB629BF)
+I (../Core/Application/Communication/bytestream.h)(0x6ABE9141)
 I (F:\kilv5\ARM\ARMCC\include\stdarg.h)(0x588B8344)
 I (../Core/Hardware/Buffers/ringbuf.h)(0x6AB56945)
-F (../Core/Application/Communication/blueserial.c)(0x6AB56DA5)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\blueserial.o --omf_browse bluecar\blueserial.crf --depend bluecar\blueserial.d)
-I (../Core/Application/Communication/blueserial.h)(0x6AB56938)
+F (../Core/Application/Communication/blueserial.c)(0x6ABE9140)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Motion -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\blueserial.o --omf_browse bluecar\blueserial.crf --depend bluecar\blueserial.d)
+I (../Core/Application/Communication/blueserial.h)(0x6ABE9141)
 I (../Core/Inc/main.h)(0x6ABE8E8C)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x69E0DCD7)
 I (../Core/Inc/stm32f1xx_hal_conf.h)(0x6A1EF420)
@@ -191,17 +187,17 @@ I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x69E0DCD7)
-I (../Core/Application/Config/app_types.h)(0x6ABE8E80)
+I (../Core/Application/Config/app_types.h)(0x6ABE9143)
 I (F:\kilv5\ARM\ARMCC\include\string.h)(0x588B8344)
 I (F:\kilv5\ARM\ARMCC\include\stdlib.h)(0x588B8344)
 I (F:\kilv5\ARM\ARMCC\include\stdio.h)(0x588B8344)
 I (F:\kilv5\ARM\ARMCC\include\stdarg.h)(0x588B8344)
-I (../Core/Application/Communication/bytestream.h)(0x6AB629BF)
-I (../Core/Application/Communication/pid_tune.h)(0x6AAA4F29)
+I (../Core/Application/Communication/bytestream.h)(0x6ABE9141)
+I (../Core/Application/Communication/pid_tune.h)(0x6ABE9141)
 I (../Core/Hardware/Buffers/ringbuf.h)(0x6AB56945)
-I (../Core/Application/Communication/serial.h)(0x6AB56935)
-F (../Core/Application/Communication/bytestream.c)(0x6AB629C0)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\bytestream.o --omf_browse bluecar\bytestream.crf --depend bluecar\bytestream.d)
-I (../Core/Application/Communication/bytestream.h)(0x6AB629BF)
+I (../Core/Application/Communication/serial.h)(0x6ABE9142)
+F (../Core/Application/Communication/bytestream.c)(0x6ABE9141)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Motion -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\bytestream.o --omf_browse bluecar\bytestream.crf --depend bluecar\bytestream.d)
+I (../Core/Application/Communication/bytestream.h)(0x6ABE9141)
 I (../Core/Inc/main.h)(0x6ABE8E8C)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x69E0DCD7)
 I (../Core/Inc/stm32f1xx_hal_conf.h)(0x6A1EF420)
@@ -231,17 +227,93 @@ I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x69E0DCD7)
-I (../Core/Application/Config/app_types.h)(0x6ABE8E80)
+I (../Core/Application/Config/app_types.h)(0x6ABE9143)
 I (F:\kilv5\ARM\ARMCC\include\stdarg.h)(0x588B8344)
 I (F:\kilv5\ARM\ARMCC\include\stdio.h)(0x588B8344)
 I (F:\kilv5\ARM\ARMCC\include\string.h)(0x588B8344)
-F (../Core/Application/Control/yingYongKongZhi.c)(0x6ABE8F83)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\yingyongkongzhi.o --omf_browse bluecar\yingyongkongzhi.crf --depend bluecar\yingyongkongzhi.d)
-I (../Core/Application/Control/yingYongKongZhi.h)(0x6ABE8E8C)
+F (../Core/Application/Control/app_tracking.c)(0x6ABE9235)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Motion -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\app_tracking.o --omf_browse bluecar\app_tracking.crf --depend bluecar\app_tracking.d)
+I (../Core/Application/Control/app_tracking.h)(0x6ABE9203)
 I (F:\kilv5\ARM\ARMCC\include\stdint.h)(0x588B8344)
-I (../Core/Application/Config/app_types.h)(0x6ABE8E80)
-I (../Core/Application/Communication/yingYongMingLing.h)(0x6ABE8E8C)
-I (../Core/Application/Config/app_config.h)(0x6ABE8E6E)
-I (../Core/Application/State/app_imu.h)(0x6ABE8F54)
+I (../Core/Application/Control/app_pid.h)(0x6ABE9096)
+I (../Core/Application/Config/app_config.h)(0x6ABE91FA)
+I (../Core/Application/Scheduler/app_scheduler.h)(0x6ABE920D)
+I (../Core/Application/State/app_state.h)(0x6ABE923B)
+I (../Core/Application/Config/app_types.h)(0x6ABE9143)
+I (../Core/Hardware/Peripherals/Sensors/irtrack.h)(0x6ABE8DA5)
+I (../Core/Inc/main.h)(0x6ABE8E8C)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x69E0DCD7)
+I (../Core/Inc/stm32f1xx_hal_conf.h)(0x6A1EF420)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_def.h)(0x69E0DCD7)
+I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h)(0x69E0DCD8)
+I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xe.h)(0x69E0DCD8)
+I (../Drivers/CMSIS/Include/core_cm3.h)(0x69E0DCCC)
+I (../Drivers/CMSIS/Include/cmsis_version.h)(0x69E0DCCC)
+I (../Drivers/CMSIS/Include/cmsis_compiler.h)(0x69E0DCCC)
+I (../Drivers/CMSIS/Include/cmsis_armcc.h)(0x69E0DCCC)
+I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h)(0x69E0DCD8)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h)(0x69E0DCD7)
+I (F:\kilv5\ARM\ARMCC\include\stddef.h)(0x588B8344)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc_ex.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio_ex.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_exti.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma_ex.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_cortex.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_i2c.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x69E0DCD7)
+F (../Core/Application/Control/app_pid.c)(0x6ABE909F)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Motion -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\app_pid.o --omf_browse bluecar\app_pid.crf --depend bluecar\app_pid.d)
+I (../Core/Application/Control/app_pid.h)(0x6ABE9096)
+I (F:\kilv5\ARM\ARMCC\include\stdint.h)(0x588B8344)
+I (F:\kilv5\ARM\ARMCC\include\string.h)(0x588B8344)
+F (../Core/Application/Control/app_testmode.c)(0x6ABE9259)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Motion -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\app_testmode.o --omf_browse bluecar\app_testmode.crf --depend bluecar\app_testmode.d)
+I (../Core/Application/Control/app_testmode.h)(0x6ABE90EB)
+I (F:\kilv5\ARM\ARMCC\include\stdint.h)(0x588B8344)
+I (../Core/Application/Config/app_types.h)(0x6ABE9143)
+I (../Core/Application/Config/app_config.h)(0x6ABE91FA)
+I (../Core/Application/State/app_state.h)(0x6ABE923B)
+I (../Core/Hardware/Peripherals/Sensors/irtrack.h)(0x6ABE8DA5)
+I (../Core/Inc/main.h)(0x6ABE8E8C)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x69E0DCD7)
+I (../Core/Inc/stm32f1xx_hal_conf.h)(0x6A1EF420)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_def.h)(0x69E0DCD7)
+I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h)(0x69E0DCD8)
+I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xe.h)(0x69E0DCD8)
+I (../Drivers/CMSIS/Include/core_cm3.h)(0x69E0DCCC)
+I (../Drivers/CMSIS/Include/cmsis_version.h)(0x69E0DCCC)
+I (../Drivers/CMSIS/Include/cmsis_compiler.h)(0x69E0DCCC)
+I (../Drivers/CMSIS/Include/cmsis_armcc.h)(0x69E0DCCC)
+I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h)(0x69E0DCD8)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h)(0x69E0DCD7)
+I (F:\kilv5\ARM\ARMCC\include\stddef.h)(0x588B8344)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc_ex.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio_ex.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_exti.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma_ex.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_cortex.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_i2c.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x69E0DCD7)
+I (../Core/Application/Control/app_tracking.h)(0x6ABE9203)
+I (../Core/Application/Control/app_pid.h)(0x6ABE9096)
+F (../Core/Application/Scheduler/app_scheduler.c)(0x6ABE9259)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Motion -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\app_scheduler.o --omf_browse bluecar\app_scheduler.crf --depend bluecar\app_scheduler.d)
+I (../Core/Application/Scheduler/app_scheduler.h)(0x6ABE920D)
+I (F:\kilv5\ARM\ARMCC\include\stdint.h)(0x588B8344)
+I (../Core/Application/Config/app_config.h)(0x6ABE91FA)
+I (../Core/Application/State/app_imu.h)(0x6ABE9145)
 I (../Core/Hardware/Peripherals/Sensors/mpu6050.h)(0x6AB5696D)
 I (../Core/Inc/main.h)(0x6ABE8E8C)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x69E0DCD7)
@@ -271,134 +343,22 @@ I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x69E0DCD7)
-I (../Core/Application/Control/yingYongZhuangTai.h)(0x6ABE8F79)
-I (../Core/Hardware/Peripherals/Motion/encoder.h)(0x6AB2895F)
-I (../Core/Application/Control/pid.h)(0x6ABE6467)
-I (../Core/Application/Communication/yingYongYaoCe.h)(0x6ABE5615)
-I (../Core/Application/Control/yingYongXunJi.h)(0x6ABE8E8C)
-I (../Core/Hardware/Peripherals/Motion/motor.h)(0x6AAE8277)
-I (../Core/Hardware/Peripherals/Sensors/irtrack.h)(0x6ABE8DA5)
-F (../Core/Application/Control/yingYongXunJi.c)(0x6ABE8E99)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\yingyongxunji.o --omf_browse bluecar\yingyongxunji.crf --depend bluecar\yingyongxunji.d)
-I (../Core/Application/Control/yingYongXunJi.h)(0x6ABE8E8C)
-I (F:\kilv5\ARM\ARMCC\include\stdint.h)(0x588B8344)
-I (../Core/Application/Config/app_types.h)(0x6ABE8E80)
-I (../Core/Application/Config/app_config.h)(0x6ABE8E6E)
-I (../Core/Application/Control/yingYongZhuangTai.h)(0x6ABE8F79)
-I (../Core/Inc/main.h)(0x6ABE8E8C)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x69E0DCD7)
-I (../Core/Inc/stm32f1xx_hal_conf.h)(0x6A1EF420)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x69E0DCD7)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_def.h)(0x69E0DCD7)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h)(0x69E0DCD8)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xe.h)(0x69E0DCD8)
-I (../Drivers/CMSIS/Include/core_cm3.h)(0x69E0DCCC)
-I (../Drivers/CMSIS/Include/cmsis_version.h)(0x69E0DCCC)
-I (../Drivers/CMSIS/Include/cmsis_compiler.h)(0x69E0DCCC)
-I (../Drivers/CMSIS/Include/cmsis_armcc.h)(0x69E0DCCC)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h)(0x69E0DCD8)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h)(0x69E0DCD7)
-I (F:\kilv5\ARM\ARMCC\include\stddef.h)(0x588B8344)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc_ex.h)(0x69E0DCD7)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio.h)(0x69E0DCD7)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio_ex.h)(0x69E0DCD7)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_exti.h)(0x69E0DCD7)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma.h)(0x69E0DCD7)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma_ex.h)(0x69E0DCD7)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_cortex.h)(0x69E0DCD7)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash.h)(0x69E0DCD7)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h)(0x69E0DCD7)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_i2c.h)(0x69E0DCD7)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x69E0DCD7)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h)(0x69E0DCD7)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h)(0x69E0DCD7)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x69E0DCD7)
-I (../Core/Hardware/Peripherals/Motion/encoder.h)(0x6AB2895F)
-I (../Core/Application/Control/pid.h)(0x6ABE6467)
-I (../Core/Hardware/Peripherals/Sensors/irtrack.h)(0x6ABE8DA5)
-I (F:\kilv5\ARM\ARMCC\include\math.h)(0x588B8344)
-F (../Core/Application/Control/yingYongZhuangTai.c)(0x6ABE8F7B)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\yingyongzhuangtai.o --omf_browse bluecar\yingyongzhuangtai.crf --depend bluecar\yingyongzhuangtai.d)
-I (../Core/Application/Control/yingYongZhuangTai.h)(0x6ABE8F79)
-I (../Core/Inc/main.h)(0x6ABE8E8C)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x69E0DCD7)
-I (../Core/Inc/stm32f1xx_hal_conf.h)(0x6A1EF420)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x69E0DCD7)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_def.h)(0x69E0DCD7)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h)(0x69E0DCD8)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xe.h)(0x69E0DCD8)
-I (../Drivers/CMSIS/Include/core_cm3.h)(0x69E0DCCC)
-I (F:\kilv5\ARM\ARMCC\include\stdint.h)(0x588B8344)
-I (../Drivers/CMSIS/Include/cmsis_version.h)(0x69E0DCCC)
-I (../Drivers/CMSIS/Include/cmsis_compiler.h)(0x69E0DCCC)
-I (../Drivers/CMSIS/Include/cmsis_armcc.h)(0x69E0DCCC)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h)(0x69E0DCD8)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h)(0x69E0DCD7)
-I (F:\kilv5\ARM\ARMCC\include\stddef.h)(0x588B8344)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc_ex.h)(0x69E0DCD7)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio.h)(0x69E0DCD7)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio_ex.h)(0x69E0DCD7)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_exti.h)(0x69E0DCD7)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma.h)(0x69E0DCD7)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma_ex.h)(0x69E0DCD7)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_cortex.h)(0x69E0DCD7)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash.h)(0x69E0DCD7)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h)(0x69E0DCD7)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_i2c.h)(0x69E0DCD7)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x69E0DCD7)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h)(0x69E0DCD7)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h)(0x69E0DCD7)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x69E0DCD7)
-I (../Core/Application/Config/app_types.h)(0x6ABE8E80)
-I (../Core/Hardware/Peripherals/Motion/encoder.h)(0x6AB2895F)
-I (../Core/Application/Control/pid.h)(0x6ABE6467)
-I (../Core/Application/Config/app_config.h)(0x6ABE8E6E)
-I (../Core/Hardware/Peripherals/Motion/motor.h)(0x6AAE8277)
-F (../Core/Application/Control/pid.c)(0x6ABE6467)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\pid.o --omf_browse bluecar\pid.crf --depend bluecar\pid.d)
-I (../Core/Application/Control/pid.h)(0x6ABE6467)
-F (../Core/Application/Scheduler/app_scheduler.c)(0x6ABE8F4C)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\app_scheduler.o --omf_browse bluecar\app_scheduler.crf --depend bluecar\app_scheduler.d)
-I (../Core/Application/Scheduler/app_scheduler.h)(0x6ABE8F3E)
-I (F:\kilv5\ARM\ARMCC\include\stdint.h)(0x588B8344)
-I (../Core/Application/Config/app_config.h)(0x6ABE8E6E)
-I (../Core/Application/State/app_imu.h)(0x6ABE8F54)
-I (../Core/Hardware/Peripherals/Sensors/mpu6050.h)(0x6AB5696D)
-I (../Core/Inc/main.h)(0x6ABE8E8C)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x69E0DCD7)
-I (../Core/Inc/stm32f1xx_hal_conf.h)(0x6A1EF420)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x69E0DCD7)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_def.h)(0x69E0DCD7)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h)(0x69E0DCD8)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xe.h)(0x69E0DCD8)
-I (../Drivers/CMSIS/Include/core_cm3.h)(0x69E0DCCC)
-I (../Drivers/CMSIS/Include/cmsis_version.h)(0x69E0DCCC)
-I (../Drivers/CMSIS/Include/cmsis_compiler.h)(0x69E0DCCC)
-I (../Drivers/CMSIS/Include/cmsis_armcc.h)(0x69E0DCCC)
-I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h)(0x69E0DCD8)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h)(0x69E0DCD7)
-I (F:\kilv5\ARM\ARMCC\include\stddef.h)(0x588B8344)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc_ex.h)(0x69E0DCD7)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio.h)(0x69E0DCD7)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio_ex.h)(0x69E0DCD7)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_exti.h)(0x69E0DCD7)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma.h)(0x69E0DCD7)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma_ex.h)(0x69E0DCD7)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_cortex.h)(0x69E0DCD7)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash.h)(0x69E0DCD7)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h)(0x69E0DCD7)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_i2c.h)(0x69E0DCD7)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x69E0DCD7)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h)(0x69E0DCD7)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h)(0x69E0DCD7)
-I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x69E0DCD7)
-I (../Core/Application/Config/app_types.h)(0x6ABE8E80)
+I (../Core/Application/Config/app_types.h)(0x6ABE9143)
+I (../Core/Application/Motion/app_speedloop.h)(0x6ABE9113)
+I (../Core/Application/Control/app_pid.h)(0x6ABE9096)
+I (../Core/Application/State/app_state.h)(0x6ABE923B)
+I (../Core/Application/Control/app_testmode.h)(0x6ABE90EB)
 I (../Core/Hardware/Peripherals/IO/key.h)(0x6AB56948)
-I (../Core/Application/Control/yingYongKongZhi.h)(0x6ABE8E8C)
-I (../Core/Application/Display/yingYongXianShi.h)(0x6AB3A898)
-I (../Core/Application/Control/yingYongXunJi.h)(0x6ABE8E8C)
-I (../Core/Application/Communication/yingYongYaoCe.h)(0x6ABE5615)
-I (../Core/Application/Control/yingYongZhuangTai.h)(0x6ABE8F79)
-I (../Core/Hardware/Peripherals/Motion/encoder.h)(0x6AB2895F)
-I (../Core/Application/Control/pid.h)(0x6ABE6467)
-F (../Core/Application/State/app_imu.c)(0x6ABE8F59)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\app_imu.o --omf_browse bluecar\app_imu.crf --depend bluecar\app_imu.d)
-I (../Core/Application/State/app_imu.h)(0x6ABE8F54)
+I (../Core/Application/Display/yingYongXianShi.h)(0x6ABE9144)
+I (../Core/Application/Control/app_tracking.h)(0x6ABE9203)
+I (../Core/Application/Communication/yingYongYaoCe.h)(0x6ABE91D6)
+F (../Core/Application/State/app_state.c)(0x6ABE924F)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Motion -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\app_state.o --omf_browse bluecar\app_state.crf --depend bluecar\app_state.d)
+I (../Core/Application/State/app_state.h)(0x6ABE923B)
+I (F:\kilv5\ARM\ARMCC\include\stdint.h)(0x588B8344)
+I (../Core/Application/Config/app_types.h)(0x6ABE9143)
+I (../Core/Application/Config/app_config.h)(0x6ABE91FA)
+F (../Core/Application/State/app_imu.c)(0x6ABE9145)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Motion -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\app_imu.o --omf_browse bluecar\app_imu.crf --depend bluecar\app_imu.d)
+I (../Core/Application/State/app_imu.h)(0x6ABE9145)
 I (../Core/Hardware/Peripherals/Sensors/mpu6050.h)(0x6AB5696D)
 I (../Core/Inc/main.h)(0x6ABE8E8C)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x69E0DCD7)
@@ -429,20 +389,14 @@ I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x69E0DCD7)
-I (../Core/Application/Config/app_types.h)(0x6ABE8E80)
-I (../Core/Application/Config/app_config.h)(0x6ABE8E6E)
+I (../Core/Application/Config/app_types.h)(0x6ABE9143)
+I (../Core/Application/Config/app_config.h)(0x6ABE91FA)
 I (../Core/Hardware/Peripherals/IO/key.h)(0x6AB56948)
-F (../Core/Application/Config/app_config.h)(0x6ABE8E6E)()
-F (../Core/Application/Config/app_types.h)(0x6ABE8E80)()
-F (../Core/Application/Config/board.h)(0x6ABE8F09)()
-F (../Core/Application/Display/yingYongXianShi.c)(0x6ABE8E8B)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\yingyongxianshi.o --omf_browse bluecar\yingyongxianshi.crf --depend bluecar\yingyongxianshi.d)
-I (../Core/Application/Display/yingYongXianShi.h)(0x6AB3A898)
-I (../Core/Application/Control/yingYongKongZhi.h)(0x6ABE8E8C)
+F (../Core/Application/Motion/app_motion.c)(0x6ABE90BA)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Motion -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\app_motion.o --omf_browse bluecar\app_motion.crf --depend bluecar\app_motion.d)
+I (../Core/Application/Motion/app_motion.h)(0x6ABE90A9)
 I (F:\kilv5\ARM\ARMCC\include\stdint.h)(0x588B8344)
-I (../Core/Application/Config/app_types.h)(0x6ABE8E80)
-I (../Core/Application/Communication/yingYongMingLing.h)(0x6ABE8E8C)
-I (../Core/Application/Config/app_config.h)(0x6ABE8E6E)
-I (../Core/Application/Control/yingYongZhuangTai.h)(0x6ABE8F79)
+I (../Core/Application/Config/app_config.h)(0x6ABE91FA)
+I (../Core/Hardware/Peripherals/Motion/encoder.h)(0x6AB2895F)
 I (../Core/Inc/main.h)(0x6ABE8E8C)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x69E0DCD7)
 I (../Core/Inc/stm32f1xx_hal_conf.h)(0x6A1EF420)
@@ -471,20 +425,103 @@ I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x69E0DCD7)
-I (../Core/Hardware/Peripherals/Motion/encoder.h)(0x6AB2895F)
-I (../Core/Application/Control/pid.h)(0x6ABE6467)
-I (../Core/Application/Control/yingYongXunJi.h)(0x6ABE8E8C)
-I (../Core/Application/Communication/yingYongYaoCe.h)(0x6ABE5615)
+I (../Core/Application/Config/app_types.h)(0x6ABE9143)
+I (../Core/Hardware/Peripherals/Motion/motor.h)(0x6AAE8277)
+F (../Core/Application/Motion/app_speedloop.c)(0x6ABE9259)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Motion -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\app_speedloop.o --omf_browse bluecar\app_speedloop.crf --depend bluecar\app_speedloop.d)
+I (../Core/Application/Motion/app_speedloop.h)(0x6ABE9113)
+I (F:\kilv5\ARM\ARMCC\include\stdint.h)(0x588B8344)
+I (../Core/Application/Control/app_pid.h)(0x6ABE9096)
+I (../Core/Application/Config/app_config.h)(0x6ABE91FA)
+I (../Core/Application/State/app_imu.h)(0x6ABE9145)
+I (../Core/Hardware/Peripherals/Sensors/mpu6050.h)(0x6AB5696D)
+I (../Core/Inc/main.h)(0x6ABE8E8C)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x69E0DCD7)
+I (../Core/Inc/stm32f1xx_hal_conf.h)(0x6A1EF420)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_def.h)(0x69E0DCD7)
+I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h)(0x69E0DCD8)
+I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xe.h)(0x69E0DCD8)
+I (../Drivers/CMSIS/Include/core_cm3.h)(0x69E0DCCC)
+I (../Drivers/CMSIS/Include/cmsis_version.h)(0x69E0DCCC)
+I (../Drivers/CMSIS/Include/cmsis_compiler.h)(0x69E0DCCC)
+I (../Drivers/CMSIS/Include/cmsis_armcc.h)(0x69E0DCCC)
+I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h)(0x69E0DCD8)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h)(0x69E0DCD7)
+I (F:\kilv5\ARM\ARMCC\include\stddef.h)(0x588B8344)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc_ex.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio_ex.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_exti.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma_ex.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_cortex.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_i2c.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x69E0DCD7)
+I (../Core/Application/Config/app_types.h)(0x6ABE9143)
+I (../Core/Application/Motion/app_motion.h)(0x6ABE90A9)
+I (../Core/Application/State/app_state.h)(0x6ABE923B)
+I (../Core/Application/Control/app_testmode.h)(0x6ABE90EB)
+I (../Core/Application/Communication/yingYongMingLing.h)(0x6ABE9142)
+I (../Core/Application/Control/app_tracking.h)(0x6ABE9203)
+I (../Core/Application/Communication/yingYongYaoCe.h)(0x6ABE91D6)
+F (../Core/Application/Config/app_config.h)(0x6ABE91FA)()
+F (../Core/Application/Config/app_types.h)(0x6ABE9143)()
+F (../Core/Application/Config/board.h)(0x6ABE9143)()
+F (../Core/Application/Display/yingYongXianShi.c)(0x6ABE9259)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Motion -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\yingyongxianshi.o --omf_browse bluecar\yingyongxianshi.crf --depend bluecar\yingyongxianshi.d)
+I (../Core/Application/Display/yingYongXianShi.h)(0x6ABE9144)
+I (../Core/Application/Config/app_config.h)(0x6ABE91FA)
+I (../Core/Application/Motion/app_speedloop.h)(0x6ABE9113)
+I (F:\kilv5\ARM\ARMCC\include\stdint.h)(0x588B8344)
+I (../Core/Application/Control/app_pid.h)(0x6ABE9096)
+I (../Core/Application/State/app_state.h)(0x6ABE923B)
+I (../Core/Application/Config/app_types.h)(0x6ABE9143)
+I (../Core/Application/Control/app_testmode.h)(0x6ABE90EB)
+I (../Core/Application/Communication/yingYongMingLing.h)(0x6ABE9142)
+I (../Core/Application/Control/app_tracking.h)(0x6ABE9203)
+I (../Core/Application/Communication/yingYongYaoCe.h)(0x6ABE91D6)
 I (../Core/Hardware/Peripherals/Sensors/irtrack.h)(0x6ABE8DA5)
+I (../Core/Inc/main.h)(0x6ABE8E8C)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x69E0DCD7)
+I (../Core/Inc/stm32f1xx_hal_conf.h)(0x6A1EF420)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_def.h)(0x69E0DCD7)
+I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h)(0x69E0DCD8)
+I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xe.h)(0x69E0DCD8)
+I (../Drivers/CMSIS/Include/core_cm3.h)(0x69E0DCCC)
+I (../Drivers/CMSIS/Include/cmsis_version.h)(0x69E0DCCC)
+I (../Drivers/CMSIS/Include/cmsis_compiler.h)(0x69E0DCCC)
+I (../Drivers/CMSIS/Include/cmsis_armcc.h)(0x69E0DCCC)
+I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h)(0x69E0DCD8)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h)(0x69E0DCD7)
+I (F:\kilv5\ARM\ARMCC\include\stddef.h)(0x588B8344)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc_ex.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_gpio_ex.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_exti.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_dma_ex.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_cortex.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_i2c.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h)(0x69E0DCD7)
+I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x69E0DCD7)
 I (../Core/Hardware/Peripherals/IO/key.h)(0x6AB56948)
 I (../Core/Hardware/Peripherals/Display/oled.h)(0x6AB56951)
 I (../Core/Hardware/System/timer.h)(0x6AB3A8AE)
 I (F:\kilv5\ARM\ARMCC\include\stdio.h)(0x588B8344)
-F (../Core/Hardware/Buffers/ringbuf.c)(0x6AB56943)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\ringbuf.o --omf_browse bluecar\ringbuf.crf --depend bluecar\ringbuf.d)
+F (../Core/Hardware/Buffers/ringbuf.c)(0x6AB56943)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Motion -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\ringbuf.o --omf_browse bluecar\ringbuf.crf --depend bluecar\ringbuf.d)
 I (../Core/Hardware/Buffers/ringbuf.h)(0x6AB56945)
 I (F:\kilv5\ARM\ARMCC\include\stdint.h)(0x588B8344)
 I (F:\kilv5\ARM\ARMCC\include\stddef.h)(0x588B8344)
-F (../Core/Hardware/Peripherals/Motion/motor.c)(0x6ABE8E8B)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\motor.o --omf_browse bluecar\motor.crf --depend bluecar\motor.d)
+F (../Core/Hardware/Peripherals/Motion/motor.c)(0x6ABE8E8B)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Motion -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\motor.o --omf_browse bluecar\motor.crf --depend bluecar\motor.d)
 I (../Core/Hardware/Peripherals/Motion/motor.h)(0x6AAE8277)
 I (../Core/Inc/main.h)(0x6ABE8E8C)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x69E0DCD7)
@@ -515,10 +552,10 @@ I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x69E0DCD7)
-I (../Core/Application/Config/app_types.h)(0x6ABE8E80)
-I (../Core/Application/Config/board.h)(0x6ABE8F09)
-I (../Core/Application/Config/app_config.h)(0x6ABE8E6E)
-F (../Core/Hardware/Peripherals/Motion/encoder.c)(0x6AB3EA2D)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\encoder.o --omf_browse bluecar\encoder.crf --depend bluecar\encoder.d)
+I (../Core/Application/Config/app_types.h)(0x6ABE9143)
+I (../Core/Application/Config/board.h)(0x6ABE9143)
+I (../Core/Application/Config/app_config.h)(0x6ABE91FA)
+F (../Core/Hardware/Peripherals/Motion/encoder.c)(0x6AB3EA2D)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Motion -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\encoder.o --omf_browse bluecar\encoder.crf --depend bluecar\encoder.d)
 I (../Core/Hardware/Peripherals/Motion/encoder.h)(0x6AB2895F)
 I (../Core/Inc/main.h)(0x6ABE8E8C)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x69E0DCD7)
@@ -549,8 +586,8 @@ I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x69E0DCD7)
-I (../Core/Application/Config/app_types.h)(0x6ABE8E80)
-F (../Core/Hardware/Peripherals/Sensors/irtrack.c)(0x6ABE8DA4)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\irtrack.o --omf_browse bluecar\irtrack.crf --depend bluecar\irtrack.d)
+I (../Core/Application/Config/app_types.h)(0x6ABE9143)
+F (../Core/Hardware/Peripherals/Sensors/irtrack.c)(0x6ABE9297)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Motion -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\irtrack.o --omf_browse bluecar\irtrack.crf --depend bluecar\irtrack.d)
 I (../Core/Hardware/Peripherals/Sensors/irtrack.h)(0x6ABE8DA5)
 I (../Core/Inc/main.h)(0x6ABE8E8C)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x69E0DCD7)
@@ -581,9 +618,9 @@ I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x69E0DCD7)
-I (../Core/Application/Config/app_types.h)(0x6ABE8E80)
+I (../Core/Application/Config/app_types.h)(0x6ABE9143)
 I (F:\kilv5\ARM\ARMCC\include\string.h)(0x588B8344)
-F (../Core/Hardware/Peripherals/Sensors/mpu6050.c)(0x6AB5696B)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\mpu6050.o --omf_browse bluecar\mpu6050.crf --depend bluecar\mpu6050.d)
+F (../Core/Hardware/Peripherals/Sensors/mpu6050.c)(0x6AB5696B)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Motion -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\mpu6050.o --omf_browse bluecar\mpu6050.crf --depend bluecar\mpu6050.d)
 I (../Core/Hardware/Peripherals/Sensors/mpu6050.h)(0x6AB5696D)
 I (../Core/Inc/main.h)(0x6ABE8E8C)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x69E0DCD7)
@@ -614,16 +651,16 @@ I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x69E0DCD7)
-I (../Core/Application/Config/app_types.h)(0x6ABE8E80)
+I (../Core/Application/Config/app_types.h)(0x6ABE9143)
 I (F:\kilv5\ARM\ARMCC\include\math.h)(0x588B8344)
 I (F:\kilv5\ARM\ARMCC\include\stdlib.h)(0x588B8344)
 I (F:\kilv5\ARM\ARMCC\include\string.h)(0x588B8344)
 I (../Core/Hardware/Peripherals/Sensors/filter.h)(0x6AB5695B)
-F (../Core/Hardware/Peripherals/Sensors/filter.c)(0x6AB5695A)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\filter.o --omf_browse bluecar\filter.crf --depend bluecar\filter.d)
+F (../Core/Hardware/Peripherals/Sensors/filter.c)(0x6AB5695A)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Motion -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\filter.o --omf_browse bluecar\filter.crf --depend bluecar\filter.d)
 I (../Core/Hardware/Peripherals/Sensors/filter.h)(0x6AB5695B)
 I (F:\kilv5\ARM\ARMCC\include\stdint.h)(0x588B8344)
 I (F:\kilv5\ARM\ARMCC\include\math.h)(0x588B8344)
-F (../Core/Hardware/Peripherals/Display/oled.c)(0x6AB5694F)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\oled.o --omf_browse bluecar\oled.crf --depend bluecar\oled.d)
+F (../Core/Hardware/Peripherals/Display/oled.c)(0x6AB5694F)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Motion -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\oled.o --omf_browse bluecar\oled.crf --depend bluecar\oled.d)
 I (../Core/Hardware/Peripherals/Display/oled.h)(0x6AB56951)
 I (../Core/Inc/main.h)(0x6ABE8E8C)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x69E0DCD7)
@@ -654,14 +691,14 @@ I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x69E0DCD7)
-I (../Core/Application/Config/app_types.h)(0x6ABE8E80)
+I (../Core/Application/Config/app_types.h)(0x6ABE9143)
 I (../Core/Hardware/Peripherals/Display/oled_font.h)(0x6AB3A8F9)
 I (../Core/Hardware/Peripherals/Display/oled_font_small.h)(0x6AB3A975)
 I (../Core/Inc/i2c.h)(0x6A282C82)
 I (F:\kilv5\ARM\ARMCC\include\string.h)(0x588B8344)
 F (../Core/Hardware/Peripherals/Display/oled_font.h)(0x6AB3A8F9)()
 F (../Core/Hardware/Peripherals/Display/oled_font_small.h)(0x6AB3A975)()
-F (../Core/Hardware/Peripherals/IO/key.c)(0x6AB56946)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\key.o --omf_browse bluecar\key.crf --depend bluecar\key.d)
+F (../Core/Hardware/Peripherals/IO/key.c)(0x6AB56946)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Motion -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\key.o --omf_browse bluecar\key.crf --depend bluecar\key.d)
 I (../Core/Hardware/Peripherals/IO/key.h)(0x6AB56948)
 I (../Core/Inc/main.h)(0x6ABE8E8C)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x69E0DCD7)
@@ -692,8 +729,8 @@ I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x69E0DCD7)
-I (../Core/Application/Config/app_types.h)(0x6ABE8E80)
-F (../Core/Hardware/Peripherals/IO/buzzer.c)(0x6AB5693A)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\buzzer.o --omf_browse bluecar\buzzer.crf --depend bluecar\buzzer.d)
+I (../Core/Application/Config/app_types.h)(0x6ABE9143)
+F (../Core/Hardware/Peripherals/IO/buzzer.c)(0x6AB5693A)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Motion -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\buzzer.o --omf_browse bluecar\buzzer.crf --depend bluecar\buzzer.d)
 I (../Core/Hardware/Peripherals/IO/buzzer.h)(0x6AB5693B)
 I (../Core/Inc/main.h)(0x6ABE8E8C)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x69E0DCD7)
@@ -724,8 +761,8 @@ I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x69E0DCD7)
-I (../Core/Application/Config/app_types.h)(0x6ABE8E80)
-F (../Core/Hardware/System/timer.c)(0x6ABE8F5E)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\timer.o --omf_browse bluecar\timer.crf --depend bluecar\timer.d)
+I (../Core/Application/Config/app_types.h)(0x6ABE9143)
+F (../Core/Hardware/System/timer.c)(0x6ABE8F5E)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Motion -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\timer.o --omf_browse bluecar\timer.crf --depend bluecar\timer.d)
 I (../Core/Hardware/System/timer.h)(0x6AB3A8AE)
 I (../Core/Inc/main.h)(0x6ABE8E8C)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x69E0DCD7)
@@ -756,9 +793,9 @@ I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x69E0DCD7)
-I (../Core/Application/Config/app_types.h)(0x6ABE8E80)
-I (../Core/Application/Scheduler/app_scheduler.h)(0x6ABE8F3E)
-F (../Core/Src/main.c)(0x6ABE8F6B)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\main.o --omf_browse bluecar\main.crf --depend bluecar\main.d)
+I (../Core/Application/Config/app_types.h)(0x6ABE9143)
+I (../Core/Application/Scheduler/app_scheduler.h)(0x6ABE920D)
+F (../Core/Src/main.c)(0x6ABE9267)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Motion -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\main.o --omf_browse bluecar\main.crf --depend bluecar\main.d)
 I (../Core/Inc/main.h)(0x6ABE8E8C)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x69E0DCD7)
 I (../Core/Inc/stm32f1xx_hal_conf.h)(0x6A1EF420)
@@ -788,36 +825,40 @@ I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x69E0DCD7)
-I (../Core/Application/Config/app_types.h)(0x6ABE8E80)
+I (../Core/Application/Config/app_types.h)(0x6ABE9143)
 I (../Core/Inc/dma.h)(0x6A1EF420)
 I (../Core/Inc/gpio.h)(0x6A1EF41F)
 I (../Core/Inc/i2c.h)(0x6A282C82)
 I (../Core/Inc/tim.h)(0x6A282C82)
 I (../Core/Inc/usart.h)(0x6A3A8A80)
-I (../Core/Application/Communication/yingYongMingLing.h)(0x6ABE8E8C)
-I (../Core/Application/Config/app_config.h)(0x6ABE8E6E)
-I (../Core/Application/State/app_imu.h)(0x6ABE8F54)
+I (../Core/Application/Communication/yingYongMingLing.h)(0x6ABE9142)
+I (../Core/Application/Config/app_config.h)(0x6ABE91FA)
+I (../Core/Application/State/app_imu.h)(0x6ABE9145)
 I (../Core/Hardware/Peripherals/Sensors/mpu6050.h)(0x6AB5696D)
-I (../Core/Application/Scheduler/app_scheduler.h)(0x6ABE8F3E)
-I (../Core/Application/Display/yingYongXianShi.h)(0x6AB3A898)
-I (../Core/Application/Control/yingYongZhuangTai.h)(0x6ABE8F79)
-I (../Core/Hardware/Peripherals/Motion/encoder.h)(0x6AB2895F)
-I (../Core/Application/Control/pid.h)(0x6ABE6467)
-I (../Core/Application/Communication/yingYongYaoCe.h)(0x6ABE5615)
-I (../Core/Application/Communication/blueserial.h)(0x6AB56938)
+I (../Core/Application/Motion/app_motion.h)(0x6ABE90A9)
+I (../Core/Application/Scheduler/app_scheduler.h)(0x6ABE920D)
+I (../Core/Application/Motion/app_speedloop.h)(0x6ABE9113)
+I (../Core/Application/Control/app_pid.h)(0x6ABE9096)
+I (../Core/Application/State/app_state.h)(0x6ABE923B)
+I (../Core/Application/Control/app_testmode.h)(0x6ABE90EB)
+I (../Core/Application/Control/app_tracking.h)(0x6ABE9203)
+I (../Core/Application/Display/yingYongXianShi.h)(0x6ABE9144)
+I (../Core/Application/Communication/yingYongYaoCe.h)(0x6ABE91D6)
+I (../Core/Application/Communication/blueserial.h)(0x6ABE9141)
 I (F:\kilv5\ARM\ARMCC\include\string.h)(0x588B8344)
 I (F:\kilv5\ARM\ARMCC\include\stdlib.h)(0x588B8344)
 I (F:\kilv5\ARM\ARMCC\include\stdio.h)(0x588B8344)
 I (F:\kilv5\ARM\ARMCC\include\stdarg.h)(0x588B8344)
 I (../Core/Hardware/Peripherals/IO/buzzer.h)(0x6AB5693B)
+I (../Core/Hardware/Peripherals/Motion/encoder.h)(0x6AB2895F)
 I (../Core/Hardware/Peripherals/Sensors/irtrack.h)(0x6ABE8DA5)
 I (../Core/Hardware/Peripherals/IO/key.h)(0x6AB56948)
 I (../Core/Hardware/Peripherals/Motion/motor.h)(0x6AAE8277)
 I (../Core/Hardware/Peripherals/Display/oled.h)(0x6AB56951)
-I (../Core/Application/Communication/pid_tune.h)(0x6AAA4F29)
-I (../Core/Application/Communication/serial.h)(0x6AB56935)
+I (../Core/Application/Communication/pid_tune.h)(0x6ABE9141)
+I (../Core/Application/Communication/serial.h)(0x6ABE9142)
 I (../Core/Hardware/System/timer.h)(0x6AB3A8AE)
-F (../Core/Src/gpio.c)(0x6ABE8E8B)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\gpio.o --omf_browse bluecar\gpio.crf --depend bluecar\gpio.d)
+F (../Core/Src/gpio.c)(0x6ABE8E8B)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Motion -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\gpio.o --omf_browse bluecar\gpio.crf --depend bluecar\gpio.d)
 I (../Core/Inc/gpio.h)(0x6A1EF41F)
 I (../Core/Inc/main.h)(0x6ABE8E8C)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x69E0DCD7)
@@ -848,9 +889,9 @@ I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x69E0DCD7)
-I (../Core/Application/Config/app_types.h)(0x6ABE8E80)
-I (../Core/Application/Config/app_config.h)(0x6ABE8E6E)
-F (../Core/Src/dma.c)(0x6A3A8A80)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\dma.o --omf_browse bluecar\dma.crf --depend bluecar\dma.d)
+I (../Core/Application/Config/app_types.h)(0x6ABE9143)
+I (../Core/Application/Config/app_config.h)(0x6ABE91FA)
+F (../Core/Src/dma.c)(0x6A3A8A80)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Motion -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\dma.o --omf_browse bluecar\dma.crf --depend bluecar\dma.d)
 I (../Core/Inc/dma.h)(0x6A1EF420)
 I (../Core/Inc/main.h)(0x6ABE8E8C)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x69E0DCD7)
@@ -881,8 +922,8 @@ I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x69E0DCD7)
-I (../Core/Application/Config/app_types.h)(0x6ABE8E80)
-F (../Core/Src/i2c.c)(0x6AAA001D)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\i2c.o --omf_browse bluecar\i2c.crf --depend bluecar\i2c.d)
+I (../Core/Application/Config/app_types.h)(0x6ABE9143)
+F (../Core/Src/i2c.c)(0x6AAA001D)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Motion -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\i2c.o --omf_browse bluecar\i2c.crf --depend bluecar\i2c.d)
 I (../Core/Inc/i2c.h)(0x6A282C82)
 I (../Core/Inc/main.h)(0x6ABE8E8C)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x69E0DCD7)
@@ -913,8 +954,8 @@ I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x69E0DCD7)
-I (../Core/Application/Config/app_types.h)(0x6ABE8E80)
-F (../Core/Src/tim.c)(0x6ABE8E8B)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\tim.o --omf_browse bluecar\tim.crf --depend bluecar\tim.d)
+I (../Core/Application/Config/app_types.h)(0x6ABE9143)
+F (../Core/Src/tim.c)(0x6ABE8E8B)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Motion -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\tim.o --omf_browse bluecar\tim.crf --depend bluecar\tim.d)
 I (../Core/Inc/tim.h)(0x6A282C82)
 I (../Core/Inc/main.h)(0x6ABE8E8C)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x69E0DCD7)
@@ -945,9 +986,9 @@ I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x69E0DCD7)
-I (../Core/Application/Config/app_types.h)(0x6ABE8E80)
-I (../Core/Application/Config/app_config.h)(0x6ABE8E6E)
-F (../Core/Src/usart.c)(0x6ABE8E8B)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\usart.o --omf_browse bluecar\usart.crf --depend bluecar\usart.d)
+I (../Core/Application/Config/app_types.h)(0x6ABE9143)
+I (../Core/Application/Config/app_config.h)(0x6ABE91FA)
+F (../Core/Src/usart.c)(0x6ABE8E8B)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Motion -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\usart.o --omf_browse bluecar\usart.crf --depend bluecar\usart.d)
 I (../Core/Inc/usart.h)(0x6A3A8A80)
 I (../Core/Inc/main.h)(0x6ABE8E8C)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x69E0DCD7)
@@ -978,9 +1019,9 @@ I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x69E0DCD7)
-I (../Core/Application/Config/app_types.h)(0x6ABE8E80)
-I (../Core/Application/Config/app_config.h)(0x6ABE8E6E)
-F (../Core/Src/stm32f1xx_it.c)(0x6AB3A921)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\stm32f1xx_it.o --omf_browse bluecar\stm32f1xx_it.crf --depend bluecar\stm32f1xx_it.d)
+I (../Core/Application/Config/app_types.h)(0x6ABE9143)
+I (../Core/Application/Config/app_config.h)(0x6ABE91FA)
+F (../Core/Src/stm32f1xx_it.c)(0x6AB3A921)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Motion -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\stm32f1xx_it.o --omf_browse bluecar\stm32f1xx_it.crf --depend bluecar\stm32f1xx_it.d)
 I (../Core/Inc/main.h)(0x6ABE8E8C)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x69E0DCD7)
 I (../Core/Inc/stm32f1xx_hal_conf.h)(0x6A1EF420)
@@ -1010,11 +1051,11 @@ I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x69E0DCD7)
-I (../Core/Application/Config/app_types.h)(0x6ABE8E80)
+I (../Core/Application/Config/app_types.h)(0x6ABE9143)
 I (../Core/Inc/stm32f1xx_it.h)(0x6AAA005A)
-I (../Core/Application/Communication/serial.h)(0x6AB56935)
+I (../Core/Application/Communication/serial.h)(0x6ABE9142)
 I (F:\kilv5\ARM\ARMCC\include\stdio.h)(0x588B8344)
-F (../Core/Src/stm32f1xx_hal_msp.c)(0x6A282C82)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\stm32f1xx_hal_msp.o --omf_browse bluecar\stm32f1xx_hal_msp.crf --depend bluecar\stm32f1xx_hal_msp.d)
+F (../Core/Src/stm32f1xx_hal_msp.c)(0x6A282C82)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Motion -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\stm32f1xx_hal_msp.o --omf_browse bluecar\stm32f1xx_hal_msp.crf --depend bluecar\stm32f1xx_hal_msp.d)
 I (../Core/Inc/main.h)(0x6ABE8E8C)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x69E0DCD7)
 I (../Core/Inc/stm32f1xx_hal_conf.h)(0x6A1EF420)
@@ -1044,8 +1085,8 @@ I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x69E0DCD7)
-I (../Core/Application/Config/app_types.h)(0x6ABE8E80)
-F (../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_gpio_ex.c)(0x69E0DCD7)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\stm32f1xx_hal_gpio_ex.o --omf_browse bluecar\stm32f1xx_hal_gpio_ex.crf --depend bluecar\stm32f1xx_hal_gpio_ex.d)
+I (../Core/Application/Config/app_types.h)(0x6ABE9143)
+F (../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_gpio_ex.c)(0x69E0DCD7)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Motion -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\stm32f1xx_hal_gpio_ex.o --omf_browse bluecar\stm32f1xx_hal_gpio_ex.crf --depend bluecar\stm32f1xx_hal_gpio_ex.d)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x69E0DCD7)
 I (../Core/Inc/stm32f1xx_hal_conf.h)(0x6A1EF420)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x69E0DCD7)
@@ -1074,7 +1115,7 @@ I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x69E0DCD7)
-F (../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_i2c.c)(0x69E0DCD8)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\stm32f1xx_hal_i2c.o --omf_browse bluecar\stm32f1xx_hal_i2c.crf --depend bluecar\stm32f1xx_hal_i2c.d)
+F (../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_i2c.c)(0x69E0DCD8)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Motion -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\stm32f1xx_hal_i2c.o --omf_browse bluecar\stm32f1xx_hal_i2c.crf --depend bluecar\stm32f1xx_hal_i2c.d)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x69E0DCD7)
 I (../Core/Inc/stm32f1xx_hal_conf.h)(0x6A1EF420)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x69E0DCD7)
@@ -1103,7 +1144,7 @@ I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x69E0DCD7)
-F (../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal.c)(0x69E0DCD8)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\stm32f1xx_hal.o --omf_browse bluecar\stm32f1xx_hal.crf --depend bluecar\stm32f1xx_hal.d)
+F (../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal.c)(0x69E0DCD8)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Motion -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\stm32f1xx_hal.o --omf_browse bluecar\stm32f1xx_hal.crf --depend bluecar\stm32f1xx_hal.d)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x69E0DCD7)
 I (../Core/Inc/stm32f1xx_hal_conf.h)(0x6A1EF420)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x69E0DCD7)
@@ -1132,7 +1173,7 @@ I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x69E0DCD7)
-F (../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_rcc.c)(0x69E0DCD8)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\stm32f1xx_hal_rcc.o --omf_browse bluecar\stm32f1xx_hal_rcc.crf --depend bluecar\stm32f1xx_hal_rcc.d)
+F (../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_rcc.c)(0x69E0DCD8)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Motion -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\stm32f1xx_hal_rcc.o --omf_browse bluecar\stm32f1xx_hal_rcc.crf --depend bluecar\stm32f1xx_hal_rcc.d)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x69E0DCD7)
 I (../Core/Inc/stm32f1xx_hal_conf.h)(0x6A1EF420)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x69E0DCD7)
@@ -1161,7 +1202,7 @@ I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x69E0DCD7)
-F (../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_rcc_ex.c)(0x69E0DCD7)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\stm32f1xx_hal_rcc_ex.o --omf_browse bluecar\stm32f1xx_hal_rcc_ex.crf --depend bluecar\stm32f1xx_hal_rcc_ex.d)
+F (../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_rcc_ex.c)(0x69E0DCD7)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Motion -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\stm32f1xx_hal_rcc_ex.o --omf_browse bluecar\stm32f1xx_hal_rcc_ex.crf --depend bluecar\stm32f1xx_hal_rcc_ex.d)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x69E0DCD7)
 I (../Core/Inc/stm32f1xx_hal_conf.h)(0x6A1EF420)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x69E0DCD7)
@@ -1190,7 +1231,7 @@ I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x69E0DCD7)
-F (../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_gpio.c)(0x69E0DCD8)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\stm32f1xx_hal_gpio.o --omf_browse bluecar\stm32f1xx_hal_gpio.crf --depend bluecar\stm32f1xx_hal_gpio.d)
+F (../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_gpio.c)(0x69E0DCD8)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Motion -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\stm32f1xx_hal_gpio.o --omf_browse bluecar\stm32f1xx_hal_gpio.crf --depend bluecar\stm32f1xx_hal_gpio.d)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x69E0DCD7)
 I (../Core/Inc/stm32f1xx_hal_conf.h)(0x6A1EF420)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x69E0DCD7)
@@ -1219,7 +1260,7 @@ I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x69E0DCD7)
-F (../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_dma.c)(0x69E0DCD8)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\stm32f1xx_hal_dma.o --omf_browse bluecar\stm32f1xx_hal_dma.crf --depend bluecar\stm32f1xx_hal_dma.d)
+F (../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_dma.c)(0x69E0DCD8)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Motion -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\stm32f1xx_hal_dma.o --omf_browse bluecar\stm32f1xx_hal_dma.crf --depend bluecar\stm32f1xx_hal_dma.d)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x69E0DCD7)
 I (../Core/Inc/stm32f1xx_hal_conf.h)(0x6A1EF420)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x69E0DCD7)
@@ -1248,7 +1289,7 @@ I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x69E0DCD7)
-F (../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_cortex.c)(0x69E0DCD7)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\stm32f1xx_hal_cortex.o --omf_browse bluecar\stm32f1xx_hal_cortex.crf --depend bluecar\stm32f1xx_hal_cortex.d)
+F (../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_cortex.c)(0x69E0DCD7)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Motion -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\stm32f1xx_hal_cortex.o --omf_browse bluecar\stm32f1xx_hal_cortex.crf --depend bluecar\stm32f1xx_hal_cortex.d)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x69E0DCD7)
 I (../Core/Inc/stm32f1xx_hal_conf.h)(0x6A1EF420)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x69E0DCD7)
@@ -1277,7 +1318,7 @@ I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x69E0DCD7)
-F (../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_pwr.c)(0x69E0DCD8)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\stm32f1xx_hal_pwr.o --omf_browse bluecar\stm32f1xx_hal_pwr.crf --depend bluecar\stm32f1xx_hal_pwr.d)
+F (../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_pwr.c)(0x69E0DCD8)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Motion -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\stm32f1xx_hal_pwr.o --omf_browse bluecar\stm32f1xx_hal_pwr.crf --depend bluecar\stm32f1xx_hal_pwr.d)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x69E0DCD7)
 I (../Core/Inc/stm32f1xx_hal_conf.h)(0x6A1EF420)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x69E0DCD7)
@@ -1306,7 +1347,7 @@ I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x69E0DCD7)
-F (../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_flash.c)(0x69E0DCD8)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\stm32f1xx_hal_flash.o --omf_browse bluecar\stm32f1xx_hal_flash.crf --depend bluecar\stm32f1xx_hal_flash.d)
+F (../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_flash.c)(0x69E0DCD8)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Motion -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\stm32f1xx_hal_flash.o --omf_browse bluecar\stm32f1xx_hal_flash.crf --depend bluecar\stm32f1xx_hal_flash.d)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x69E0DCD7)
 I (../Core/Inc/stm32f1xx_hal_conf.h)(0x6A1EF420)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x69E0DCD7)
@@ -1335,7 +1376,7 @@ I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x69E0DCD7)
-F (../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_flash_ex.c)(0x69E0DCD7)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\stm32f1xx_hal_flash_ex.o --omf_browse bluecar\stm32f1xx_hal_flash_ex.crf --depend bluecar\stm32f1xx_hal_flash_ex.d)
+F (../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_flash_ex.c)(0x69E0DCD7)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Motion -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\stm32f1xx_hal_flash_ex.o --omf_browse bluecar\stm32f1xx_hal_flash_ex.crf --depend bluecar\stm32f1xx_hal_flash_ex.d)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x69E0DCD7)
 I (../Core/Inc/stm32f1xx_hal_conf.h)(0x6A1EF420)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x69E0DCD7)
@@ -1364,7 +1405,7 @@ I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x69E0DCD7)
-F (../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_exti.c)(0x69E0DCD8)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\stm32f1xx_hal_exti.o --omf_browse bluecar\stm32f1xx_hal_exti.crf --depend bluecar\stm32f1xx_hal_exti.d)
+F (../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_exti.c)(0x69E0DCD8)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Motion -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\stm32f1xx_hal_exti.o --omf_browse bluecar\stm32f1xx_hal_exti.crf --depend bluecar\stm32f1xx_hal_exti.d)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x69E0DCD7)
 I (../Core/Inc/stm32f1xx_hal_conf.h)(0x6A1EF420)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x69E0DCD7)
@@ -1393,7 +1434,7 @@ I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x69E0DCD7)
-F (../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_tim.c)(0x69E0DCD8)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\stm32f1xx_hal_tim.o --omf_browse bluecar\stm32f1xx_hal_tim.crf --depend bluecar\stm32f1xx_hal_tim.d)
+F (../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_tim.c)(0x69E0DCD8)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Motion -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\stm32f1xx_hal_tim.o --omf_browse bluecar\stm32f1xx_hal_tim.crf --depend bluecar\stm32f1xx_hal_tim.d)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x69E0DCD7)
 I (../Core/Inc/stm32f1xx_hal_conf.h)(0x6A1EF420)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x69E0DCD7)
@@ -1422,7 +1463,7 @@ I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x69E0DCD7)
-F (../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_tim_ex.c)(0x69E0DCD8)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\stm32f1xx_hal_tim_ex.o --omf_browse bluecar\stm32f1xx_hal_tim_ex.crf --depend bluecar\stm32f1xx_hal_tim_ex.d)
+F (../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_tim_ex.c)(0x69E0DCD8)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Motion -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\stm32f1xx_hal_tim_ex.o --omf_browse bluecar\stm32f1xx_hal_tim_ex.crf --depend bluecar\stm32f1xx_hal_tim_ex.d)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x69E0DCD7)
 I (../Core/Inc/stm32f1xx_hal_conf.h)(0x6A1EF420)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x69E0DCD7)
@@ -1451,7 +1492,7 @@ I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x69E0DCD7)
-F (../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_uart.c)(0x69E0DCD7)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\stm32f1xx_hal_uart.o --omf_browse bluecar\stm32f1xx_hal_uart.crf --depend bluecar\stm32f1xx_hal_uart.d)
+F (../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_uart.c)(0x69E0DCD7)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Motion -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\stm32f1xx_hal_uart.o --omf_browse bluecar\stm32f1xx_hal_uart.crf --depend bluecar\stm32f1xx_hal_uart.d)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x69E0DCD7)
 I (../Core/Inc/stm32f1xx_hal_conf.h)(0x6A1EF420)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h)(0x69E0DCD7)
@@ -1480,7 +1521,7 @@ I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h)(0x69E0DCD7)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h)(0x69E0DCD7)
-F (../Core/Src/system_stm32f1xx.c)(0x69E0DCD8)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\system_stm32f1xx.o --omf_browse bluecar\system_stm32f1xx.crf --depend bluecar\system_stm32f1xx.d)
+F (../Core/Src/system_stm32f1xx.c)(0x69E0DCD8)(--c99 -c --cpu Cortex-M3 -g -O3 -Otime --apcs=interwork --split_sections -I ../Core/Inc -I ../Core/Application/Communication -I ../Core/Application/Control -I ../Core/Application/Config -I ../Core/Application/Display -I ../Core/Application/Motion -I ../Core/Application/Scheduler -I ../Core/Application/State -I ../Core/Hardware/Buffers -I ../Core/Hardware/Peripherals/Motion -I ../Core/Hardware/Peripherals/Sensors -I ../Core/Hardware/Peripherals/Display -I ../Core/Hardware/Peripherals/IO -I ../Core/Hardware/System -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include-I.\RTE\_bluecar-IF:\kilv5\ARM\PACK\ARM\CMSIS\6.2.0\CMSIS\Core\Include-IF:\kilv5\ARM\PACK\Keil\STM32F1xx_DFP\2.4.1\Device\Include-D__UVISION_VERSION="543" -DSTM32F10X_HD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xE-o bluecar\system_stm32f1xx.o --omf_browse bluecar\system_stm32f1xx.crf --depend bluecar\system_stm32f1xx.d)
 I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f1xx.h)(0x69E0DCD8)
 I (../Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xe.h)(0x69E0DCD8)
 I (../Drivers/CMSIS/Include/core_cm3.h)(0x69E0DCCC)

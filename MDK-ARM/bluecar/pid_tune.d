@@ -33,11 +33,11 @@ bluecar\pid_tune.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h
 bluecar\pid_tune.o: ../Core/Application/Config/app_types.h
 bluecar\pid_tune.o: ../Core/Application/Communication/yingYongMingLing.h
 bluecar\pid_tune.o: ../Core/Application/Config/app_config.h
-bluecar\pid_tune.o: ../Core/Application/Control/yingYongZhuangTai.h
-bluecar\pid_tune.o: ../Core/Hardware/Peripherals/Motion/encoder.h
-bluecar\pid_tune.o: ../Core/Application/Control/pid.h
-bluecar\pid_tune.o: ../Core/Application/Control/yingYongXunJi.h
-bluecar\pid_tune.o: ../Core/Application/Control/yingYongKongZhi.h
+bluecar\pid_tune.o: ../Core/Application/State/app_state.h
+bluecar\pid_tune.o: ../Core/Application/Control/app_tracking.h
+bluecar\pid_tune.o: ../Core/Application/Control/app_pid.h
+bluecar\pid_tune.o: ../Core/Application/Motion/app_speedloop.h
+bluecar\pid_tune.o: ../Core/Application/Control/app_testmode.h
 bluecar\pid_tune.o: ../Core/Application/Communication/yingYongYaoCe.h
 bluecar\pid_tune.o: ../Core/Application/Communication/serial.h
 bluecar\pid_tune.o: F:\kilv5\ARM\ARMCC\Bin\..\include\stdio.h

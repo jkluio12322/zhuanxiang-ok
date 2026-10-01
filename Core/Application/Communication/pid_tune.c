@@ -1,11 +1,12 @@
 #include "pid_tune.h"
 #include "yingYongMingLing.h"
 #include "app_config.h"
-#include "yingYongZhuangTai.h"
-#include "yingYongXunJi.h"
-#include "yingYongKongZhi.h"
+#include "app_state.h"
+#include "app_tracking.h"
+#include "app_speedloop.h"
+#include "app_testmode.h"
 #include "yingYongYaoCe.h"
-#include "pid.h"
+#include "app_pid.h"
 #include "serial.h"
 
 #include <stdarg.h>
@@ -125,19 +126,14 @@ static const TuneCommand_t *pidTuneFind(const char *name)
     return 0;
 }
 
-static void pidTuneSetSpeedField(PID_t *pid, PID_Field_t field, float value)
-{
-    PID_SetField(pid, field, value);
-}
-
 static const char *pidTunePhaseName(void)
 {
-    if (workMode == modePwmSpeed) {
-        return (appControlGetPwmSpeedPhase() == PWM_TEST_PHASE_REVERSE)
+    if (AppState()->mode == modePwmSpeed) {
+        return (AppTestMode_GetSpeedPhase() == PWM_TEST_PHASE_REVERSE)
                ? "REVERSE" : "FORWARD";
     }
-    if (workMode == modePwmTrack) {
-        return (appControlPwmTrackGetPhase() == PWM_TEST_PHASE_RIGHT)
+    if (AppState()->mode == modePwmTrack) {
+        return (AppTestMode_GetTrackPhase() == PWM_TEST_PHASE_RIGHT)
                ? "RIGHT" : "LEFT";
     }
     return "TRACK";
@@ -145,8 +141,8 @@ static const char *pidTunePhaseName(void)
 
 static const char *pidTuneModeName(void)
 {
-    if (workMode == modePwmSpeed) return "PWM-SPEED";
-    if (workMode == modePwmTrack) return "PWM-TRACK";
+    if (AppState()->mode == modePwmSpeed) return "PWM-SPEED";
+    if (AppState()->mode == modePwmTrack) return "PWM-TRACK";
     return "TRACK";
 }
 
@@ -185,51 +181,48 @@ void pidTuneProcess(void)
     if (count >= 2) value = strtof(argument, 0);
 
     switch (entry->action) {
+    /* 左右同时设置三个增益。 */
     case TUNE_SKP:
-        pidTuneSetSpeedField(&speedPidLeft, PID_FIELD_KP, value);
-        pidTuneSetSpeedField(&speedPidRight, PID_FIELD_KP, value);
-        break;
     case TUNE_SKI:
-        pidTuneSetSpeedField(&speedPidLeft, PID_FIELD_KI, value);
-        pidTuneSetSpeedField(&speedPidRight, PID_FIELD_KI, value);
+    case TUNE_SKD: {
+        PidField_t field = (entry->action == TUNE_SKP) ? PID_FIELD_KP
+                           : (entry->action == TUNE_SKI) ? PID_FIELD_KI
+                           : PID_FIELD_KD;
+        AppSpeedLoop_SetGain(SPEED_CH_LEFT, field, value);
+        AppSpeedLoop_SetGain(SPEED_CH_RIGHT, field, value);
         break;
-    case TUNE_SKD:
-        pidTuneSetSpeedField(&speedPidLeft, PID_FIELD_KD, value);
-        pidTuneSetSpeedField(&speedPidRight, PID_FIELD_KD, value);
-        break;
+    }
+    /* 只设左轮。 */
     case TUNE_LKP:
-        pidTuneSetSpeedField(&speedPidLeft, PID_FIELD_KP, value);
-        break;
     case TUNE_LKI:
-        pidTuneSetSpeedField(&speedPidLeft, PID_FIELD_KI, value);
+    case TUNE_LKD: {
+        PidField_t field = (entry->action == TUNE_LKP) ? PID_FIELD_KP
+                           : (entry->action == TUNE_LKI) ? PID_FIELD_KI
+                           : PID_FIELD_KD;
+        AppSpeedLoop_SetGain(SPEED_CH_LEFT, field, value);
         break;
-    case TUNE_LKD:
-        pidTuneSetSpeedField(&speedPidLeft, PID_FIELD_KD, value);
-        break;
+    }
+    /* 只设右轮。 */
     case TUNE_RKP:
-        pidTuneSetSpeedField(&speedPidRight, PID_FIELD_KP, value);
-        break;
     case TUNE_RKI:
-        pidTuneSetSpeedField(&speedPidRight, PID_FIELD_KI, value);
+    case TUNE_RKD: {
+        PidField_t field = (entry->action == TUNE_RKP) ? PID_FIELD_KP
+                           : (entry->action == TUNE_RKI) ? PID_FIELD_KI
+                           : PID_FIELD_KD;
+        AppSpeedLoop_SetGain(SPEED_CH_RIGHT, field, value);
         break;
-    case TUNE_RKD:
-        pidTuneSetSpeedField(&speedPidRight, PID_FIELD_KD, value);
-        break;
+    }
     case TUNE_TKP:
     case TUNE_TKI:
     case TUNE_TKD: {
-        float kp;
-        float ki;
-        float kd;
-        appTrackingGetPidGains(&kp, &ki, &kd);
-        if (entry->action == TUNE_TKP) kp = value;
-        else if (entry->action == TUNE_TKI) ki = value;
-        else kd = value;
-        appTrackingSetPidGains(kp, ki, kd);
+        PidField_t field = (entry->action == TUNE_TKP) ? PID_FIELD_KP
+                           : (entry->action == TUNE_TKI) ? PID_FIELD_KI
+                           : PID_FIELD_KD;
+        AppTracking_SetGain(field, value);
         break;
     }
     case TUNE_TKG:
-        appTrackingSetSteerRpmToPwmGain(value);
+        AppTracking_SetSteerRpmToPwmGain(value);
         break;
     case TUNE_START:
         appCommandPushValue(commandStart, 0.0f);
@@ -255,7 +248,7 @@ void pidTuneProcess(void)
     }
     case TUNE_BASE:
         appCommandPushValue(commandPwmTrackBaseStep,
-                            value - (float)appControlGetPwmTrackBasePwm());
+                            value - (float)AppTestMode_GetBasePwm());
         break;
     case TUNE_SIM:
         if (strcmp(argument, "on") == 0) {
@@ -273,23 +266,24 @@ void pidTuneProcess(void)
         appCommandPushValue(commandLog, 0.0f);
         break;
     case TUNE_SHOW: {
-        float kp;
-        float ki;
-        float kd;
-        appTrackingGetPidGains(&kp, &ki, &kd);
+        SpeedPidInfo_t infoL;
+        SpeedPidInfo_t infoR;
+        float kp = AppTracking_GetGain(PID_FIELD_KP);
+        float ki = AppTracking_GetGain(PID_FIELD_KI);
+        float kd = AppTracking_GetGain(PID_FIELD_KD);
+        AppSpeedLoop_GetInfo(SPEED_CH_LEFT, &infoL);
+        AppSpeedLoop_GetInfo(SPEED_CH_RIGHT, &infoR);
         pidTuneRespond(
             "Mode=%s Run=%d Phase=%s Gear=%d Base=%d%%\r\n"
             "SpeedL Kp=%.2f Ki=%.2f Kd=%.2f Tgt=%.1f Out=%.1f\r\n"
             "SpeedR Kp=%.2f Ki=%.2f Kd=%.2f Tgt=%.1f Out=%.1f\r\n"
             "Track Kp=%.2f Ki=%.2f Kd=%.2f tkg=%.2f\r\n"
             "VoltL=%.2fV VoltR=%.2fV\r\n",
-            pidTuneModeName(), runFlag, pidTunePhaseName(),
-            appStateGetSpeedLevel(), appControlGetPwmTrackBasePwm(),
-            speedPidLeft.Kp, speedPidLeft.Ki, speedPidLeft.Kd,
-            speedPidLeft.Target, speedPidLeft.Out,
-            speedPidRight.Kp, speedPidRight.Ki, speedPidRight.Kd,
-            speedPidRight.Target, speedPidRight.Out,
-            kp, ki, kd, appTrackingGetSteerRpmToPwmGain(),
+            pidTuneModeName(), AppState()->running, pidTunePhaseName(),
+            AppState()->gear, (int)AppTestMode_GetBasePwm(),
+            infoL.kp, infoL.ki, infoL.kd, infoL.target, infoL.out,
+            infoR.kp, infoR.ki, infoR.kd, infoR.target, infoR.out,
+            kp, ki, kd, AppTracking_GetSteerRpmToPwmGain(),
             telemetryData.commandVoltageLeft,
             telemetryData.commandVoltageRight);
         break;

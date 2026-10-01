@@ -1,6 +1,6 @@
 #include "yingYongMingLing.h"
 #include "app_config.h"
-#include "yingYongZhuangTai.h"
+#include "app_state.h"
 #include "key.h"
 #include "pid_tune.h"
 
@@ -50,8 +50,8 @@ void appCommandProcessBluetooth(void)
 
 static commandType_t appNextMode(void)
 {
-    if (workMode == modeTrack) return commandModePwmSpeed;
-    if (workMode == modePwmSpeed) return commandModePwmTrack;
+    if (AppState()->mode == modeTrack) return commandModePwmSpeed;
+    if (AppState()->mode == modePwmSpeed) return commandModePwmTrack;
     return commandModeTrack;
 }
 
@@ -61,13 +61,13 @@ void appCommandProcessKeys(void)
         appCommandPushValue(appNextMode(), 0.0f);
     }
 
-    if (workMode == modeTrack) {
-        if (Key_Check(KEY_4, KEY_SINGLE) && !runFlag) {
+    if (AppState()->mode == modeTrack) {
+        if (Key_Check(KEY_4, KEY_SINGLE) && !AppState()->running) {
             appCommandPushValue(commandLapCycle, 0.0f);
         }
         (void)Key_CheckSingleOrLong(KEY_4);
         if (Key_Check(KEY_2, KEY_SINGLE)) {
-            appCommandPushValue(runFlag ? commandStop : commandStart, 0.0f);
+            appCommandPushValue(AppState()->running ? commandStop : commandStart, 0.0f);
         }
         if (Key_Check(KEY_3, KEY_SINGLE)) {
             appCommandPushValue(commandStop, 0.0f);
@@ -75,7 +75,7 @@ void appCommandProcessKeys(void)
         return;
     }
 
-    if (workMode == modePwmTrack) {
+    if (AppState()->mode == modePwmTrack) {
         if (Key_Check(KEY_4, KEY_SINGLE)) {
             appCommandPushValue(commandPwmTrackBaseStep,
                                 (float)PWM_TRACK_BASE_STEP_PERCENT);
@@ -89,7 +89,7 @@ void appCommandProcessKeys(void)
             appCommandPushValue(commandPwmTrackNext, 0.0f);
         }
         if (Key_Check(KEY_3, KEY_SINGLE)) {
-            appCommandPushValue(runFlag ? commandStop : commandStart, 0.0f);
+            appCommandPushValue(AppState()->running ? commandStop : commandStart, 0.0f);
         }
         return;
     }
@@ -99,7 +99,7 @@ void appCommandProcessKeys(void)
         appCommandPushValue(commandPwmSpeedNextGear, 0.0f);
     }
     if (Key_Check(KEY_3, KEY_SINGLE)) {
-        appCommandPushValue(runFlag ? commandStop : commandStart, 0.0f);
+        appCommandPushValue(AppState()->running ? commandStop : commandStart, 0.0f);
     }
 }
 

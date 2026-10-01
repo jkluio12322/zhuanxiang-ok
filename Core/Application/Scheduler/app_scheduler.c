@@ -6,12 +6,13 @@
 #include "app_scheduler.h"
 #include "app_config.h"
 #include "app_imu.h"
+#include "app_speedloop.h"
+#include "app_state.h"
+#include "app_testmode.h"
 #include "key.h"
-#include "yingYongKongZhi.h"
 #include "yingYongXianShi.h"
-#include "yingYongXunJi.h"
+#include "app_tracking.h"
 #include "yingYongYaoCe.h"
-#include "yingYongZhuangTai.h"
 
 /* TIM6 的 1 ms 计数，用于任务分频。 */
 static uint32_t tickCount = 0U;
@@ -28,6 +29,25 @@ void AppScheduler_Init(void)
     deferredPending[DEFERRED_TELEMETRY] = 0U;
     deferredPending[DEFERRED_DISPLAY] = 0U;
     schedulerEnabled = 1U;
+}
+
+void Confirm_Reset(ConfirmCounter *c, uint16_t need)
+{
+    c->need = need;
+    c->count = 0U;
+}
+
+uint8_t Confirm_Update(ConfirmCounter *c, uint8_t condition_true)
+{
+    if (condition_true != 0U) {
+        if (c->count < c->need) {
+            c->count++;
+        }
+    } else {
+        c->count = 0U;
+    }
+
+    return (c->count >= c->need) ? 1U : 0U;
 }
 
 void AppScheduler_RequestDeferred(AppDeferredId_t id)
@@ -70,16 +90,16 @@ void AppScheduler_OnTick(void)
 
     /* 每 20 ms 生成循迹目标，供后续 50 ms 速度控制任务使用。 */
     if ((tickCount % APP_TRACK_PERIOD_MS) == 0U) {
-        if (workMode == modePwmTrack) {
-            appControlPwmTrackTask20ms();
+        if (AppState()->mode == modePwmTrack) {
+            AppTestMode_Task20ms();
         } else {
-            appTrackingTask20ms();
+            AppTracking_Task20ms();
         }
     }
 
     /* 每 50 ms 执行速度控制，并把遥测发送交给主循环。 */
     if ((tickCount % APP_CONTROL_PERIOD_MS) == 0U) {
-        appControlTask50ms();
+        AppSpeedLoop_Task50ms();
         AppScheduler_RequestDeferred(DEFERRED_TELEMETRY);
     }
 

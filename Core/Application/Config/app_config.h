@@ -191,14 +191,19 @@
 /* 9. 循迹位置环（外环，PD）                                                 */
 /* ========================================================================= */
 
-/* 循迹环比例增益。 */
-#define TRACK_PID_KP                  1.2f
+/* 循迹环比例增益。
+   误差信号已从「八路权重和」换成归一化质心 position，
+   量纲差了约 3.6 倍（单路压黑时 25 : 7），所以初值由 1.2 放大到 4.3。 */
+#define TRACK_PID_KP                  4.3f
 
-/* 循迹环积分增益。 */
-#define TRACK_PID_KI                  0.5f
+/* 循迹环积分增益。
+   位置环没有稳态误差可言，加积分只会在出弯积一堆造成超调，默认给 0。
+   若实测发现持续偏向一侧（比如传感器安装歪了），再引入一点点。 */
+#define TRACK_PID_KI                  0.0f
 
-/* 循迹环微分增益，用于阻尼和预判。 */
-#define TRACK_PID_KD                  0.2f
+/* 循迹环微分增益，用于阻尼和预判。同样按 3.6 倍折算。
+   注意 e_y 是阶梯量化值，Kd 放大的是量化台阶，实车抖动就往下调。 */
+#define TRACK_PID_KD                  0.7f
 
 /* 循迹环控制周期，与循迹任务调用周期一致，单位秒。 */
 #define TRACK_PID_PERIOD_SECONDS      0.02f
@@ -219,7 +224,7 @@
 #define TRACK_DRIVE_SPEED_SCALE       1.00f
 
 /* ========================================================================= */
-/* 10. 八路循迹：线路判定与保护                                              */
+/* 10. 八路循迹：线路判定                                                    */
 /* ========================================================================= */
 
 /* 普通有效线路图案允许的最大压黑通道数，再多视为全黑无效。 */
@@ -231,97 +236,30 @@
 /* 八路全白连续保持周期数，50 个 20 ms 周期即 1 秒后停车。 */
 #define TRACK_ALL_WHITE_STOP_TICKS    50U
 
-/* 八路加权误差限幅。 */
-#define TRACK_WEIGHTED_ERROR_LIMIT    40.0f
-
-/* 中间 IR4/IR5 掩码仅用于区分遥测阶段；误差统一由八路权重计算。 */
-#define TRACK_CENTER_LEFT_MASK        0x08U
-
-/* 中间右侧 IR5 的通道位掩码，对应 bit4。 */
-#define TRACK_CENTER_RIGHT_MASK       0x10U
-
-/* 中间两路 IR4/IR5 的组合位掩码。 */
-#define TRACK_CENTER_SENSOR_MASK      0x18U
-
 /* ========================================================================= */
-/* 11. 弯道预降速与丢线保护                                                  */
+/* 11. 循迹：丢线保护与计圈                                                  */
 /* ========================================================================= */
-
-/* 弯道预降速开始生效的八路权重绝对误差。 */
-#define TRACK_CURVE_SPEED_ERROR_START 6.0f
-
-/* 达到最低速度比例时对应的八路权重绝对误差。 */
-#define TRACK_CURVE_SPEED_ERROR_FULL  40.0f
-
-/* 强误差时允许使用的最低基础速度，单位 RPM。 */
-#define TRACK_CURVE_SPEED_MIN_RPM     45.0f
-
-/* 强误差时基础速度相对当前档位速度的最低比例。 */
-#define TRACK_CURVE_SPEED_MIN_SCALE   0.35f
-
-/* 线路恢复居中后基础速度每周期允许的最大回升量，单位 RPM。 */
-#define TRACK_SPEED_RECOVERY_STEP_RPM 10.0f
-
-/* 线路确认丢失后允许使用的最高平均基础速度，单位 RPM。 */
-#define TRACK_LOST_LINE_MAX_BASE_RPM  45.0f
-
-/* 急弯标记期间确认线路丢失后要求的最低绝对差速，单位 RPM。 */
-#define TRACK_CORNER_LOST_LINE_MIN_DIFF_RPM 40.0f
-
-/* 急弯标记期间确认线路丢失后允许使用的最高平均基础速度，单位 RPM。 */
-#define TRACK_CORNER_LOST_LINE_MAX_BASE_RPM 45.0f
-
-/* 急弯标记期间连续无效线路达到该周期数后触发超时停车。 */
-#define TRACK_CORNER_LOST_LINE_STOP_TICKS 100U
-
-/* ========================================================================= */
-/* 12. 弯道检测与计圈                                                        */
-/* ========================================================================= */
-
-/* 判定线路已经偏到边缘所需的最小归一化位置绝对值。 */
-#define TRACK_CORNER_EDGE_POSITION_MIN 4.5f
-
-/* 判断边缘候选所需的最少压线通道数。 */
-#define TRACK_CORNER_EDGE_MIN_BLACK   1U
-
-/* 无需等待离线即可直接触发急弯所需的单侧最少压线通道数。 */
-#define TRACK_CORNER_DIRECT_MIN_BLACK 3U
-
-/* 边缘候选保持周期数，5 个周期约为 100 ms。 */
-#define TRACK_CORNER_CANDIDATE_HOLD_TICKS 5U
-
-/* 下一个弯需要连续确认的次数，避免单帧噪声触发连续转向。 */
-#define TRACK_CORNER_PENDING_CONFIRM_TICKS 2U
-
-/* 急弯标记后的最短持续时间，6 个周期约为 120 ms。 */
-#define TRACK_CORNER_MIN_TICKS        6U
-
-/* 八路位置确认离开中心所需的连续周期数。 */
-#define TRACK_CORNER_CENTER_CLEAR_TICKS 2U
-
-/* 八路位置确认离开中心的最小绝对位置阈值。 */
-#define TRACK_CORNER_CENTER_CLEAR_POSITION_MIN 0.5f
-
-/* 八路位置重新居中所需连续周期数，5 次约为 100 ms。 */
-#define TRACK_CORNER_REACQUIRE_CENTER_TICKS 5U
-
-/* 判定完整八路位置已经居中的最大归一化位置绝对值。 */
-#define TRACK_CORNER_REACQUIRE_POSITION_MAX 0.5f
-
-/* 每圈完成终点计圈前必须通过的同向直角弯数量。 */
-#define TRACK_CORNERS_PER_LAP         4U
-
-/* 终点横线判定所需的最少压黑通道数，7 路用于容忍斜穿时未全部压线。 */
-#define TRACK_FINISH_BLACK_COUNT_MIN  7U
-
-/* 终点图案连续确认周期数。 */
-#define TRACK_FINISH_CONFIRM_TICKS    1U
-
-/* 非最终圈过终点后的短时丢线宽限周期数，25 个周期约为 500 ms。 */
-#define TRACK_POST_LAP_LINE_GRACE_TICKS 25U
 
 /* 起步后直行保持的周期数，50 个周期约为 1 秒。 */
 #define TRACK_START_FORWARD_TICKS     50U
+
+/* 丢线连续保持该周期数后停车（100 个 20 ms 周期约为 2 秒）。 */
+#define TRACK_LINE_LOST_STOP_TICKS    100U
+
+/* 判定「车在过弯」所需的归一化横向偏差绝对值。
+   e_y 全量程 ±7；8 路全压黑时 e_y≈0，所以起点横线天然不会计入。 */
+#define TRACK_CORNER_E_Y_MIN          3.0f
+
+/* 越过该阈值需要连续保持的周期数。
+   取 3（60 ms）：起点横线一闪而过只有约 1.5 个周期，会被滤掉；
+   而转弯持续几十到几百毫秒，能抓住。 */
+#define TRACK_CORNER_CONFIRM_TICKS    3U
+
+/* 计一个弯之后的最小间隔周期数，防止一个弯被计成多个。 */
+#define TRACK_CORNER_GAP_TICKS        10U
+
+/* 每圈必须通过的直角弯数量。 */
+#define TRACK_CORNERS_PER_LAP         4U
 
 /* 上电默认的目标完成圈数。 */
 #define TRACK_LAP_TARGET_DEFAULT      1U

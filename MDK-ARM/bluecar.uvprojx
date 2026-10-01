@@ -337,7 +337,7 @@
               <MiscControls />
               <Define>USE_HAL_DRIVER,STM32F103xE</Define>
               <Undefine />
-              <IncludePath>../Core/Inc;../Core/Application/Communication;../Core/Application/Control;../Core/Application/Config;../Core/Application/Display;../Core/Application/Scheduler;../Core/Application/State;../Core/Hardware/Buffers;../Core/Hardware/Peripherals/Motion;../Core/Hardware/Peripherals/Sensors;../Core/Hardware/Peripherals/Display;../Core/Hardware/Peripherals/IO;../Core/Hardware/System;../Drivers/STM32F1xx_HAL_Driver/Inc;../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy;../Drivers/CMSIS/Device/ST/STM32F1xx/Include;../Drivers/CMSIS/Include</IncludePath>
+              <IncludePath>../Core/Inc;../Core/Application/Communication;../Core/Application/Control;../Core/Application/Config;../Core/Application/Display;../Core/Application/Motion;../Core/Application/Scheduler;../Core/Application/State;../Core/Hardware/Buffers;../Core/Hardware/Peripherals/Motion;../Core/Hardware/Peripherals/Sensors;../Core/Hardware/Peripherals/Display;../Core/Hardware/Peripherals/IO;../Core/Hardware/System;../Drivers/STM32F1xx_HAL_Driver/Inc;../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy;../Drivers/CMSIS/Device/ST/STM32F1xx/Include;../Drivers/CMSIS/Include</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -427,24 +427,19 @@
           <GroupName>Application/Control</GroupName>
           <Files>
             <File>
-              <FileName>yingYongKongZhi.c</FileName>
+              <FileName>app_tracking.c</FileName>
               <FileType>1</FileType>
-              <FilePath>../Core/Application/Control/yingYongKongZhi.c</FilePath>
+              <FilePath>../Core/Application/Control/app_tracking.c</FilePath>
             </File>
             <File>
-              <FileName>yingYongXunJi.c</FileName>
+              <FileName>app_pid.c</FileName>
               <FileType>1</FileType>
-              <FilePath>../Core/Application/Control/yingYongXunJi.c</FilePath>
+              <FilePath>../Core/Application/Control/app_pid.c</FilePath>
             </File>
             <File>
-              <FileName>yingYongZhuangTai.c</FileName>
+              <FileName>app_testmode.c</FileName>
               <FileType>1</FileType>
-              <FilePath>../Core/Application/Control/yingYongZhuangTai.c</FilePath>
-            </File>
-            <File>
-              <FileName>pid.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>../Core/Application/Control/pid.c</FilePath>
+              <FilePath>../Core/Application/Control/app_testmode.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -462,9 +457,29 @@
           <GroupName>Application/State</GroupName>
           <Files>
             <File>
+              <FileName>app_state.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>../Core/Application/State/app_state.c</FilePath>
+            </File>
+            <File>
               <FileName>app_imu.c</FileName>
               <FileType>1</FileType>
               <FilePath>../Core/Application/State/app_imu.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>Application/Motion</GroupName>
+          <Files>
+            <File>
+              <FileName>app_motion.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>../Core/Application/Motion/app_motion.c</FilePath>
+            </File>
+            <File>
+              <FileName>app_speedloop.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>../Core/Application/Motion/app_speedloop.c</FilePath>
             </File>
           </Files>
         </Group>
