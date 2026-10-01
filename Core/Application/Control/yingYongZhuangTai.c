@@ -12,7 +12,6 @@ float targetLeftRpm = 0.0f;
 float targetRightRpm = 0.0f;
 Encoder encoderLeft;
 Encoder encoderRight;
-MPU6050 imu;
 
 static uint8_t speedLevel = SPEED_LEVEL_DEFAULT;
 static uint8_t lapTarget = TRACK_LAP_TARGET_DEFAULT;

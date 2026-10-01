@@ -4,7 +4,6 @@
 #include "main.h"
 #include "app_types.h"
 #include "encoder.h"
-#include "mpu6050.h"
 #include "pid.h"
 
 extern workMode_t workMode;
@@ -17,7 +16,6 @@ extern float targetLeftRpm;
 extern float targetRightRpm;
 extern Encoder encoderLeft;
 extern Encoder encoderRight;
-extern MPU6050 imu;
 
 void appStateInit(void);
 void appStateResetMotion(void);

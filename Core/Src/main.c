@@ -17,6 +17,8 @@
 /* USER CODE BEGIN Includes */
 #include "yingYongMingLing.h"
 #include "app_config.h"
+#include "app_imu.h"
+#include "app_scheduler.h"
 #include "yingYongXianShi.h"
 #include "yingYongZhuangTai.h"
 #include "yingYongYaoCe.h"
@@ -71,7 +73,7 @@ int main(void)
 
   Motor_Init();
   IRTrack_Init();
-  MPU6050_init(&hi2c1);
+  AppImu_Init();
   Encoder_Init_TIM_All();
   Timer_Init();
   TIM5_Init();
@@ -88,8 +90,8 @@ int main(void)
   appCommandInit();
   appTelemetryInit();
 
-  /* Start IMU sampling before the boot mode screen so yaw is live there too. */
-  MPU6050_ReadAsync_Start();
+  /* 所有模块都初始化完了才放行中断任务，避免中断改到未初始化的对象。 */
+  AppScheduler_Init();
 
   appDisplayShowBootScreen();
   Buzzer_ON();
@@ -107,6 +109,10 @@ int main(void)
   while (1)
   {
     /* USER CODE BEGIN 3 */
+    /* 遥测发送和 OLED 刷新由调度器置标志，在这里执行；
+       中断里不做 snprintf 和 I2C，避免压住串口接收。 */
+    AppDeferred_Run();
+
     /* 处理串口调参响应、蓝牙命令和按键事件。 */
     pidTuneProcessResponse();
 
@@ -114,14 +120,8 @@ int main(void)
     appCommandProcessKeys();
     appCommandProcessTune();
 
-    /* OLED 缓冲写入和状态页刷新。 */
+    /* OLED 缓冲写入。 */
     OLED_Flush();
-
-    static uint32_t displayTick = 0;
-    if (milliseconds - displayTick > APP_DISPLAY_PERIOD_MS) {
-      displayTick = milliseconds;
-      appDisplayUpdate();
-    }
     /* USER CODE END 3 */
   }
 }

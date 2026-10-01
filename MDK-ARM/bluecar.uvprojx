@@ -337,7 +337,7 @@
               <MiscControls />
               <Define>USE_HAL_DRIVER,STM32F103xE</Define>
               <Undefine />
-              <IncludePath>../Core/Inc;../Core/Application/Communication;../Core/Application/Control;../Core/Application/Config;../Core/Application/Display;../Core/Hardware/Buffers;../Core/Hardware/Peripherals/Motion;../Core/Hardware/Peripherals/Sensors;../Core/Hardware/Peripherals/Display;../Core/Hardware/Peripherals/IO;../Core/Hardware/System;../Drivers/STM32F1xx_HAL_Driver/Inc;../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy;../Drivers/CMSIS/Device/ST/STM32F1xx/Include;../Drivers/CMSIS/Include</IncludePath>
+              <IncludePath>../Core/Inc;../Core/Application/Communication;../Core/Application/Control;../Core/Application/Config;../Core/Application/Display;../Core/Application/Scheduler;../Core/Application/State;../Core/Hardware/Buffers;../Core/Hardware/Peripherals/Motion;../Core/Hardware/Peripherals/Sensors;../Core/Hardware/Peripherals/Display;../Core/Hardware/Peripherals/IO;../Core/Hardware/System;../Drivers/STM32F1xx_HAL_Driver/Inc;../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy;../Drivers/CMSIS/Device/ST/STM32F1xx/Include;../Drivers/CMSIS/Include</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -445,6 +445,26 @@
               <FileName>pid.c</FileName>
               <FileType>1</FileType>
               <FilePath>../Core/Application/Control/pid.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>Application/Scheduler</GroupName>
+          <Files>
+            <File>
+              <FileName>app_scheduler.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>../Core/Application/Scheduler/app_scheduler.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>Application/State</GroupName>
+          <Files>
+            <File>
+              <FileName>app_imu.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>../Core/Application/State/app_imu.c</FilePath>
             </File>
           </Files>
         </Group>

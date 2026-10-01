@@ -37,10 +37,12 @@ bluecar\main.o: ../Core/Inc/tim.h
 bluecar\main.o: ../Core/Inc/usart.h
 bluecar\main.o: ../Core/Application/Communication/yingYongMingLing.h
 bluecar\main.o: ../Core/Application/Config/app_config.h
+bluecar\main.o: ../Core/Application/State/app_imu.h
+bluecar\main.o: ../Core/Hardware/Peripherals/Sensors/mpu6050.h
+bluecar\main.o: ../Core/Application/Scheduler/app_scheduler.h
 bluecar\main.o: ../Core/Application/Display/yingYongXianShi.h
 bluecar\main.o: ../Core/Application/Control/yingYongZhuangTai.h
 bluecar\main.o: ../Core/Hardware/Peripherals/Motion/encoder.h
-bluecar\main.o: ../Core/Hardware/Peripherals/Sensors/mpu6050.h
 bluecar\main.o: ../Core/Application/Control/pid.h
 bluecar\main.o: ../Core/Application/Communication/yingYongYaoCe.h
 bluecar\main.o: ../Core/Application/Communication/blueserial.h

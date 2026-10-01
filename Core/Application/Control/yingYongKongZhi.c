@@ -1,6 +1,7 @@
 #include "yingYongKongZhi.h"
 #include "yingYongMingLing.h"
 #include "app_config.h"
+#include "app_imu.h"
 #include "yingYongZhuangTai.h"
 #include "yingYongYaoCe.h"
 #include "yingYongXunJi.h"
@@ -322,7 +323,7 @@ static void appControlFillTelemetry(float targetLeft, float targetRight,
     telemetryData.filteredRightRpm = filteredSpeedRight;
     telemetryData.steerRpm = steerRpm;
     telemetryData.actualDiffRpm = rpmDifference;
-    telemetryData.yawAngleDeg = imu.yaw;
+    telemetryData.yawAngleDeg = AppImu_Get()->yaw;
     telemetryData.trackError = trackError;
     telemetryData.mode = (int16_t)workMode;
     telemetryData.runFlag = runFlag;

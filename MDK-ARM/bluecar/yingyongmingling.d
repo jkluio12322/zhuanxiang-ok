@@ -34,7 +34,6 @@ bluecar\yingyongmingling.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_ti
 bluecar\yingyongmingling.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h
 bluecar\yingyongmingling.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h
 bluecar\yingyongmingling.o: ../Core/Hardware/Peripherals/Motion/encoder.h
-bluecar\yingyongmingling.o: ../Core/Hardware/Peripherals/Sensors/mpu6050.h
 bluecar\yingyongmingling.o: ../Core/Application/Control/pid.h
 bluecar\yingyongmingling.o: ../Core/Hardware/Peripherals/IO/key.h
 bluecar\yingyongmingling.o: ../Core/Application/Communication/pid_tune.h

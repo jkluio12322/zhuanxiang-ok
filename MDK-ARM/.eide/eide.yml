@@ -31,6 +31,14 @@ virtualFolder:
             - path: ../Core/Application/Control/yingYongZhuangTai.c
             - path: ../Core/Application/Control/pid.c
           folders: []
+        - name: Scheduler
+          files:
+            - path: ../Core/Application/Scheduler/app_scheduler.c
+          folders: []
+        - name: State
+          files:
+            - path: ../Core/Application/State/app_imu.c
+          folders: []
         - name: Config
           files:
             - path: ../Core/Application/Config/app_config.h
@@ -135,6 +143,8 @@ targets:
         - ../Core/Application/Control
         - ../Core/Application/Config
         - ../Core/Application/Display
+        - ../Core/Application/Scheduler
+        - ../Core/Application/State
         - ../Core/Hardware/Buffers
         - ../Core/Hardware/Peripherals/Motion
         - ../Core/Hardware/Peripherals/Sensors

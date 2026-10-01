@@ -10,6 +10,8 @@
 "bluecar\yingyongxunji.o"
 "bluecar\yingyongzhuangtai.o"
 "bluecar\pid.o"
+"bluecar\app_scheduler.o"
+"bluecar\app_imu.o"
 "bluecar\yingyongxianshi.o"
 "bluecar\ringbuf.o"
 "bluecar\motor.o"

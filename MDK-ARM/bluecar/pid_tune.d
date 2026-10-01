@@ -35,7 +35,6 @@ bluecar\pid_tune.o: ../Core/Application/Communication/yingYongMingLing.h
 bluecar\pid_tune.o: ../Core/Application/Config/app_config.h
 bluecar\pid_tune.o: ../Core/Application/Control/yingYongZhuangTai.h
 bluecar\pid_tune.o: ../Core/Hardware/Peripherals/Motion/encoder.h
-bluecar\pid_tune.o: ../Core/Hardware/Peripherals/Sensors/mpu6050.h
 bluecar\pid_tune.o: ../Core/Application/Control/pid.h
 bluecar\pid_tune.o: ../Core/Application/Control/yingYongXunJi.h
 bluecar\pid_tune.o: ../Core/Application/Control/yingYongKongZhi.h
