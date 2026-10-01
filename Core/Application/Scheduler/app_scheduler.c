@@ -11,7 +11,7 @@
 #include "app_state.h"
 #include "app_testmode.h"
 #include "key.h"
-#include "yingYongXianShi.h"
+#include "app_display.h"
 #include "app_tracking.h"
 #include "app_telemetry.h"
 
@@ -118,6 +118,6 @@ void AppDeferred_Run(void)
     }
 
     if (AppScheduler_TakeDeferred(DEFERRED_DISPLAY) != 0U) {
-        appDisplayUpdate();
+        AppDisplay_Task100ms();
     }
 }

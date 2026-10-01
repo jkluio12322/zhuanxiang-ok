@@ -502,9 +502,9 @@
           <GroupName>Application/Display</GroupName>
           <Files>
             <File>
-              <FileName>yingYongXianShi.c</FileName>
+              <FileName>app_display.c</FileName>
               <FileType>1</FileType>
-              <FilePath>../Core/Application/Display/yingYongXianShi.c</FilePath>
+              <FilePath>../Core/Application/Display/app_display.c</FilePath>
             </File>
           </Files>
         </Group>

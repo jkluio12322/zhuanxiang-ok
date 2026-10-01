@@ -24,7 +24,7 @@
 #include "app_state.h"
 #include "app_testmode.h"
 #include "app_tracking.h"
-#include "yingYongXianShi.h"
+#include "app_display.h"
 #include "app_telemetry.h"
 #include "buzzer.h"
 #include "encoder.h"
@@ -98,13 +98,13 @@ int main(void)
   /* 所有模块都初始化完了才放行中断任务，避免中断改到未初始化的对象。 */
   AppScheduler_Init();
 
-  appDisplayShowBootScreen();
+  AppDisplay_ShowBoot();
   Buzzer_ON();
   HAL_Delay(APP_BOOT_BEEP_MS);
   Buzzer_OFF();
 
   /* 等待指定按键启动，避免上电后立即进入控制状态。 */
-  appBootConfigRun();
+  AppDisplay_BootConfig();
   OLED_Clear();
   OLED_ShowString(2, 1, " Calibrating... ");
   OLED_Flush();

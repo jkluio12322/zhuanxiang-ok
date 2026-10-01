@@ -17,19 +17,17 @@ virtualFolder:
           folders: []
         - name: Communication
           files:
-            - path: ../Core/Application/Communication/yingYongMingLing.c
-            - path: ../Core/Application/Communication/yingYongYaoCe.c
-            - path: ../Core/Application/Communication/pid_tune.c
-            - path: ../Core/Application/Communication/serial.c
-            - path: ../Core/Application/Communication/blueserial.c
+            - path: ../Core/Application/Communication/app_cmd.c
+            - path: ../Core/Application/Communication/app_telemetry.c
+            - path: ../Core/Application/Communication/app_console.c
+            - path: ../Core/Application/Communication/app_serial.c
             - path: ../Core/Application/Communication/bytestream.c
           folders: []
         - name: Control
           files:
-            - path: ../Core/Application/Control/yingYongKongZhi.c
-            - path: ../Core/Application/Control/yingYongXunJi.c
-            - path: ../Core/Application/Control/yingYongZhuangTai.c
-            - path: ../Core/Application/Control/pid.c
+            - path: ../Core/Application/Control/app_tracking.c
+            - path: ../Core/Application/Control/app_pid.c
+            - path: ../Core/Application/Control/app_testmode.c
           folders: []
         - name: Scheduler
           files:
@@ -47,7 +45,7 @@ virtualFolder:
           folders: []
         - name: Display
           files:
-            - path: ../Core/Application/Display/yingYongXianShi.c
+            - path: ../Core/Application/Display/app_display.c
           folders: []
         - name: User
           files: []

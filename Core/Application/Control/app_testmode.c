@@ -9,7 +9,7 @@
 #include "irtrack.h"
 #include "app_tracking.h"
 
-/* 允许的模拟角度表，pid_tune 的 simlevel 校验也用这几个值。 */
+/* 允许的模拟角度表，app_console 的 simlevel 校验也用这几个值。 */
 static const uint8_t angleTable[] = {5U, 10U, 45U, 90U};
 #define ANGLE_TABLE_SIZE (sizeof(angleTable) / sizeof(angleTable[0]))
 
@@ -188,4 +188,15 @@ uint8_t AppTestMode_GetSimEnabled(void)
 PwmTestPhase_t AppTestMode_GetTrackPhase(void)
 {
     return trackPhase;
+}
+
+const char *AppPhaseName(PwmTestPhase_t phase)
+{
+    switch (phase) {
+    case PWM_TEST_PHASE_FORWARD: return "FORWARD";
+    case PWM_TEST_PHASE_REVERSE: return "REVERSE";
+    case PWM_TEST_PHASE_LEFT:    return "LEFT";
+    case PWM_TEST_PHASE_RIGHT:   return "RIGHT";
+    default:                     return "--";
+    }
 }

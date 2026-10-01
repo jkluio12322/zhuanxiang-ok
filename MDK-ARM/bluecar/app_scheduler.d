@@ -40,6 +40,6 @@ bluecar\app_scheduler.o: ../Core/Application/Control/app_pid.h
 bluecar\app_scheduler.o: ../Core/Application/State/app_state.h
 bluecar\app_scheduler.o: ../Core/Application/Control/app_testmode.h
 bluecar\app_scheduler.o: ../Core/Hardware/Peripherals/IO/key.h
-bluecar\app_scheduler.o: ../Core/Application/Display/yingYongXianShi.h
+bluecar\app_scheduler.o: ../Core/Application/Display/app_display.h
 bluecar\app_scheduler.o: ../Core/Application/Control/app_tracking.h
 bluecar\app_scheduler.o: ../Core/Application/Communication/app_telemetry.h

@@ -41,6 +41,18 @@ void AppState_Init(void);
 void AppState_SetMode(workMode_t mode);
 
 /**
+ * @brief  取模式循环里的下一个模式。
+ * @return modeTrack -> modePwmSpeed -> modePwmTrack -> modeTrack。
+ * @note   按键轮换和开机页轮换共用这一处，避免两套循环逻辑各自漂移。
+ */
+workMode_t AppState_NextMode(void);
+
+/**
+ * @brief  模式名，供 OLED 和串口命令行共用。
+ */
+const char *AppModeName(workMode_t mode);
+
+/**
  * @brief  设置运行标志。
  */
 void AppState_SetRunning(uint8_t running);

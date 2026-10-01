@@ -46,7 +46,7 @@ bluecar\main.o: ../Core/Application/Control/app_pid.h
 bluecar\main.o: ../Core/Application/State/app_state.h
 bluecar\main.o: ../Core/Application/Control/app_testmode.h
 bluecar\main.o: ../Core/Application/Control/app_tracking.h
-bluecar\main.o: ../Core/Application/Display/yingYongXianShi.h
+bluecar\main.o: ../Core/Application/Display/app_display.h
 bluecar\main.o: ../Core/Application/Communication/app_telemetry.h
 bluecar\main.o: ../Core/Hardware/Peripherals/IO/buzzer.h
 bluecar\main.o: ../Core/Hardware/Peripherals/Motion/encoder.h

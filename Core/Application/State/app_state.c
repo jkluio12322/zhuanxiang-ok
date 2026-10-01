@@ -48,6 +48,28 @@ void AppState_SetMode(workMode_t mode)
     state.mode = mode;
 }
 
+workMode_t AppState_NextMode(void)
+{
+    if (state.mode == modeTrack) {
+        return modePwmSpeed;
+    }
+    if (state.mode == modePwmSpeed) {
+        return modePwmTrack;
+    }
+    return modeTrack;
+}
+
+const char *AppModeName(workMode_t mode)
+{
+    if (mode == modePwmSpeed) {
+        return "PWM-SPEED";
+    }
+    if (mode == modePwmTrack) {
+        return "PWM-TRACK";
+    }
+    return "TRACK";
+}
+
 void AppState_SetRunning(uint8_t running)
 {
     state.running = (running != 0U) ? 1U : 0U;

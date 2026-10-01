@@ -123,24 +123,16 @@ static const TuneCommand_t *consoleFind(const char *name)
     return 0;
 }
 
+/* show 命令里的 Phase 字段：测试模式下是当前相位，循迹模式下无相位可言。 */
 static const char *consolePhaseName(void)
 {
     if (AppState()->mode == modePwmSpeed) {
-        return (AppTestMode_GetSpeedPhase() == PWM_TEST_PHASE_REVERSE)
-               ? "REVERSE" : "FORWARD";
+        return AppPhaseName(AppTestMode_GetSpeedPhase());
     }
     if (AppState()->mode == modePwmTrack) {
-        return (AppTestMode_GetTrackPhase() == PWM_TEST_PHASE_RIGHT)
-               ? "RIGHT" : "LEFT";
+        return AppPhaseName(AppTestMode_GetTrackPhase());
     }
-    return "TRACK";
-}
-
-static const char *consoleModeName(void)
-{
-    if (AppState()->mode == modePwmSpeed) return "PWM-SPEED";
-    if (AppState()->mode == modePwmTrack) return "PWM-TRACK";
-    return "TRACK";
+    return "-";
 }
 
 void AppConsole_Process(void)
@@ -276,7 +268,7 @@ void AppConsole_Process(void)
             "SpeedR Kp=%.2f Ki=%.2f Kd=%.2f Tgt=%.1f Out=%.1f\r\n"
             "Track Kp=%.2f Ki=%.2f Kd=%.2f tkg=%.2f\r\n"
             "VoltL=%.2fV VoltR=%.2fV\r\n",
-            consoleModeName(), AppState()->running, consolePhaseName(),
+            AppModeName(AppState()->mode), AppState()->running, consolePhaseName(),
             AppState()->gear, (int)AppTestMode_GetBasePwm(),
             infoL.kp, infoL.ki, infoL.kd, infoL.target, infoL.out,
             infoR.kp, infoR.ki, infoR.kd, infoR.target, infoR.out,

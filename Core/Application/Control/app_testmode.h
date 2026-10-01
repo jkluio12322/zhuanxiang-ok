@@ -92,4 +92,9 @@ PwmTestPhase_t AppTestMode_GetSpeedPhase(void);
  */
 PwmTestPhase_t AppTestMode_GetTrackPhase(void);
 
+/**
+ * @brief  相位名，供 OLED 和串口命令行共用。
+ */
+const char *AppPhaseName(PwmTestPhase_t phase);
+
 #endif /* __APP_TESTMODE_H */

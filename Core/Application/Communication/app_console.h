@@ -1,5 +1,5 @@
 /**
- * @file    pid_tune.h
+ * @file    app_console.h
  * @brief   USART1 在线 PID 调参和电机测试接口。
  * @note    UART 中断只缓存接收字节，命令行解析在主循环中完成。
  */

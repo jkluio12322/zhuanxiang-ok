@@ -13,7 +13,7 @@
 "bluecar\app_imu.o"
 "bluecar\app_motion.o"
 "bluecar\app_speedloop.o"
-"bluecar\yingyongxianshi.o"
+"bluecar\app_display.o"
 "bluecar\ringbuf.o"
 "bluecar\motor.o"
 "bluecar\encoder.o"
