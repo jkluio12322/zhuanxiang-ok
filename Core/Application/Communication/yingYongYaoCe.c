@@ -4,7 +4,7 @@
  */
 
 #include "yingYongYaoCe.h"
-#include "yingYongPeiZhi.h"
+#include "app_config.h"
 #include "yingYongZhuangTai.h"
 #include "serial.h"
 

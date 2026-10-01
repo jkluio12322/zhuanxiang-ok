@@ -33,8 +33,9 @@ virtualFolder:
           folders: []
         - name: Config
           files:
-            - path: ../Core/Application/Config/yingYongPeiZhi.h
-            - path: ../Core/Application/Config/yingYongLeiXing.h
+            - path: ../Core/Application/Config/app_config.h
+            - path: ../Core/Application/Config/app_types.h
+            - path: ../Core/Application/Config/board.h
           folders: []
         - name: Display
           files:

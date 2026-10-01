@@ -5,7 +5,7 @@ from pathlib import Path
 import re
 
 ROOT = Path(__file__).resolve().parents[1]
-CONFIG = ROOT / "Core/Application/Config/yingYongPeiZhi.h"
+CONFIG = ROOT / "Core/Application/Config/app_config.h"
 
 
 def read_macros(path: Path):

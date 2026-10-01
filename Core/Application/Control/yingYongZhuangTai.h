@@ -2,7 +2,7 @@
 #define __YING_YONG_ZHUANG_TAI_H
 
 #include "main.h"
-#include "yingYongLeiXing.h"
+#include "app_types.h"
 #include "encoder.h"
 #include "mpu6050.h"
 #include "pid.h"

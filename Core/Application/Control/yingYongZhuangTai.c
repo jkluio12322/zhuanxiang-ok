@@ -1,19 +1,6 @@
 #include "yingYongZhuangTai.h"
-#include "yingYongPeiZhi.h"
+#include "app_config.h"
 #include "motor.h"
-
-#define SPEED_LEVEL_DEFAULT 2U
-#define SPEED_TABLE_G1_RPM 30.0f
-#define SPEED_TABLE_G2_RPM 55.0f
-#define SPEED_TABLE_G3_RPM 80.0f
-#define SPEED_TABLE_G4_RPM 105.0f
-#define SPEED_TABLE_G5_RPM 130.0f
-#define SPEED_TABLE_G6_RPM 170.0f
-#define SPEED_PID_KP 0.25f
-#define SPEED_PID_KI 0.020f
-#define SPEED_PID_KD 0.0f
-#define SPEED_PID_OUT_MAX 100.0f
-#define SPEED_PID_OUT_MIN (-100.0f)
 
 workMode_t workMode = modeTrack;
 uint8_t runFlag = 0;

@@ -2,9 +2,10 @@ bluecar\yingyongxianshi.o: ../Core/Application/Display/yingYongXianShi.c
 bluecar\yingyongxianshi.o: ../Core/Application/Display/yingYongXianShi.h
 bluecar\yingyongxianshi.o: ../Core/Application/Control/yingYongKongZhi.h
 bluecar\yingyongxianshi.o: F:\kilv5\ARM\ARMCC\Bin\..\include\stdint.h
-bluecar\yingyongxianshi.o: ../Core/Application/Config/yingYongLeiXing.h
+bluecar\yingyongxianshi.o: ../Core/Application/Config/app_types.h
 bluecar\yingyongxianshi.o: ../Core/Application/Communication/yingYongMingLing.h
-bluecar\yingyongxianshi.o: ../Core/Application/Config/yingYongPeiZhi.h
+bluecar\yingyongxianshi.o: ../Core/Application/Config/app_config.h
+bluecar\yingyongxianshi.o: ../Core/Application/Control/yingYongZhuangTai.h
 bluecar\yingyongxianshi.o: ../Core/Inc/main.h
 bluecar\yingyongxianshi.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h
 bluecar\yingyongxianshi.o: ../Core/Inc/stm32f1xx_hal_conf.h
@@ -34,7 +35,6 @@ bluecar\yingyongxianshi.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr
 bluecar\yingyongxianshi.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h
 bluecar\yingyongxianshi.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h
 bluecar\yingyongxianshi.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h
-bluecar\yingyongxianshi.o: ../Core/Application/Control/yingYongZhuangTai.h
 bluecar\yingyongxianshi.o: ../Core/Hardware/Peripherals/Motion/encoder.h
 bluecar\yingyongxianshi.o: ../Core/Hardware/Peripherals/Sensors/mpu6050.h
 bluecar\yingyongxianshi.o: ../Core/Application/Control/pid.h

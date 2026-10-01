@@ -30,9 +30,9 @@ bluecar\pid_tune.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h
 bluecar\pid_tune.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h
 bluecar\pid_tune.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h
 bluecar\pid_tune.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h
-bluecar\pid_tune.o: ../Core/Application/Config/yingYongLeiXing.h
+bluecar\pid_tune.o: ../Core/Application/Config/app_types.h
 bluecar\pid_tune.o: ../Core/Application/Communication/yingYongMingLing.h
-bluecar\pid_tune.o: ../Core/Application/Config/yingYongPeiZhi.h
+bluecar\pid_tune.o: ../Core/Application/Config/app_config.h
 bluecar\pid_tune.o: ../Core/Application/Control/yingYongZhuangTai.h
 bluecar\pid_tune.o: ../Core/Hardware/Peripherals/Motion/encoder.h
 bluecar\pid_tune.o: ../Core/Hardware/Peripherals/Sensors/mpu6050.h

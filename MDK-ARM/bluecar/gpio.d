@@ -30,5 +30,5 @@ bluecar\gpio.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h
 bluecar\gpio.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h
 bluecar\gpio.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h
 bluecar\gpio.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h
-bluecar\gpio.o: ../Core/Application/Config/yingYongLeiXing.h
-bluecar\gpio.o: ../Core/Application/Config/yingYongPeiZhi.h
+bluecar\gpio.o: ../Core/Application/Config/app_types.h
+bluecar\gpio.o: ../Core/Application/Config/app_config.h

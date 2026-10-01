@@ -30,7 +30,7 @@ bluecar\mpu6050.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h
 bluecar\mpu6050.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h
 bluecar\mpu6050.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h
 bluecar\mpu6050.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h
-bluecar\mpu6050.o: ../Core/Application/Config/yingYongLeiXing.h
+bluecar\mpu6050.o: ../Core/Application/Config/app_types.h
 bluecar\mpu6050.o: F:\kilv5\ARM\ARMCC\Bin\..\include\math.h
 bluecar\mpu6050.o: F:\kilv5\ARM\ARMCC\Bin\..\include\stdlib.h
 bluecar\mpu6050.o: F:\kilv5\ARM\ARMCC\Bin\..\include\string.h

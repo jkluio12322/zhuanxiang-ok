@@ -2,7 +2,7 @@
 #define __YING_YONG_XUN_JI_H
 
 #include <stdint.h>
-#include "yingYongLeiXing.h"
+#include "app_types.h"
 
 typedef enum {
     TRACK_CONTROL_FOLLOW = 0,

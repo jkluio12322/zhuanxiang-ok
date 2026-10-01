@@ -1,7 +1,8 @@
 bluecar\yingyongyaoce.o: ../Core/Application/Communication/yingYongYaoCe.c
 bluecar\yingyongyaoce.o: ../Core/Application/Communication/yingYongYaoCe.h
 bluecar\yingyongyaoce.o: F:\kilv5\ARM\ARMCC\Bin\..\include\stdint.h
-bluecar\yingyongyaoce.o: ../Core/Application/Config/yingYongPeiZhi.h
+bluecar\yingyongyaoce.o: ../Core/Application/Config/app_config.h
+bluecar\yingyongyaoce.o: ../Core/Application/Control/yingYongZhuangTai.h
 bluecar\yingyongyaoce.o: ../Core/Inc/main.h
 bluecar\yingyongyaoce.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h
 bluecar\yingyongyaoce.o: ../Core/Inc/stm32f1xx_hal_conf.h
@@ -31,8 +32,7 @@ bluecar\yingyongyaoce.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h
 bluecar\yingyongyaoce.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h
 bluecar\yingyongyaoce.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h
 bluecar\yingyongyaoce.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h
-bluecar\yingyongyaoce.o: ../Core/Application/Config/yingYongLeiXing.h
-bluecar\yingyongyaoce.o: ../Core/Application/Control/yingYongZhuangTai.h
+bluecar\yingyongyaoce.o: ../Core/Application/Config/app_types.h
 bluecar\yingyongyaoce.o: ../Core/Hardware/Peripherals/Motion/encoder.h
 bluecar\yingyongyaoce.o: ../Core/Hardware/Peripherals/Sensors/mpu6050.h
 bluecar\yingyongyaoce.o: ../Core/Application/Control/pid.h

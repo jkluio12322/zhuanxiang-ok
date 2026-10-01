@@ -8,7 +8,7 @@
  */
 
 #include "motor.h"
-#include "yingYongPeiZhi.h"
+#include "board.h"
 
 extern TIM_HandleTypeDef htim1;
 

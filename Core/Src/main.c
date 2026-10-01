@@ -16,7 +16,7 @@
 
 /* USER CODE BEGIN Includes */
 #include "yingYongMingLing.h"
-#include "yingYongPeiZhi.h"
+#include "app_config.h"
 #include "yingYongXianShi.h"
 #include "yingYongZhuangTai.h"
 #include "yingYongYaoCe.h"

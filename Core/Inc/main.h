@@ -6,7 +6,7 @@ extern "C" {
 #endif
 
 #include "stm32f1xx_hal.h"
-#include "yingYongLeiXing.h"
+#include "app_types.h"
 
 /**
  * @brief  进入不可恢复错误状态。

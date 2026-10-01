@@ -7,7 +7,7 @@
 
 #include "timer.h"
 #include "yingYongKongZhi.h"
-#include "yingYongPeiZhi.h"
+#include "app_config.h"
 #include "yingYongZhuangTai.h"
 #include "yingYongXunJi.h"
 #include "yingYongYaoCe.h"

@@ -29,14 +29,14 @@ bluecar\main.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h
 bluecar\main.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h
 bluecar\main.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h
 bluecar\main.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h
-bluecar\main.o: ../Core/Application/Config/yingYongLeiXing.h
+bluecar\main.o: ../Core/Application/Config/app_types.h
 bluecar\main.o: ../Core/Inc/dma.h
 bluecar\main.o: ../Core/Inc/gpio.h
 bluecar\main.o: ../Core/Inc/i2c.h
 bluecar\main.o: ../Core/Inc/tim.h
 bluecar\main.o: ../Core/Inc/usart.h
 bluecar\main.o: ../Core/Application/Communication/yingYongMingLing.h
-bluecar\main.o: ../Core/Application/Config/yingYongPeiZhi.h
+bluecar\main.o: ../Core/Application/Config/app_config.h
 bluecar\main.o: ../Core/Application/Display/yingYongXianShi.h
 bluecar\main.o: ../Core/Application/Control/yingYongZhuangTai.h
 bluecar\main.o: ../Core/Hardware/Peripherals/Motion/encoder.h

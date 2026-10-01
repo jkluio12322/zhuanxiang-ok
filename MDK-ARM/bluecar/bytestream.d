@@ -30,7 +30,7 @@ bluecar\bytestream.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h
 bluecar\bytestream.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h
 bluecar\bytestream.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h
 bluecar\bytestream.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h
-bluecar\bytestream.o: ../Core/Application/Config/yingYongLeiXing.h
+bluecar\bytestream.o: ../Core/Application/Config/app_types.h
 bluecar\bytestream.o: F:\kilv5\ARM\ARMCC\Bin\..\include\stdarg.h
 bluecar\bytestream.o: F:\kilv5\ARM\ARMCC\Bin\..\include\stdio.h
 bluecar\bytestream.o: F:\kilv5\ARM\ARMCC\Bin\..\include\string.h

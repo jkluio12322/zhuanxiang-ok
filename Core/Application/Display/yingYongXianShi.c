@@ -1,7 +1,7 @@
 #include "yingYongXianShi.h"
 #include "yingYongKongZhi.h"
 #include "yingYongMingLing.h"
-#include "yingYongPeiZhi.h"
+#include "app_config.h"
 #include "yingYongZhuangTai.h"
 #include "yingYongXunJi.h"
 #include "yingYongYaoCe.h"

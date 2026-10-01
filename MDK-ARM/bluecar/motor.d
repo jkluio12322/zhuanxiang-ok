@@ -30,5 +30,6 @@ bluecar\motor.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h
 bluecar\motor.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h
 bluecar\motor.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h
 bluecar\motor.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h
-bluecar\motor.o: ../Core/Application/Config/yingYongLeiXing.h
-bluecar\motor.o: ../Core/Application/Config/yingYongPeiZhi.h
+bluecar\motor.o: ../Core/Application/Config/app_types.h
+bluecar\motor.o: ../Core/Application/Config/board.h
+bluecar\motor.o: ../Core/Application/Config/app_config.h

@@ -1,7 +1,7 @@
 #ifndef __YING_YONG_MING_LING_H
 #define __YING_YONG_MING_LING_H
 
-#include "yingYongLeiXing.h"
+#include "app_types.h"
 
 void appCommandInit(void);
 void appCommandPushValue(commandType_t type, float value);

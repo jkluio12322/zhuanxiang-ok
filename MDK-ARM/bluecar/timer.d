@@ -30,9 +30,9 @@ bluecar\timer.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h
 bluecar\timer.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h
 bluecar\timer.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h
 bluecar\timer.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h
-bluecar\timer.o: ../Core/Application/Config/yingYongLeiXing.h
+bluecar\timer.o: ../Core/Application/Config/app_types.h
 bluecar\timer.o: ../Core/Application/Control/yingYongKongZhi.h
-bluecar\timer.o: ../Core/Application/Config/yingYongPeiZhi.h
+bluecar\timer.o: ../Core/Application/Config/app_config.h
 bluecar\timer.o: ../Core/Application/Control/yingYongZhuangTai.h
 bluecar\timer.o: ../Core/Hardware/Peripherals/Motion/encoder.h
 bluecar\timer.o: ../Core/Hardware/Peripherals/Sensors/mpu6050.h

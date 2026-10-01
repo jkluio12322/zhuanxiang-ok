@@ -452,14 +452,19 @@
           <GroupName>Application/Config</GroupName>
           <Files>
             <File>
-              <FileName>yingYongPeiZhi.h</FileName>
+              <FileName>app_config.h</FileName>
               <FileType>5</FileType>
-              <FilePath>../Core/Application/Config/yingYongPeiZhi.h</FilePath>
+              <FilePath>../Core/Application/Config/app_config.h</FilePath>
             </File>
             <File>
-              <FileName>yingYongLeiXing.h</FileName>
+              <FileName>app_types.h</FileName>
               <FileType>5</FileType>
-              <FilePath>../Core/Application/Config/yingYongLeiXing.h</FilePath>
+              <FilePath>../Core/Application/Config/app_types.h</FilePath>
+            </File>
+            <File>
+              <FileName>board.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>../Core/Application/Config/board.h</FilePath>
             </File>
           </Files>
         </Group>

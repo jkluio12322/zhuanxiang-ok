@@ -1,5 +1,5 @@
 #include "yingYongMingLing.h"
-#include "yingYongPeiZhi.h"
+#include "app_config.h"
 #include "yingYongZhuangTai.h"
 #include "key.h"
 #include "pid_tune.h"

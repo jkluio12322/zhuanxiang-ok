@@ -9,9 +9,7 @@ import re
 
 
 ROOT = Path(__file__).resolve().parents[1]
-CONFIG_PATH = ROOT / "Core/Application/Config/yingYongPeiZhi.h"
-TRACKING_PATH = ROOT / "Core/Application/Control/yingYongXunJi.c"
-STATE_PATH = ROOT / "Core/Application/Control/yingYongZhuangTai.c"
+CONFIG_PATH = ROOT / "Core/Application/Config/app_config.h"
 IRTRACK_PATH = ROOT / "Core/Hardware/Peripherals/Sensors/irtrack.c"
 
 DEFINE_RE = re.compile(r"^\s*#\s*define\s+([A-Za-z_]\w*)\s+([^\s/]+)")
@@ -42,13 +40,12 @@ def require(macros: dict[str, float], name: str) -> float:
     return macros[name]
 
 
-MACROS = parse_macros(CONFIG_PATH, TRACKING_PATH, STATE_PATH, IRTRACK_PATH)
+MACROS = parse_macros(CONFIG_PATH, IRTRACK_PATH)
 
 PID_KP = require(MACROS, "TRACK_PID_KP")
 PID_KI = require(MACROS, "TRACK_PID_KI")
 PID_KD = require(MACROS, "TRACK_PID_KD")
 PID_PERIOD = require(MACROS, "TRACK_PID_PERIOD_SECONDS")
-INTEGRAL_LIMIT = require(MACROS, "TRACK_PID_INTEGRAL_LIMIT_RPM")
 ERROR_LIMIT = require(MACROS, "TRACK_WEIGHTED_ERROR_LIMIT")
 DIFF_LIMIT = require(MACROS, "TRACK_FOLLOW_DIFF_LIMIT_RPM")
 STEERING_SIGN = require(MACROS, "TRACK_STEERING_SIGN")
@@ -242,10 +239,12 @@ class TrackingPid:
             )
             error = clamp(float(sample.weight_sum), -ERROR_LIMIT, ERROR_LIMIT)
             derivative = error - self.previous_error
+            # 代码里积分项和输出项都由 diffLimit 限幅（pid.c TrackPid_Update），
+            # 不是单独的积分限。
             self.integral = clamp(
                 self.integral + PID_KI * error * PID_PERIOD,
-                -INTEGRAL_LIMIT,
-                INTEGRAL_LIMIT,
+                -DIFF_LIMIT,
+                DIFF_LIMIT,
             )
             self.weighted_error = error
             self.previous_error = error

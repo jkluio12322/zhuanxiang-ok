@@ -2,7 +2,7 @@
 #define __YING_YONG_KONG_ZHI_H
 
 #include <stdint.h>
-#include "yingYongLeiXing.h"
+#include "app_types.h"
 
 void appControlResetModeState(void);
 PwmTestPhase_t appControlGetPwmSpeedPhase(void);

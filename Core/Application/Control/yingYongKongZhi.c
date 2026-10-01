@@ -1,16 +1,11 @@
 #include "yingYongKongZhi.h"
 #include "yingYongMingLing.h"
-#include "yingYongPeiZhi.h"
+#include "app_config.h"
 #include "yingYongZhuangTai.h"
 #include "yingYongYaoCe.h"
 #include "yingYongXunJi.h"
 #include "motor.h"
 #include "irtrack.h"
-
-#define ENCODER_FILTER_PREVIOUS 0.75f
-#define ENCODER_FILTER_CURRENT 0.25f
-#define MOTOR_OUTPUT_MAX_PERCENT 100
-#define MOTOR_OUTPUT_MIN_PERCENT (-100)
 
 typedef struct {
     PwmTestPhase_t speedPhase;

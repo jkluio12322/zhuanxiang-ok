@@ -4,39 +4,16 @@
  */
 
 #include "yingYongXunJi.h"
-#include "yingYongPeiZhi.h"
+#include "app_config.h"
 #include "yingYongZhuangTai.h"
 #include "pid.h"
 #include "irtrack.h"
 
 #include <math.h>
 
-/* ------------------------------------------------------------------------- */
-/* 急弯检测与转弯确认常调参数                                                */
-/* ------------------------------------------------------------------------- */
-
-/* 急弯边缘位置阈值，绝对值越大表示线路越靠外。 */
-#define TRACK_CORNER_EDGE_POSITION_MIN 4.5f
-
-/* 判断边缘候选所需的最少压线通道数。 */
-#define TRACK_CORNER_EDGE_MIN_BLACK 1U
-
-/* 无需等待离线即可直接触发急弯所需的单侧最少压线通道数。 */
-#define TRACK_CORNER_DIRECT_MIN_BLACK 3U
-
-/* 边缘候选保持时间，5 个 20 ms 周期约为 100 ms。 */
-#define TRACK_CORNER_CANDIDATE_HOLD_TICKS 5U
-
-/* 下一个弯需要连续确认的次数，避免单帧噪声触发连续转向。 */
-#define TRACK_CORNER_PENDING_CONFIRM_TICKS 2U
-
-/* 差速 RPM 换算为 PWM 百分比时使用的默认增益。 */
-#define TRACK_STEER_RPM_TO_PWM_DEFAULT 1.0f
-
-/* 八路红外全部压到黑线时，每一路 raw 的物理状态都为 0。 */
+/* 八路红外 raw 的物理语义：0 表示压到黑线，1 表示丢失黑线。
+   这是本文件内部的判定约定，不放到 app_config.h。 */
 #define ZHAN_SHU_BAO_HEI_XIAN_RAW_MIE 0U
-
-/* 八路红外全部丢线时，每一路 raw 的物理状态都为 1。 */
 #define ZHAN_SHU_BAO_DIU_XIAN_RAW_BAI 1U
 
 static TrackControlState_t trackControlState = TRACK_CONTROL_FOLLOW;

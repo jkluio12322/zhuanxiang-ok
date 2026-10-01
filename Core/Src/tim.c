@@ -19,7 +19,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "tim.h"
-#include "yingYongPeiZhi.h"
+#include "app_config.h"
 
 /* USER CODE BEGIN 0 */
 
