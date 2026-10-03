@@ -179,6 +179,7 @@ void AppTracking_ResetState(void)
     output.steer_rpm = 0.0f;
     output.e_y = 0.0f;
     output.state = trackState;
+    output.pattern = 0U;
 }
 
 /**
@@ -380,4 +381,5 @@ void AppTracking_Task20ms(void)
     output.steer_rpm = lastSteer;
     output.e_y = sample.e_y;
     output.state = trackState;
+    output.pattern = sample.pattern;
 }

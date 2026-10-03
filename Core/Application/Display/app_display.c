@@ -121,19 +121,22 @@ void AppDisplay_BootConfig(void)
 
 /**
  * @brief  显示循迹页。
- * @note   四行依次是：运行状态与圈数进度、八路红外原始位、循迹差速、命令电压。
- *         IR 那一行把八路开关量直接铺成 0/1 串，方便现场确认哪几路压线。
- * @note   八路读数取自 ir_data.raw，是驱动层最近一次 IRTrack_Read() 的结果，
- *         与循迹模块同源，所以显示的内容与控制用的是同一份采样。
+ * @note   四行依次是：运行状态与圈数进度、八路红外状态位、循迹差速、命令电压。
+ *         IR 那一行把八路开关量铺成 0/1 串，方便现场确认哪几路压线。
+ * @note   八路状态取自循迹快照的 pattern 字段，**不直接读 ir_data**——
+ *         驱动层全局只允许 app_tracking.c 读，显示要用就从快照转发，
+ *         这样传感器只有一处解读，显示和控制看到的必然是同一份采样。
  */
 static void showTrackPage(void)
 {
     char buffer[OLED_TEXT_BUFFER_SIZE];
     char irBits[IRTRACK_CHANNELS + 1U];
+    uint8_t pattern = AppTracking_Output()->pattern;
 
-    /* raw = 0 表示压黑、1 表示白线；这里原样显示，不做取反。 */
+    /* 保持原有的显示习惯：压黑显示 '0'、白线显示 '1'。
+       pattern 的位是「压黑置 1」，所以这里取反。 */
     for (uint8_t i = 0; i < IRTRACK_CHANNELS; i++) {
-        irBits[i] = ir_data.raw[i] ? '1' : '0';
+        irBits[i] = ((pattern >> i) & 0x01U) ? '0' : '1';
     }
     irBits[IRTRACK_CHANNELS] = '\0';
 

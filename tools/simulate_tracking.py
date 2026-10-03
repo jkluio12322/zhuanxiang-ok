@@ -74,6 +74,12 @@ CORNER_CONFIRM_TICKS = int(require("TRACK_CORNER_CONFIRM_TICKS"))
 CORNER_GAP_TICKS = int(require("TRACK_CORNER_GAP_TICKS"))
 CORNERS_PER_LAP = int(require("TRACK_CORNERS_PER_LAP"))
 
+# 起点横线在物理上一闪而过：按 100 RPM、轮径 0.065m 算车速约 0.68 m/s，
+# 20mm 宽的横线约 30 ms 通过，在 20 ms 任务下只有 1~2 个周期。
+# 这是**物理事实，不随配置变**——模拟横线时必须用这个固定值，
+# 不能用 CORNER_CONFIRM_TICKS 推出来，否则测试会跟着参数走、永远通过。
+BAR_CROSS_TICKS = 2
+
 
 def clamp(value: float, low: float, high: float) -> float:
     return max(low, min(high, value))
@@ -293,12 +299,15 @@ def run_tracking() -> None:
     expect(t.lap_corners == 0, "a straight-on start bar never counts a corner")
 
     # ---- 计圈：斜穿起点横线（单侧 4 路）也不计 ----
+    # 用固定的 BAR_CROSS_TICKS 而不是 CONFIRM_TICKS-1：只有固定周期数
+    # 才能真正验证「确认窗口比横线长」。若把 CONFIRM_TICKS 调到 <= 横线周期数，
+    # 这条就会失败——这正是它该有的报警行为。
     t = Tracker()
     t.state = "FOLLOW"
-    for _ in range(CORNER_CONFIRM_TICKS - 1):
-        t.step(pattern_of(1, 2, 3, 4))   # e_y = -3.78，超过阈值
+    for _ in range(BAR_CROSS_TICKS):
+        t.step(pattern_of(1, 2, 3, 4))   # e_y = -3.78，幅度上已超过阈值
     expect(t.lap_corners == 0,
-           "a slanted start bar shorter than the confirm window never counts")
+           f"a {BAR_CROSS_TICKS}-tick slanted start bar never counts a corner")
 
     # ---- 计圈：持续偏在一侧才算一个弯 ----
     t = Tracker()

@@ -24,6 +24,9 @@ typedef struct {
     float        steer_rpm;  /* 循迹环输出的差速量，单位 RPM。 */
     float        e_y;        /* 当前归一化横向偏差，范围约 ±7。 */
     TrackState_t state;      /* 当前状态机状态。 */
+    uint8_t      pattern;    /* 八路黑线掩码，bit0..7 对应 IR1..8，压黑置 1。 */
+                             /* 转发自驱动层，供显示模块画红外状态，
+                                免得显示去直接读 ir_data。 */
 } TrackOutput_t;
 
 /**
