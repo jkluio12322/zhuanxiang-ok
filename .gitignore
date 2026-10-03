@@ -1,8 +1,25 @@
-# Local build logs, crash dumps, and editor backups
+# 日志、崩溃转储和编辑器备份
 *.log
 *.bak
 hs_err_pid*
 replay_pid*
 
-# Keil full-build report
+# Keil 构建产物
 bluecar.build_log.htm
+MDK-ARM/bluecar/
+MDK-ARM/build/
+MDK-ARM/*.lst
+MDK-ARM/*.map
+MDK-ARM/*.lnp
+MDK-ARM/*.dep
+MDK-ARM/*.plg
+MDK-ARM/bluecar.uvguix.*
+MDK-ARM/codex-logs/
+
+# EIDE / GCC 中间产物
+*.o
+*.d
+*.crf
+*.axf
+*.elf
+*.bin
