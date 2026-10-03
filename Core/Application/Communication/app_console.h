@@ -8,10 +8,14 @@
 
 #include "main.h"
 
-/* USART1 单字节接收缓存，由 HAL_UART_Receive_IT 使用。 */
+/* 原注释已过时：USART1 的接收缓存 serialRxByte 与中断装填已在阶段 5 移到
+   app_serial.c（那里才有 HAL_UART_RxCpltCallback）。本模块只负责把收到的
+   字节拼成一行并解析。 */
 
 /**
- * @brief  初始化在线调参模块并启动 USART1 单字节中断接收。
+ * @brief  初始化在线调参模块。
+ * @note   不启动 UART 接收——接收中断由 app_serial.c 的 Serial_Init() 启动，
+ *         由 HAL_UART_RxCpltCallback 转交给 AppConsole_RxByte()。
  */
 void AppConsole_Init(void);
 

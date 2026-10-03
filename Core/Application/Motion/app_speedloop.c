@@ -1,6 +1,25 @@
 /**
  * @file    app_speedloop.c
- * @brief   50 ms 控制任务的实现。
+ * @brief   50 ms 控制任务 — 速度环、模式分发、电机输出。
+ *
+ * @note    **这是全工程唯一直接驱动电机的函数。** 其它模块只提供目标或差速，
+ *          由这里统一算成 PWM 并交给 app_motion.c 输出。
+ *
+ * @note    三个模式走三条不同的输出路径（见 AppSpeedLoop_Task50ms）：
+ * @code
+ *   modeTrack     级联：循迹环出目标转速 -> 左右速度环各自闭环 -> PWM
+ *   modePwmSpeed  手动：目标转速由 AppState 给出 -> 左右速度环 -> PWM（允许反转）
+ *   modePwmTrack  开环：基础占空比 ± 差速PWM，**旁路速度环**
+ * @endcode
+ *
+ * @note    为什么是级联而不是「平均环 + PWM 差速」：
+ *          差速放在目标转速空间是**闭环**的——某个轮子跟不上目标时，
+ *          它自己的速度环会把 PWM 顶上去补；而直接加到 PWM 上是开环，
+ *          轮子被卡住差速就失真。详见 README §4.3.3。
+ *
+ * @note    执行上下文：AppSpeedLoop_Task50ms() 在 TIM6 中断里，50 ms 一次。
+ *          本函数里的浮点与 PID 运算都是为「固定周期」设计的，
+ *          挪到主循环会因抖动而算错（测速分母是常数 50 ms）。
  */
 
 #include "app_speedloop.h"
@@ -17,6 +36,13 @@
 static Pid_t pidLeft;
 static Pid_t pidRight;
 
+/* 速度环配置：增量式 PI。
+   - Kd = 0：测速有噪声，微分会把它放大成抖动；
+   - derivative_on_measurement：即便将来加 Kd，也让它作用于测量值，
+     避免改目标时产生微分冲击；
+   - reset_on_sign_change：目标反号时清运行时，防止原地转的内侧轮
+     保留着转弯前的正输出；
+   - zero_target_hold：目标接近 0 时强制输出 0，避免停车后残留输出顶电机。 */
 static const PidConfig_t speedPidConfig = {
     .kp = SPEED_PID_KP,
     .ki = SPEED_PID_KI,
@@ -31,6 +57,13 @@ static const PidConfig_t speedPidConfig = {
     .derivative_on_measurement = 1U,
 };
 
+/**
+ * @brief  把目标转速夹到绝对上限内。
+ * @param  target 目标转速，单位 RPM。
+ * @return 夹取后的值，范围 ±SPEED_TARGET_LIMIT_RPM。
+ * @note   这里夹的是**目标**，不是 PID 输出。目标的来源可能是用户输入的
+ *         在线命令或蓝牙数据，必须在这里兜住，不能让电机被要求跑到超限转速。
+ */
 static float clampSpeedTarget(float target)
 {
     if (target > SPEED_TARGET_LIMIT_RPM) return SPEED_TARGET_LIMIT_RPM;
@@ -38,18 +71,34 @@ static float clampSpeedTarget(float target)
     return target;
 }
 
+/**
+ * @brief  初始化左右两个速度环。
+ * @note   必须在中断放行之前调用；Pid_Init() 会把运行时状态一并清零。
+ */
 void AppSpeedLoop_Init(void)
 {
     Pid_Init(&pidLeft, &speedPidConfig);
     Pid_Init(&pidRight, &speedPidConfig);
 }
 
+/**
+ * @brief  清空速度环运行时状态，保留增益。
+ * @note   在「停止」「模式切换」「PWM 速度测试换向」三处调用。
+ *         停车时清积分是必须的：否则下次启动时积分项带着旧值进来，
+ *         输出会突然不为零，表现为**起步窜车**。
+ */
 void AppSpeedLoop_ResetRuntime(void)
 {
     Pid_Reset(&pidLeft);
     Pid_Reset(&pidRight);
 }
 
+/**
+ * @brief  停车：清运行标志、清目标、复位速度环、关电机。
+ * @note   这是「上报停车」之后真正落地的一步。循迹模块只负责上报
+ *         （AppState_ReportStop），由 50 ms 任务取走标志后执行这里的动作，
+ *         这样循迹模块不需要反向依赖速度环。
+ */
 void AppSpeedLoop_ResetMotion(void)
 {
     AppState_SetRunning(0U);
@@ -58,6 +107,12 @@ void AppSpeedLoop_ResetMotion(void)
     AppMotion_Stop();
 }
 
+/**
+ * @brief  复位整个模式：停车 + 复位循迹状态机 + 复位两个测试模式。
+ * @note   模式切换、开机页轮换、以及从开机页退出时都会调用。
+ *         只复位自己域内的东西——三处状态分属三个模块，任何一处漏掉都会
+ *         在切换后留下残留输出。
+ */
 void AppSpeedLoop_ResetModeState(void)
 {
     AppSpeedLoop_ResetMotion();
@@ -66,12 +121,25 @@ void AppSpeedLoop_ResetModeState(void)
     AppTestMode_ResetPwmTrack();
 }
 
+/**
+ * @brief  在线设置一个速度环增益。
+ * @param  channel SPEED_CH_LEFT 或 SPEED_CH_RIGHT。
+ * @param  field   要改的增益。
+ * @param  value   新值。
+ * @note   只有左右两个环，没有平均环。channel 传别的值会被当成右轮。
+ */
 void AppSpeedLoop_SetGain(SpeedChannel_t channel, PidField_t field, float value)
 {
     Pid_t *pid = (channel == SPEED_CH_LEFT) ? &pidLeft : &pidRight;
     Pid_SetGain(pid, field, value);
 }
 
+/**
+ * @brief  读取速度环的增益与运行状态。
+ * @param  channel SPEED_CH_LEFT 或 SPEED_CH_RIGHT。
+ * @param  out     输出结构体，为空指针时直接返回。
+ * @note   供串口 show 命令打印，参数在调参时对照用。
+ */
 void AppSpeedLoop_GetInfo(SpeedChannel_t channel, SpeedPidInfo_t *out)
 {
     const Pid_t *pid = (channel == SPEED_CH_LEFT) ? &pidLeft : &pidRight;
@@ -88,7 +156,10 @@ void AppSpeedLoop_GetInfo(SpeedChannel_t channel, SpeedPidInfo_t *out)
     out->out = pid->out;
 }
 
-/* PWM 速度测试：左右轮同向同速，按档位速度跑，定时换向。 */
+/**
+ * @brief  启动 PWM 速度测试：按当前档位设好左右同向目标。
+ * @note   相位回到正转、速度环复位；转向由 TickPwmSpeed 按时间翻转。
+ */
 static void startPwmSpeedTest(void)
 {
     float target = AppState()->gear_rpm;
@@ -98,7 +169,11 @@ static void startPwmSpeedTest(void)
     AppState_SetWheelTargets(target, target);
 }
 
-/* 模式切换前的统一复位。 */
+/**
+ * @brief  模式切换前的统一处理：运行中先报一次停车原因，再整体复位。
+ * @note   报 stopReasonModeSwitch 是为了让遥测打印一行 [STOP]，
+ *         现场能看出「车是自己停的，不是出错停的」。
+ */
 static void resetBeforeModeChange(void)
 {
     if (AppState()->running) {
@@ -107,6 +182,27 @@ static void resetBeforeModeChange(void)
     AppSpeedLoop_ResetModeState();
 }
 
+/**
+ * @brief  执行一条命令。
+ * @param  message 从命令队列取出的命令。
+ * @note   由 AppSpeedLoop_Task50ms() 在中断里调用，所以这里**不能有阻塞操作**
+ *         和长耗时的格式化。命令涉及的动作全部是「改状态 + 复位」这类短操作。
+ *
+ * @note   各命令的处理要点：
+ * @code
+ *   start        先按当前模式做启动前初始化，再置运行标志
+ *   stop         报停车原因（若在运行），再整体复位
+ *   lapCycle     只在循迹模式且**停车时**允许改目标圈数
+ *   modeXxx      先报停车原因并复位，再改模式并做该模式的初始化
+ *   pwmSpeedNextGear / setSpeedGear
+ *                PWM 速度模式下换档要重启测试，否则新旧目标混在一起
+ *   quiet / log  只切 VOFA 开关，不动控制
+ * @endcode
+ *
+ * @note   start 分模式初始化这一点容易漏：三种模式各自的「起步状态」不同
+ *         （循迹要进 ACQUIRE、PWM 速度要设目标、PWM 循迹要复位状态机），
+ *         不做的话会沿用上次停机时的残留状态。
+ */
 static void handleCommand(commandMessage_t message)
 {
     switch (message.type) {
@@ -202,6 +298,23 @@ static void handleCommand(commandMessage_t message)
     }
 }
 
+/**
+ * @brief  把本周期的结果写进遥测快照。
+ * @param  targetLeft    左轮目标转速，单位 RPM。
+ * @param  targetRight   右轮目标转速，单位 RPM。
+ * @param  leftPwm       左轮实际输出百分比。
+ * @param  rightPwm      右轮实际输出百分比。
+ * @param  steerRpm      本周期差速量，单位 RPM。
+ * @param  trackError    本周期误差（e_y），仅在循迹/循迹测试下有效。
+ * @param  turnPhase     循迹状态机的状态值。
+ * @param  rpmDifference 左右实际速度差，单位 RPM。
+ * @note   只做赋值，不做任何计算和格式化——格式化（snprintf）在
+ *         AppTelemetry_Send() 里由主循环完成，那是必须移出中断的部分。
+ * @note   commandVoltage 是 PWM 百分比按标称电压换算的近似值，仅供观察趋势，
+ *         不是真实母线电压（本工程没有电压采样）。
+ * @note   运行中传入的 trackError 与 turnPhase 取自循迹快照；
+ *         停止分支传固定值，因为此时循迹状态机已经复位。
+ */
 static void fillTelemetry(float targetLeft, float targetRight,
                           int16_t leftPwm, int16_t rightPwm,
                           float steerRpm, float trackError,
@@ -228,6 +341,36 @@ static void fillTelemetry(float targetLeft, float targetRight,
     telemetryData.fresh = 1;
 }
 
+/**
+ * @brief  执行一次 50 ms 控制任务。
+ *
+ * @note   在 TIM6 中断里执行。整体顺序：
+ * @code
+ *   1. 读编码器并做中值滤波
+ *   2. 消费命令队列（含启停、模式切换、换挡）
+ *   3. 处理停车请求
+ *   4. 未运行 -> 清积分、关电机、发一帧停止遥测，返回
+ *   5. 按模式算左右 PWM
+ *   6. 输出到电机并填充遥测快照
+ * @endcode
+ *
+ * @note   第 1 步放在最前面是必须的：命令处理里的 startPwmSpeedTest() 等
+ *         会用到位移量，虽然它不直接用速度，但把采样和滤波固定在最前面
+ *         能保证「一个周期内的速度反馈只取一次」。
+ *
+ * @note   三条输出路径的差别：
+ *         - **PWM 循迹**：不走速度环，直接「基础占空比 ± 差速 PWM」，
+ *           下限夹 0（测试用，不允许反转基础速度）；
+ *         - **循迹**：级联。差速在**目标转速**空间生效，左右速度环各自闭环，
+ *           并把 PID 输出下限收到 0 禁止反转；
+ *         - **手动/PWM 速度**：左右目标独立，输出下限放开到 -100，
+ *           原地转需要一正一反。
+ *
+ * @note   为什么禁止反转要用 PID 的 out_min 而不是事后夹一下：
+ *         增量式 PID 的「积分」就是输出本身。在外面把负数改成 0，
+ *         内部输出仍会停在 -100，出弯时要一路爬回来，表现为内轮反应迟钝。
+ *         把 out_min 设成 0 则输出天然停在 0，出弯立刻能往上走。
+ */
 void AppSpeedLoop_Task50ms(void)
 {
     int16_t leftPwm = 0;
@@ -309,6 +452,8 @@ void AppSpeedLoop_Task50ms(void)
         /* 手动模式：左右各自目标，允许反转（原地转需要一正一反）。
            PWM 速度测试也走这条分支，只是目标由测试相位决定。 */
         if (AppState()->mode == modePwmSpeed) {
+            /* 到点换向：必须复位速度环并重设目标，否则会带着上个方向的
+               积分继续跑，换向瞬间出现明显迟滞。 */
             if (AppTestMode_TickPwmSpeed() != 0U) {
                 float target = AppState()->gear_rpm
                                * (float)AppTestMode_GetPwmSpeedSign();
