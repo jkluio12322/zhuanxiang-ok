@@ -2,8 +2,13 @@
  * @file    encoder.c
  * @brief   JGB37-520 霍尔编码器驱动 + 速度/位置解算
  * @note    使用 TIM2/TIM3 编码器模式 (4倍频)
- *          - TIM3: 左轮编码器 (PA6=CH1, PA7=CH2)
- *          - TIM2: 右轮编码器 (PA0=CH1, PA1=CH2)
+ *          - TIM3: 编码器 (PA6=CH1, PA7=CH2) —— 绑给**右轮**
+ *          - TIM2: 编码器 (PA0=CH1, PA1=CH2) —— 绑给**左轮**
+ *
+ * @warning 哪个定时器绑哪个轮子由 app_motion.c 决定，**以那里为准**：
+ *          encoderRight 取 TIM3、encoderLeft 取 TIM2。本文件与 README §2.1 的
+ *          早期版本都把这两个写反了；实车调通的是 app_motion.c 的绑定，
+ *          别照旧注释"理顺"，改动前先架空车轮验证轮向与编码器符号。
  *
  *          转速计算公式:
  *            RPM = count_increment / (multiple * ratio * ppr) * 1000 / T * 60
@@ -102,7 +107,8 @@ void updateEncoderLoopSimpleVersion(Encoder *ecd, uint16_t loop_period, TIM_Type
 {
     ecd->counter.count_now = Encoder_Get(TIMx);
 
-    /* 左轮编码器(TIM3)正转时计数为负, 取反统一方向 */
+    /* TIM3 那一路正转时计数为负，取反统一到"前进为正"。
+       这里按**定时器**描述而不是按轮子——TIM3 绑给右轮，见 app_motion.c。 */
     if (TIMx == TIM3)
         ecd->counter.count_now = -ecd->counter.count_now;
 

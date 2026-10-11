@@ -2,8 +2,10 @@
  * @file    app_display.c
  * @brief   OLED 开机页与三个模式状态页。
  *
+ * @note    文件内排序：核心任务放最上方，辅助函数与对外接口放下面。
+ *
  * @note    本模块只有两类工作：开机时等待用户选模式，以及运行中每 100 ms
- *          刷新一页状态。所有内容都来自只读快照（AppState() == 、
+ *          刷新一页状态。所有内容都来自只读快照（AppState()、
  *          AppTracking_Output()、telemetryData），不读也不写任何硬件状态。
  *
  * @note    执行上下文：AppDisplay_Task100ms() 由 AppDeferred_Run() 在主循环里
@@ -28,6 +30,37 @@
 #include "timer.h"
 
 #include <stdio.h>
+
+/* ── 辅助函数前置声明（定义在文件下方） ───────────────────────────── */
+static void showVoltageLine(uint8_t row);
+static void cycleBootMode(void);
+static void showTrackPage(void);
+static void showPwmSpeedPage(void);
+static void showPwmTrackPage(void);
+
+/* ══════════════ 核心任务 ══════════════ */
+
+/**
+ * @brief  100 ms 显示任务：按当前模式刷新对应的一页 —— 本文件核心。
+ * @note   由 AppDeferred_Run() 在主循环调用（OLED 走 I2C，不能放中断）。
+ *         整屏重绘前先 OLED_Clear()，不存在残影问题。
+ * @note   三个模式各占一个 static 函数，而不是塞进一个长函数里用 if-else
+ *         包住整段绘制代码——这样每页的字段布局能一眼看清。
+ */
+void AppDisplay_Task100ms(void)
+{
+    OLED_Clear();
+
+    if (AppState()->mode == modeTrack) {
+        showTrackPage();
+    } else if (AppState()->mode == modePwmSpeed) {
+        showPwmSpeedPage();
+    } else {
+        showPwmTrackPage();
+    }
+}
+
+/* ══════════════ 辅助函数 ══════════════ */
 
 /**
  * @brief  在指定行显示「命令电压 L/R」。
@@ -55,68 +88,35 @@ static void showVoltageLine(uint8_t row)
  */
 static void cycleBootMode(void)
 {
+    uint32_t primask = __get_PRIMASK();
+
+    /* 临界区：这两句写的 mode 与 PID/循迹/测试模式对象，同时也是 TIM6 里的
+       控制任务在碰的东西。开机阶段 running 恒为 0、两边写的都是同一组复位值，
+       所以本来也不会出事——但那是巧合，把写序列整体挡住中断就不靠巧合了。 */
+    __disable_irq();
     AppState_SetMode(AppState_NextMode());
     AppSpeedLoop_ResetModeState();
+    __set_PRIMASK(primask);
 }
 
 /**
- * @brief  显示开机页：当前模式、档位和按键提示。
- * @note   只写帧缓冲并调用一次 OLED_Flush()，因为开机阶段没有主循环在跑。
+ * @brief  读一次毫秒时间戳（TIM5 ISR 在自增，64 位读会撕裂）。
+ * @return 一致的 64 位时间戳。
+ * @note   `milliseconds` 是 volatile uint64_t，在 TIM5 中断里自增；主循环里直接
+ *         读会被拆成两条 32 位 loads，中断插在中间就得到撕裂值。开机页的 100 ms
+ *         重绘判据虽然只在乎低位，但撕裂值可能让判据跳一下，所以在这里统一用
+ *         临界区读——只在开机页用，成本可以忽略。
  */
-void AppDisplay_ShowBoot(void)
+static uint64_t bootTick(void)
 {
-    char buffer[OLED_TEXT_BUFFER_SIZE];
+    uint32_t primask = __get_PRIMASK();
+    uint64_t value;
 
-    OLED_Clear();
-    OLED_ShowStringSmall(1, 1, "[BlueCar]");
-    snprintf(buffer, sizeof(buffer), "Mode:%s G:%d",
-             AppModeName(AppState()->mode), AppState()->gear);
-    OLED_ShowStringSmall(2, 1, buffer);
-    OLED_ShowStringSmall(4, 1, "KEY1 Mode");
-    OLED_ShowStringSmall(5, 1, "KEY2/3 Exit");
-    OLED_Flush();
-}
+    __disable_irq();
+    value = milliseconds;
+    __set_PRIMASK(primask);
 
-/**
- * @brief  开机配置阶段：等待用户选好模式后退出。
- * @note   **阻塞式**，只在 main() 的初始化阶段调用一次。
- * @code
- *   KEY1      循环切换 循迹 / PWM 速度 / PWM 循迹
- *   KEY2、KEY3 退出，进入正常运行
- * @endcode
- * @note   每 100 ms 无条件重绘一次开机页，保证按键改变模式后显示能跟上；
- *         这个 100 ms 是写死的（不是 APP_DISPLAY_PERIOD_MS），
- *         因为此时调度器还没有规律地跑显示任务。
- * @note   退出前会复位模式状态并重新清空命令队列：开机期间用户可能已经按下
- *         若干按键，那些命令不该带到运行阶段执行。
- */
-void AppDisplay_BootConfig(void)
-{
-    uint8_t exitRequested = 0;
-    uint64_t lastTick = milliseconds;
-
-    AppSpeedLoop_ResetMotion();
-    AppDisplay_ShowBoot();
-
-    while (!exitRequested) {
-        if (Key_CheckSingleOrLong(KEY_1)) {
-            cycleBootMode();
-            AppDisplay_ShowBoot();
-            lastTick = milliseconds;
-        }
-        if (Key_Check(KEY_2, KEY_SINGLE) || Key_Check(KEY_3, KEY_SINGLE)) {
-            exitRequested = 1;
-        }
-        if ((milliseconds - lastTick) >= 100U) {
-            lastTick = milliseconds;
-            AppDisplay_ShowBoot();
-        }
-        OLED_Flush();
-    }
-
-    AppSpeedLoop_ResetModeState();
-    AppCmd_Init();
-    Key_Clear();
+    return value;
 }
 
 /**
@@ -159,6 +159,8 @@ static void showTrackPage(void)
  * @brief  显示 PWM 速度测试页。
  * @note   目标转速按当前相位显示正负：反转相位显示成负数，
  *         便于和实际轮向对照。
+ * @note   手动转速模式下自动相位已停，相位字段不再变化，
+ *         但页面仍然有效——目标值是从 AppState 读的，跟着命令走。
  */
 static void showPwmSpeedPage(void)
 {
@@ -182,21 +184,30 @@ static void showPwmSpeedPage(void)
 
 /**
  * @brief  显示 PWM 循迹测试页。
- * @note   第三行的 SRC 字段说明当前用的是模拟角度（SIM）还是真实红外（IR），
- *         调参时容易忘记这一项，显示出来避免误判。
+ * @note   第二行把当前注入的八路图案按 IR1→IR8 逐位展开（1 = 压黑），
+ *         这是本页最要看的东西——它决定循迹模块收到什么数据。
+ * @note   本模式的参数（图案、基础占空比）**只能用按键改**，
+ *         串口命令行不再提供对应命令。
  */
 static void showPwmTrackPage(void)
 {
-    char buffer[OLED_TEXT_BUFFER_SIZE];
+    char    buffer[OLED_TEXT_BUFFER_SIZE];
+    char    bits[PATTERN_BITS + 1U];
+    uint8_t pattern = AppTestMode_GetPattern();
+    uint8_t i;
 
-    snprintf(buffer, sizeof(buffer), "[PWM-TRK] %s A:%u",
-             AppState()->running ? "RUN" : "STOP",
-             (unsigned int)AppTestMode_GetAngle());
+    /* bit0 是最左边那一路（IR1），所以按位序从左往右展开。 */
+    for (i = 0U; i < PATTERN_BITS; i++) {
+        bits[i] = ((pattern & (uint8_t)(1U << i)) != 0U) ? '1' : '0';
+    }
+    bits[PATTERN_BITS] = '\0';
+
+    snprintf(buffer, sizeof(buffer), "[PWM-TRK] %s",
+             AppState()->running ? "RUN" : "STOP");
     OLED_ShowStringSmall(1, 1, buffer);
 
-    snprintf(buffer, sizeof(buffer), "PH:%s SRC:%s",
-             AppPhaseName(AppTestMode_GetTrackPhase()),
-             AppTestMode_GetSimEnabled() ? "SIM" : "IR");
+    snprintf(buffer, sizeof(buffer), "P:%s PH:%s", bits,
+             AppPhaseName(AppTestMode_GetTrackPhase()));
     OLED_ShowStringSmall(2, 1, buffer);
 
     snprintf(buffer, sizeof(buffer), "BASE:%d%% ERR:%+05.1f",
@@ -206,22 +217,71 @@ static void showPwmTrackPage(void)
     showVoltageLine(4);
 }
 
-/**
- * @brief  100 ms 显示任务：按当前模式刷新对应的一页。
- * @note   由 AppDeferred_Run() 在主循环调用。整屏重绘前先 OLED_Clear()，
- *         不存在残影问题。
- * @note   三个模式各占一个 static 函数，而不是塞进一个长函数里用 if-else
- *         包住整段绘制代码——这样每页的字段布局能一眼看清。
- */
-void AppDisplay_Task100ms(void)
-{
-    OLED_Clear();
+/* ══════════════ 对外接口 ══════════════ */
 
-    if (AppState()->mode == modeTrack) {
-        showTrackPage();
-    } else if (AppState()->mode == modePwmSpeed) {
-        showPwmSpeedPage();
-    } else {
-        showPwmTrackPage();
+/**
+ * @brief  显示开机页：当前模式、档位和按键提示。
+ * @note   只写帧缓冲并调用一次 OLED_Flush()，因为开机阶段没有主循环在跑。
+ */
+void AppDisplay_ShowBoot(void)
+{
+    char buffer[OLED_TEXT_BUFFER_SIZE];
+
+    OLED_Clear();
+    OLED_ShowStringSmall(1, 1, "[BlueCar]");
+    snprintf(buffer, sizeof(buffer), "Mode:%s G:%d",
+             AppModeName(AppState()->mode), AppState()->gear);
+    OLED_ShowStringSmall(2, 1, buffer);
+    OLED_ShowStringSmall(4, 1, "KEY1 Mode");
+    OLED_ShowStringSmall(5, 1, "KEY2/3 Exit");
+    OLED_Flush();
+}
+
+/**
+ * @brief  开机配置阶段：等待用户选好模式后退出。
+ * @note   **阻塞式**，只在 main() 的初始化阶段调用一次。
+ * @code
+ *   KEY1      循环切换 循迹 / PWM 速度 / PWM 循迹
+ *   KEY2、KEY3 退出，进入正常运行
+ * @endcode
+ * @note   每 100 ms 无条件重绘一次开机页，保证按键改变模式后显示能跟上；
+ *         这个 100 ms 是写死的（不是 APP_DISPLAY_PERIOD_MS），
+ *         因为此时调度器还没有规律地跑显示任务。
+ * @note   退出前会复位模式状态并重新清空命令队列：开机期间用户可能已经按下
+ *         若干按键，那些命令不该带到运行阶段执行。
+ */
+void AppDisplay_BootConfig(void)
+{
+    uint8_t exitRequested = 0;
+    uint64_t lastTick = bootTick();
+
+    AppSpeedLoop_ResetMotion();
+    AppDisplay_ShowBoot();
+
+    while (!exitRequested) {
+        if (Key_CheckSingleOrLong(KEY_1)) {
+            cycleBootMode();
+            AppDisplay_ShowBoot();
+            lastTick = bootTick();
+        }
+        if (Key_Check(KEY_2, KEY_SINGLE) || Key_Check(KEY_3, KEY_SINGLE)) {
+            exitRequested = 1;
+        }
+        if ((bootTick() - lastTick) >= 100U) {
+            lastTick = bootTick();
+            AppDisplay_ShowBoot();
+        }
+        OLED_Flush();
+    }
+
+    /* 退出时的复位同样要挡住中断，理由见 cycleBootMode()。 */
+    {
+        uint32_t primask = __get_PRIMASK();
+
+        __disable_irq();
+        AppSpeedLoop_ResetModeState();
+        AppCmd_Init();
+        Key_Clear();
+        __set_PRIMASK(primask);
     }
 }

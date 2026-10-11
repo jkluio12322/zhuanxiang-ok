@@ -62,7 +62,7 @@
 /* 3. 串口波特率                                                             */
 /* ========================================================================= */
 
-/* USART1 调试、VOFA 和在线调参使用的波特率。 */
+/* USART1 调试、VOFA 和串口命令使用的波特率。 */
 #define SERIAL_DEBUG_BAUD_RATE        115200U
 
 /* USART2 保留给蓝牙模块，当前应用未使用。 */
@@ -100,11 +100,10 @@
 /* 编码器速度中值滤波窗口长度。 */
 #define ENCODER_FILTER_WINDOW         3U
 
-/* 编码器速度一阶低通滤波的旧值权重。 */
-#define ENCODER_FILTER_PREVIOUS       0.75f
-
-/* 编码器速度一阶低通滤波的新值权重。 */
-#define ENCODER_FILTER_CURRENT        0.25f
+/* 这里原有两个一阶低通 EMA 的权重宏（PREVIOUS 0.75 / CURRENT 0.25）。
+   那套「中值-3 + EMA」级联已被纯中值取代——EMA 的群延迟约 200 ms
+   （4 个控制周期）是起步 judder 的成因之一，见 app_motion.c 的文件头。
+   权重宏随之删除：它们零引用，留着只会让人以为滤波还是 EMA。 */
 
 /* ========================================================================= */
 /* 6. TIM2/TIM3 编码器寄存器参数与轮参数                                     */
@@ -292,11 +291,9 @@
 /* PWM-TRACK 每次调整基础 PWM 的百分比。 */
 #define PWM_TRACK_BASE_STEP_PERCENT   10
 
-/* PWM-TRACK 模拟角度到循迹加权误差的线性满量程映射。 */
-#define PWM_TRACK_ERROR_FULL_SCALE    40.0f
-
-/* PWM-TRACK 模拟角度的满量程，单位度。 */
-#define PWM_TRACK_ANGLE_FULL_SCALE    90.0f
+/* 模拟输入不再是「角度 + 量纲映射」：PWM-TRACK 把八路图案直接注入驱动层，
+   由驱动层算归一化质心当误差，所以不需要任何手工标定的满量程系数。
+   图案表本身在 app_testmode.c 的 patternTable[] 里。 */
 
 /* ========================================================================= */
 /* 14. 遥测与 OLED                                                           */

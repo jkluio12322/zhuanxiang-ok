@@ -53,12 +53,8 @@ void AppSpeedLoop_ResetMotion(void);
 void AppSpeedLoop_ResetModeState(void);
 
 /**
- * @brief  在线设置一个速度环增益。
- */
-void AppSpeedLoop_SetGain(SpeedChannel_t channel, PidField_t field, float value);
-
-/**
  * @brief  读取一个速度环的增益与运行状态。
+ * @note   只读。速度环增益不再支持在线修改——在 app_config.h 里改后重新编译。
  */
 void AppSpeedLoop_GetInfo(SpeedChannel_t channel, SpeedPidInfo_t *out);
 

@@ -47,8 +47,9 @@ void SystemClock_Config(void);
 /**
  * @brief  程序入口。
  * @return 正常情况下不会返回。
- * @note   完成 HAL、CubeMX 外设和应用模块初始化后进入主循环，
- *         主循环负责调参响应、蓝牙、按键、OLED 和周期显示刷新。
+ * @note   完成 HAL、CubeMX 外设和应用模块初始化后进入主循环。
+ *         主循环只做延后任务（遥测发送、OLED 刷新）和串口命令行解析——
+ *         中断里不做 snprintf 与 I2C，避免压住串口接收。
  */
 int main(void)
 {
@@ -70,7 +71,7 @@ int main(void)
   MX_USART1_UART_Init();
 
   /* USER CODE BEGIN 2 */
-  /* 初始化显示、电机、传感器、编码器、通信和 PID 调参模块。 */
+  /* 初始化显示、电机、传感器、编码器、通信、遥测与命令行模块。 */
   OLED_Init();
   HAL_Delay(APP_OLED_BOOT_DELAY_MS);
 

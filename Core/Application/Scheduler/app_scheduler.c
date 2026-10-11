@@ -2,6 +2,8 @@
  * @file    app_scheduler.c
  * @brief   应用层任务调度 — TIM6 中断分频 + 延后任务表。
  *
+ * @note    文件内排序：两个核心调度函数放最上方，其余接口放下面。
+ *
  * @note    为什么任务要分「中断内」和「延后」两类：
  *          遥测的 snprintf 16 个浮点要 100~300 µs，OLED 的 I2C 刷屏可能上 ms，
  *          而 USART1 一个字节只要 86.8 µs。把这几个放进优先级最高的 TIM6 中断
@@ -9,24 +11,28 @@
  *          反过来，速度环和循迹环按**固定周期常数**（50 ms、dt = 0.02）计算，
  *          挪到可能有抖动的主循环里就会算错，所以必须留在中断。
  *
- * @note    实测代价：延后之后中断体从约 40 行降到 2 行
- *          （见 Hardware/System/timer.c），中断里不再有浮点和 I2C。
+ * @note    实测代价：延后之后中断体从约 40 行降到 2 行（见 Hardware/System/timer.c）。
+ *          中断里不再有 `snprintf` 格式化、也没有阻塞的 I2C 等待（MPU6050 改成了
+ *          异步读，总线搬运在 I2C 中断里做）。**但中断里仍有浮点**：10 ms 的
+ *          MPU6050_AHRS_Update() 要用 atan2f/asinf，Cortex-M3 没有 FPU，
+ *          这几个超越函数是软件浮点，属于中断里最重的一块。别再写"中断里没有浮点"。
  *
  * @note    执行上下文：AppScheduler_OnTick() 在 TIM6 中断里，每 1 ms 一次；
- *          AppDeferred_Run() 在主循环里被反复调用。
+ *          AppDeferred_Run() 在主循环里被反复调用。两者分居不同上下文，
+ *          是理解本文件的关键。
  */
 
 #include "app_scheduler.h"
 #include "app_cmd.h"
 #include "app_config.h"
+#include "app_display.h"
 #include "app_imu.h"
 #include "app_speedloop.h"
 #include "app_state.h"
 #include "app_testmode.h"
-#include "key.h"
-#include "app_display.h"
 #include "app_tracking.h"
 #include "app_telemetry.h"
+#include "key.h"
 
 /* TIM6 的 1 ms 计数，用于任务分频。溢出周期约 49.7 天，对本工程足够。 */
 static uint32_t tickCount = 0U;
@@ -37,91 +43,10 @@ static uint8_t schedulerEnabled = 0U;
 /* 延后任务的待办标志表。只置标志、不排队：同一个任务重复请求也只执行一次。 */
 static volatile uint8_t deferredPending[DEFERRED_COUNT] = {0U, 0U};
 
-/**
- * @brief  初始化调度器并放行中断分发。
- * @note   必须在所有模块的 *_Init() 之后、Timer_Init() 之前调用。
- *         原实现在 Key_Init()/AppState_Init() 之前就开了 TIM6 中断，
- *         中断可能改到尚未初始化的对象；这个门闩就是修那一处。
- */
-void AppScheduler_Init(void)
-{
-    tickCount = 0U;
-    deferredPending[DEFERRED_TELEMETRY] = 0U;
-    deferredPending[DEFERRED_DISPLAY] = 0U;
-    schedulerEnabled = 1U;
-}
+/* ══════════════ 核心调度函数 ══════════════ */
 
 /**
- * @brief  复位一个「连续 N 次成立」确认计数器。
- * @param  c    计数器。
- * @param  need 需要连续成立的次数。
- * @note   取代原来散落的裸 tick 计数器——调用方不再自己 ++ / -- / 比阈值，
- *         也就不会出现「忘了清零」或「阈值写错」这类错。
- */
-void Confirm_Reset(ConfirmCounter *c, uint16_t need)
-{
-    c->need = need;
-    c->count = 0U;
-}
-
-/**
- * @brief  推进一次确认。
- * @param  c              计数器。
- * @param  condition_true 本次条件是否成立（非 0 即成立）。
- * @return 1 表示已经连续成立 need 次；0 表示还没到。
- * @note   条件不成立时计数立即清零——这正是「连续」的语义。
- * @note   计数到 need 后不再增长（封顶），所以**不能**拿 count 当累计计时用。
- *         需要「持续 N 次后停车」这类语义时，用独立的计数器。
- */
-uint8_t Confirm_Update(ConfirmCounter *c, uint8_t condition_true)
-{
-    if (condition_true != 0U) {
-        if (c->count < c->need) {
-            c->count++;
-        }
-    } else {
-        c->count = 0U;
-    }
-
-    return (c->count >= c->need) ? 1U : 0U;
-}
-
-/**
- * @brief  请求执行一个延后任务。
- * @param  id 延后任务编号。
- * @note   只置标志，不排队也不计数。在中断里调用是安全的（单字节写）。
- * @note   越界的 id 被静默忽略。
- */
-void AppScheduler_RequestDeferred(AppDeferredId_t id)
-{
-    if ((uint32_t)id < (uint32_t)DEFERRED_COUNT) {
-        deferredPending[id] = 1U;
-    }
-}
-
-/**
- * @brief  取走一个延后任务的待办标志。
- * @param  id 延后任务编号。
- * @return 1 表示该任务待办且标志已清除；0 表示无待办或 id 越界。
- * @note   置位在中断、清除在主循环。即便同一周期内被请求多次，
- *         也只会执行一次——延后任务要的是「最新快照」，不是逐次补齐。
- */
-uint8_t AppScheduler_TakeDeferred(AppDeferredId_t id)
-{
-    if ((uint32_t)id >= (uint32_t)DEFERRED_COUNT) {
-        return 0U;
-    }
-
-    if (deferredPending[id] == 0U) {
-        return 0U;
-    }
-
-    deferredPending[id] = 0U;
-    return 1U;
-}
-
-/**
- * @brief  TIM6 的 1 ms 中断入口，分频调度各周期任务。
+ * @brief  TIM6 的 1 ms 中断入口，分频调度各周期任务 —— 本文件核心之一。
  * @note   **中断上下文** — 只允许调用耗时很短的函数。本函数里跑的
  *         控制环、循迹环、按键、姿态解算都是「短且必须定周期」的任务；
  *         遥测和 OLED 只置标志，不在这里执行。
@@ -182,7 +107,7 @@ void AppScheduler_OnTick(void)
 }
 
 /**
- * @brief  执行所有已置位的延后任务。
+ * @brief  执行所有已置位的延后任务 —— 本文件核心之一。
  * @note   主循环的唯一入口。这里可以自由使用浮点、snprintf 和 I2C，
  *         因为不在中断上下文。
  * @note   命令行的解析不在这里——它由 main.c 直接调 AppConsole_Process()，
@@ -199,4 +124,90 @@ void AppDeferred_Run(void)
     if (AppScheduler_TakeDeferred(DEFERRED_DISPLAY) != 0U) {
         AppDisplay_Task100ms();
     }
+}
+
+/* ══════════════ 对外接口 ══════════════ */
+
+/**
+ * @brief  初始化调度器并放行中断分发。
+ * @note   必须在所有模块的 *_Init() 之后、Timer_Init() 之前调用。
+ *         原实现在 Key_Init()/AppState_Init() 之前就开了 TIM6 中断，
+ *         中断可能改到尚未初始化的对象；这个门闩就是修那一处。
+ */
+void AppScheduler_Init(void)
+{
+    tickCount = 0U;
+    deferredPending[DEFERRED_TELEMETRY] = 0U;
+    deferredPending[DEFERRED_DISPLAY] = 0U;
+    schedulerEnabled = 1U;
+}
+
+/**
+ * @brief  请求执行一个延后任务。
+ * @param  id 延后任务编号。
+ * @note   只置标志，不排队也不计数。在中断里调用是安全的（单字节写）。
+ * @note   越界的 id 被静默忽略。
+ */
+void AppScheduler_RequestDeferred(AppDeferredId_t id)
+{
+    if ((uint32_t)id < (uint32_t)DEFERRED_COUNT) {
+        deferredPending[id] = 1U;
+    }
+}
+
+/**
+ * @brief  取走一个延后任务的待办标志。
+ * @param  id 延后任务编号。
+ * @return 1 表示该任务待办且标志已清除；0 表示无待办或 id 越界。
+ * @note   置位在中断、清除在主循环。即便同一周期内被请求多次，
+ *         也只会执行一次——延后任务要的是「最新快照」，不是逐次补齐。
+ */
+uint8_t AppScheduler_TakeDeferred(AppDeferredId_t id)
+{
+    if ((uint32_t)id >= (uint32_t)DEFERRED_COUNT) {
+        return 0U;
+    }
+
+    if (deferredPending[id] == 0U) {
+        return 0U;
+    }
+
+    deferredPending[id] = 0U;
+    return 1U;
+}
+
+/**
+ * @brief  复位一个「连续 N 次成立」确认计数器。
+ * @param  c    计数器。
+ * @param  need 需要连续成立的次数。
+ * @note   本工程只有循迹模块用这两个确认函数（app_tracking.c）。
+ *         它取代了原来散落的裸 tick 计数器——调用方不再自己 ++ / -- / 比阈值，
+ *         也就不会出现「忘了清零」或「阈值写错」这类错。
+ */
+void Confirm_Reset(ConfirmCounter *c, uint16_t need)
+{
+    c->need = need;
+    c->count = 0U;
+}
+
+/**
+ * @brief  推进一次确认。
+ * @param  c              计数器。
+ * @param  condition_true 本次条件是否成立（非 0 即成立）。
+ * @return 1 表示已经连续成立 need 次；0 表示还没到。
+ * @note   条件不成立时计数立即清零——这正是「连续」的语义。
+ * @note   计数到 need 后不再增长（封顶），所以**不能**拿 count 当累计计时用。
+ *         需要「持续 N 次后停车」这类语义时，用独立的计数器。
+ */
+uint8_t Confirm_Update(ConfirmCounter *c, uint8_t condition_true)
+{
+    if (condition_true != 0U) {
+        if (c->count < c->need) {
+            c->count++;
+        }
+    } else {
+        c->count = 0U;
+    }
+
+    return (c->count >= c->need) ? 1U : 0U;
 }

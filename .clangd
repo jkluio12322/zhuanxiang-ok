@@ -1,0 +1,46 @@
+# clangd 配置 —— 必须放在仓库根目录。
+#
+# clangd 从「源文件所在目录」逐级向上查找 .clangd 和 compile_commands.json。
+# 33 个 .c 文件全在 Core/ 下，而 MDK-ARM/ 是 Core/ 的兄弟目录而非祖先，
+# 所以放在 MDK-ARM/.clangd 的那份对真实源码永远不会命中。
+#
+# 本文件是 Core/ 下文件唯一会命中的配置，CompileFlags 的 ARMCC flag
+# 剔除清单不可省略。
+
+CompileFlags:
+  Add:
+    - -ferror-limit=0
+    - -isystemE:\32\STM32CubeCLT_1.20.0\GNU-tools-for-STM32\arm-none-eabi\include\c++\13.3.1
+    - -isystemE:\32\STM32CubeCLT_1.20.0\GNU-tools-for-STM32\arm-none-eabi\include\c++\13.3.1\arm-none-eabi\thumb\v7-m\nofp
+    - -isystemE:\32\STM32CubeCLT_1.20.0\GNU-tools-for-STM32\arm-none-eabi\include\c++\13.3.1\backward
+    - -isystemE:\32\STM32CubeCLT_1.20.0\GNU-tools-for-STM32\lib\gcc\arm-none-eabi\13.3.1\include
+    - -isystemE:\32\STM32CubeCLT_1.20.0\GNU-tools-for-STM32\lib\gcc\arm-none-eabi\13.3.1\include-fixed
+    - -isystemE:\32\STM32CubeCLT_1.20.0\GNU-tools-for-STM32\arm-none-eabi\include
+  # compile_commands.json 由 EIDE 从 ARMCC(armcc.exe) 生成，需要剔除它的专有 flag，
+  # 否则 clangd 无法解析。
+  Remove:
+    - --cpu
+    - --li
+    - --c99
+    - --split_sections
+    - --diag_suppress=*
+    - --no_depend_system_headers
+    - --depend
+    - --strict
+    - --enum_is_int
+    - --gnu
+    - --apcs=*
+    - --signed_chars
+    - --split_ldm
+    - --execute_only
+    - -Otime
+  # 相对本文件所在目录（仓库根）解析
+  CompilationDatabase: MDK-ARM/build/bluecar
+  Compiler: E:\32\STM32CubeCLT_1.20.0\GNU-tools-for-STM32\bin\arm-none-eabi-gcc.exe
+
+# 有意屏蔽全部诊断：clangd 会误解析 ARMCC 的 __weak / __packed / #pragma arm
+# 等 Keil 扩展，放开会产生大量假错误。
+# 因此 clangd 只提供导航（跳转、引用、类型），不提供报错。
+# 错误检查请用 CLAUDE.md 里记录的 arm-none-eabi-gcc -fsyntax-only 命令。
+Diagnostics:
+  Suppress: "*"

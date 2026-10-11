@@ -8,23 +8,29 @@
 
 #include <stdint.h>
 
-/* 命令队列里的命令类型。 */
+/**
+ * @brief  命令队列里的命令类型。
+ * @note   两个来源都往同一个队列里放：按键任务（app_cmd.c）和串口命令行
+ *         （app_console.c）。执行方是 50 ms 控制任务（app_speedloop.c）。
+ * @note   删命令时**不能对号入座地删枚举**——有些枚举值命令行已经不用了，
+ *         但按键路径还在发。当前每个值的来源见注释。
+ */
 typedef enum {
     commandNone = 0,
-    commandStart,
-    commandStop,
-    commandLapCycle,
-    commandModeTrack,
-    commandModePwmSpeed,
-    commandModePwmTrack,
-    commandPwmSpeedNextGear,
-    commandSetSpeedGear,
-    commandPwmTrackNext,
-    commandPwmTrackSetAngle,
-    commandPwmTrackBaseStep,
-    commandPwmTrackSim,
-    commandQuiet,
-    commandLog
+    commandStart,            /* 按键：KEY2（循迹/PWM循迹）；命令行已不提供 */
+    commandStop,             /* 按键：KEY3 / 命令行 stop */
+    commandLapCycle,         /* 按键：循迹模式下 KEY4（仅停车时） */
+    commandModeTrack,        /* 按键：KEY1 轮换 */
+    commandModePwmSpeed,     /* 按键：KEY1 轮换 */
+    commandModePwmTrack,     /* 按键：KEY1 轮换 */
+    commandPwmSpeedNextGear, /* 按键：PWM 速度模式下 KEY2 */
+    commandPwmTrackNext,     /* 按键：PWM 循迹模式下 KEY2 */
+    commandPwmTrackBaseStep, /* 按键：PWM 循迹模式下 KEY4 短按/长按 */
+    commandSetLeftRpm,       /* 命令行：l <rpm>，只改左轮目标 */
+    commandSetRightRpm,      /* 命令行：r <rpm>，只改右轮目标 */
+    commandSetBothRpm,       /* 命令行：t <rpm>，两轮同时改 */
+    commandQuiet,            /* 命令行：quiet，暂停 VOFA */
+    commandLog               /* 命令行：log，恢复 VOFA */
 } commandType_t;
 
 /* 一条待执行的命令。 */

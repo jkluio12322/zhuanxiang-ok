@@ -1,6 +1,6 @@
 /**
  * @file    app_console.h
- * @brief   USART1 在线 PID 调参和电机测试接口。
+ * @brief   USART1 串口命令接口（台架手动转速、状态查询、VOFA 开关）。
  * @note    UART 中断只缓存接收字节，命令行解析在主循环中完成。
  */
 #ifndef __APP_CONSOLE_H
@@ -13,7 +13,7 @@
    字节拼成一行并解析。 */
 
 /**
- * @brief  初始化在线调参模块。
+ * @brief  初始化命令行模块。
  * @note   不启动 UART 接收——接收中断由 app_serial.c 的 Serial_Init() 启动，
  *         由 HAL_UART_RxCpltCallback 转交给 AppConsole_RxByte()。
  */
@@ -27,13 +27,13 @@ void AppConsole_Init(void);
 void AppConsole_RxByte(uint8_t byte);
 
 /**
- * @brief  解析并执行一行在线调参命令。
+ * @brief  解析并执行一行串口命令。
  * @note   该函数在主循环中调用，电机控制类命令会写入统一命令队列。
  */
 void AppConsole_Process(void);
 
 /**
- * @brief  发送已经准备好的调参命令响应。
+ * @brief  发送已经准备好的命令响应。
  * @note   响应发送期间短暂关闭中断，防止字符串缓冲区被并发修改。
  */
 void AppConsole_Flush(void);

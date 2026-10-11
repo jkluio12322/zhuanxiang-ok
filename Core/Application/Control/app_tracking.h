@@ -56,12 +56,8 @@ void AppTracking_ResetState(void);
 void AppTracking_Task20ms(void);
 
 /**
- * @brief  在线设置循迹环增益。
- */
-void AppTracking_SetGain(PidField_t field, float value);
-
-/**
  * @brief  读取循迹环增益。
+ * @note   只读。循迹环增益不再支持在线修改——在 app_config.h 里改后重新编译。
  */
 float AppTracking_GetGain(PidField_t field);
 
@@ -76,18 +72,19 @@ void AppTracking_SetSteerRpmToPwmGain(float gain);
 float AppTracking_GetSteerRpmToPwmGain(void);
 
 /**
- * @brief  直接读一次八路传感器并返回归一化横向偏差。
- * @note   供 PWM 循迹测试的非模拟路径使用。
+ * @brief  PWM 循迹测试的一步：把一段八路图案当成传感器读数跑一遍循迹。
+ * @param  pattern 要模拟的黑线掩码，bit0..7 对应 IR1..8，压黑置 1。
+ * @return 1 表示本周期没有算差速（未运行，或已请求停车）；0 表示算过了。
+ * @note   与实车路径共用同一个 sample、状态机、确认计数、PID 限幅和 lastSteer，
+ *         所以丢线保持、全白停车、丢线超时的行为与实车一致；只是不读 GPIO、
+ *         不做过弯判定与计圈。
+ * @note   未运行时负责把状态机收回 TRK_STOPPED（与实车路径的 !running 分支对齐）。
+ * @note   在 TIM6 的 20 ms 时隙里由 app_testmode 调用。
  */
-float AppTracking_ComputeWeightedError(void);
+uint8_t AppTracking_TestStep20ms(uint8_t pattern);
 
 /**
- * @brief  用循迹环算一次指定误差对应的差速输出，供 PWM 循迹测试复用。
- */
-float AppTracking_UpdatePidForError(float error, float diffLimit);
-
-/**
- * @brief  直接写入差速输出，供 PWM 循迹测试旁路循迹环。
+ * @brief  写入本周期算出的差速输出，供 PWM 循迹测试发布用。
  */
 void AppTracking_SetPwmSteer(float steerRpm);
 

@@ -2,6 +2,8 @@
  * @file    app_motion.c
  * @brief   底盘运动 — 编码器测速、中值滤波、电机输出。
  *
+ * @note    文件内排序：两个核心函数放最上方，辅助函数与对外接口放下面。
+ *
  * @note    本模块是**应用层里唯一直接调用电机驱动的地方**，负责把
  *          「左右轮 PWM 百分比」翻译成 TB6612 需要的方向 + PWM。
  *          驱动层的交叉映射与极性约定只在这里出现一次，别处一律用
@@ -40,6 +42,77 @@ static float   sampleLeft[ENCODER_FILTER_WINDOW];
 static float   sampleRight[ENCODER_FILTER_WINDOW];
 static uint8_t sampleIndex = 0U;
 
+/* ── 辅助函数前置声明（定义在文件下方） ───────────────────────────── */
+static float median3(float a, float b, float c);
+
+/* ══════════════ 核心函数 ══════════════ */
+
+/**
+ * @brief  读一次编码器并做中值滤波 —— 本文件核心之一。
+ * @note   在 50 ms 控制任务里调用；**全工程只有这里做速度滤波**。
+ * @note   转速换算在驱动层完成，本函数只负责组织顺序与滤波。
+ *         采样的固定周期由 APP_CONTROL_PERIOD_MS 决定，所以本函数必须
+ *         跟着 50 ms 任务跑——挪到抖动的主循环里会让转速整体算错。
+ */
+void AppMotion_Update(void)
+{
+    /* 编码器号与定时器的对应关系照抄原 yingYongKongZhi.c:353-354，
+       encoderRight 取 TIM3、encoderLeft 取 TIM2，与 README 的引脚表相反。 */
+    updateEncoderLoopSimpleVersion(&encoderRight, APP_CONTROL_PERIOD_MS, TIM3);
+    updateEncoderLoopSimpleVersion(&encoderLeft, APP_CONTROL_PERIOD_MS, TIM2);
+
+    /* 原始值直接暴露给遥测，用于对照滤波前后的差别。 */
+    motionView.left_rpm_raw = encoderLeft.velocity.angular;
+    motionView.right_rpm_raw = encoderRight.velocity.angular;
+
+    /* 写入环形窗口的当前位置。 */
+    sampleLeft[sampleIndex] = motionView.left_rpm_raw;
+    sampleRight[sampleIndex] = motionView.right_rpm_raw;
+
+    motionView.left_rpm = median3(sampleLeft[0], sampleLeft[1], sampleLeft[2]);
+    motionView.right_rpm = median3(sampleRight[0], sampleRight[1], sampleRight[2]);
+
+    sampleIndex++;
+    if (sampleIndex >= ENCODER_FILTER_WINDOW) {
+        sampleIndex = 0U;
+    }
+}
+
+/**
+ * @brief  限幅后把左右轮 PWM 输出到电机 —— 本文件核心之一。
+ * @param  left_pwm  左轮 PWM 百分比，负值表示反转。
+ * @param  right_pwm 右轮 PWM 百分比，负值表示反转。
+ * @note   限幅范围是 MOTOR_OUTPUT_MIN_PERCENT ~ MOTOR_OUTPUT_MAX_PERCENT（±100）。
+ *         调用方若需要「禁止反转」，应通过 PID 的 out_min 实现，
+ *         而不是在这里传负数——见 app_speedloop.c 的说明。
+ * @note   最后写入视图，供遥测取「本周期实际输出」。
+ */
+void AppMotion_Apply(int16_t left_pwm, int16_t right_pwm)
+{
+    if (left_pwm > MOTOR_OUTPUT_MAX_PERCENT) {
+        left_pwm = MOTOR_OUTPUT_MAX_PERCENT;
+    }
+    if (left_pwm < MOTOR_OUTPUT_MIN_PERCENT) {
+        left_pwm = MOTOR_OUTPUT_MIN_PERCENT;
+    }
+    if (right_pwm > MOTOR_OUTPUT_MAX_PERCENT) {
+        right_pwm = MOTOR_OUTPUT_MAX_PERCENT;
+    }
+    if (right_pwm < MOTOR_OUTPUT_MIN_PERCENT) {
+        right_pwm = MOTOR_OUTPUT_MIN_PERCENT;
+    }
+
+    /* 交叉映射：Motor_SetSpeedA 驱动物理右轮，Motor_SetSpeedB 驱动物理左轮。
+       照抄原 yingYongKongZhi.c:443-444，不要"理顺"。 */
+    Motor_SetSpeedA(right_pwm);
+    Motor_SetSpeedB(left_pwm);
+
+    motionView.left_pwm = left_pwm;
+    motionView.right_pwm = right_pwm;
+}
+
+/* ══════════════ 辅助函数 ══════════════ */
+
 /**
  * @brief  取三个数的中值。
  * @param  a,b,c 三个输入值。
@@ -56,6 +129,8 @@ static float median3(float a, float b, float c)
     if (((b >= a) && (b <= c)) || ((b >= c) && (b <= a))) return b;
     return c;
 }
+
+/* ══════════════ 对外接口 ══════════════ */
 
 /**
  * @brief  获取只读运动视图。
@@ -97,70 +172,6 @@ void AppMotion_Init(void)
     motionView.right_rpm_raw = 0.0f;
     motionView.left_pwm = 0;
     motionView.right_pwm = 0;
-}
-
-/**
- * @brief  读一次编码器并做中值滤波。
- * @note   在 50 ms 控制任务里调用；**全工程只有这里做速度滤波**。
- * @note   转速换算在驱动层完成，本函数只负责组织顺序与滤波。
- *         采样的固定周期由 APP_CONTROL_PERIOD_MS 决定，所以本函数必须
- *         跟着 50 ms 任务跑——挪到抖动的主循环里会让转速整体算错。
- */
-void AppMotion_Update(void)
-{
-    /* 编码器号与定时器的对应关系照抄原 yingYongKongZhi.c:353-354，
-       encoderRight 取 TIM3、encoderLeft 取 TIM2，与 README 的引脚表相反。 */
-    updateEncoderLoopSimpleVersion(&encoderRight, APP_CONTROL_PERIOD_MS, TIM3);
-    updateEncoderLoopSimpleVersion(&encoderLeft, APP_CONTROL_PERIOD_MS, TIM2);
-
-    /* 原始值直接暴露给遥测，用于对照滤波前后的差别。 */
-    motionView.left_rpm_raw = encoderLeft.velocity.angular;
-    motionView.right_rpm_raw = encoderRight.velocity.angular;
-
-    /* 写入环形窗口的当前位置。 */
-    sampleLeft[sampleIndex] = motionView.left_rpm_raw;
-    sampleRight[sampleIndex] = motionView.right_rpm_raw;
-
-    motionView.left_rpm = median3(sampleLeft[0], sampleLeft[1], sampleLeft[2]);
-    motionView.right_rpm = median3(sampleRight[0], sampleRight[1], sampleRight[2]);
-
-    sampleIndex++;
-    if (sampleIndex >= ENCODER_FILTER_WINDOW) {
-        sampleIndex = 0U;
-    }
-}
-
-/**
- * @brief  限幅后把左右轮 PWM 输出到电机。
- * @param  left_pwm  左轮 PWM 百分比，负值表示反转。
- * @param  right_pwm 右轮 PWM 百分比，负值表示反转。
- * @note   限幅范围是 MOTOR_OUTPUT_MIN_PERCENT ~ MOTOR_OUTPUT_MAX_PERCENT（±100）。
- *         调用方若需要「禁止反转」，应通过 PID 的 out_min 实现，
- *         而不是在这里传负数——见 app_speedloop.c 的说明。
- * @note   最后写入视图，供遥测取「本周期实际输出」。
- */
-void AppMotion_Apply(int16_t left_pwm, int16_t right_pwm)
-{
-    if (left_pwm > MOTOR_OUTPUT_MAX_PERCENT) {
-        left_pwm = MOTOR_OUTPUT_MAX_PERCENT;
-    }
-    if (left_pwm < MOTOR_OUTPUT_MIN_PERCENT) {
-        left_pwm = MOTOR_OUTPUT_MIN_PERCENT;
-    }
-    if (right_pwm > MOTOR_OUTPUT_MAX_PERCENT) {
-        right_pwm = MOTOR_OUTPUT_MAX_PERCENT;
-    }
-    if (right_pwm < MOTOR_OUTPUT_MIN_PERCENT) {
-        right_pwm = MOTOR_OUTPUT_MIN_PERCENT;
-    }
-
-    /* 交叉映射：Motor_SetSpeedA 驱动物理右轮，Motor_SetSpeedB 驱动物理左轮。
-       照抄原 yingYongKongZhi.c:443-444，不要"理顺"。 */
-    Motor_SetSpeedA(right_pwm);
-    Motor_SetSpeedB(left_pwm);
-
-    motionView.left_pwm = left_pwm;
-    motionView.right_pwm = right_pwm;
 }
 
 /**

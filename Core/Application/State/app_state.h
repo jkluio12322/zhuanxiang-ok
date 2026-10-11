@@ -12,21 +12,29 @@
 #include <stdint.h>
 #include "app_types.h"
 
-/* 只读状态视图。字段直接读，不为每个字段另配 getter。 */
+/* 只读状态视图。字段直接读，不为每个字段另配 getter。
+   每个字段都带 volatile：它们由 TIM6 中断里的任务写（模式、启停、档位、目标
+   转速都走命令执行路径）、由主循环读（显示、命令行、遥测）。没有 volatile 时
+   优化器可以把主循环里的一次字段读提到循环外反复使用；今天没出事只是因为
+   AppState() 是另一个编译单元的函数、编译器不得不重新加载——那是巧合，
+   不是保证，换个优化档位或上了 LTO 就不成立。
+   每个字段都是 32 位以内的标量，读写本身原子，所以不需要临界区，只需要
+   让编译器老老实实每次都去取。 */
 typedef struct {
-    workMode_t mode;            /* 当前工作模式。 */
-    uint8_t    running;         /* 1 表示正在运行。 */
-    uint8_t    vofa;            /* 1 表示允许发送 VOFA 遥测。 */
-    uint8_t    gear;            /* 当前档位，1..SPEED_LEVEL_COUNT。 */
-    float      gear_rpm;        /* 当前档位对应的目标转速，单位 RPM。 */
-    uint8_t    lap_target;      /* 目标完成圈数。 */
-    uint8_t    laps_done;       /* 已完成圈数。 */
-    float      target_left_rpm; /* 左轮目标转速，单位 RPM。 */
-    float      target_right_rpm;/* 右轮目标转速，单位 RPM。 */
+    volatile workMode_t mode;            /* 当前工作模式。 */
+    volatile uint8_t    running;         /* 1 表示正在运行。 */
+    volatile uint8_t    vofa;            /* 1 表示允许发送 VOFA 遥测。 */
+    volatile uint8_t    gear;            /* 当前档位，1..SPEED_LEVEL_COUNT。 */
+    volatile float      gear_rpm;        /* 当前档位对应的目标转速，单位 RPM。 */
+    volatile uint8_t    lap_target;      /* 目标完成圈数。 */
+    volatile uint8_t    laps_done;       /* 已完成圈数。 */
+    volatile float      target_left_rpm; /* 左轮目标转速，单位 RPM。 */
+    volatile float      target_right_rpm;/* 右轮目标转速，单位 RPM。 */
 } AppStateView_t;
 
 /**
  * @brief  获取只读状态视图。
+ * @note   返回的字段是 volatile（见上面结构体的说明），调用方只需只读。
  */
 const AppStateView_t *AppState(void);
 

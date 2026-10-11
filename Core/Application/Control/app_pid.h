@@ -15,7 +15,9 @@ typedef enum {
     PID_MODE_POSITIONAL         /* 位置式：输出绝对值，用于循迹转角环 */
 } PidMode_t;
 
-/* 可在线整定的增益字段。 */
+/* 增益字段的选取器，供只读的取值接口使用（如 show 命令打印三组增益）。
+   注意本工程**没有在线整定路径**：增益只在 app_config.h 的宏里改，
+   改完重新编译烧录。 */
 typedef enum {
     PID_FIELD_KP = 0,
     PID_FIELD_KI,
@@ -59,11 +61,6 @@ void Pid_Init(Pid_t *p, const PidConfig_t *cfg);
  * @brief  清空运行时状态，保留增益与配置。
  */
 void Pid_Reset(Pid_t *p);
-
-/**
- * @brief  在线设置一个增益。
- */
-void Pid_SetGain(Pid_t *p, PidField_t field, float value);
 
 /**
  * @brief  读取一个增益。

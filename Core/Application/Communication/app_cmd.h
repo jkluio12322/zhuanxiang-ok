@@ -21,15 +21,16 @@ void AppCmd_Init(void);
  * @brief  构造并写入一条命令。
  * @param  type  命令类型，见 commandType_t。
  * @param  value 命令参数，无参数的命令传 0.0f。
+ * @return 1 表示已入队；0 表示队列已满，本条被丢弃。
  */
-void AppCmd_PushValue(commandType_t type, float value);
+uint8_t AppCmd_PushValue(commandType_t type, float value);
 
 /**
  * @brief  写入一条已经构造好的命令。
  * @param  message 待入队的命令。
- * @note   队列满时静默丢弃。
+ * @return 1 表示已入队；0 表示队列已满，本条被丢弃。
  */
-void AppCmd_Push(commandMessage_t message);
+uint8_t AppCmd_Push(commandMessage_t message);
 
 /**
  * @brief  取出一条命令。

@@ -25,7 +25,7 @@
 #define KEY_LONG        0x20  /**< 长按 (>1s) */
 #define KEY_REPEAT      0x40  /**< 连发 (长按持续触发) */
 
-extern uint8_t Key_Flag[];
+extern volatile uint8_t Key_Flag[];
 extern volatile uint8_t mpu_int_ready;  /**< MPU6050 INT 数据就绪, ISR 置 1 */
 
 /**

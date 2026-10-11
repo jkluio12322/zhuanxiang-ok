@@ -2,13 +2,15 @@
  * @file    app_pid.c
  * @brief   统一的 PID 实现 — 增量式（速度环）与位置式（循迹环）合一。
  *
+ * @note    文件内排序：两个核心更新函数放最上方，辅助函数与对外接口放下面。
+ *
  * @note    取代原来的 pid.c：那里 PID_t 和 TrackPid_t 两套并行的
  *          init / set / reset / update，现在塌缩成一套。
  *
  * @note    两种模式的差别集中在 pidCompute()：
  * @code
- *   增量式 PAST  delta = Kp*(e0-e1) + Ki*e0 + Kd项；out += delta；累加器限幅
- *   位置式 PAST  integral += Ki*e0*dt；out = Kp*e0 + integral + Kd项
+ *   增量式       delta = Kp*(e0-e1) + Ki*e0 + Kd项；out += delta；累加器限幅
+ *   位置式       integral += Ki*e0*dt；out = Kp*e0 + integral + Kd项
  * @endcode
  *
  * @note    调用方约定（两个使用者必须遵守，否则会互相污染）：
@@ -16,14 +18,78 @@
  *          - 循迹环用 Pid_UpdatePosition(error)，位置式，微分作用于误差。
  *          同一个 Pid_t 不能两种模式混用。
  *
- * @note    执行上下文：速度环在 TIM6 中断里调用，循迹环也在中断里调用；
- *          命令行调参在主循环里调 Pid_SetGain()。增益是 float 写入，
- *          Cortex-M3 上是单条 STR，不会读到半个值，但可能会丢一次更新，
- *          对调参这种人工操作可以接受。
+ * @note    执行上下文：两个更新函数都在 TIM6 中断里被调用。
+ *          增益不再支持在线修改（参数在 app_config.h 里改后重新编译），
+ *          所以不存在"主循环改增益、中断读增益"的竞争。
  */
 
 #include "app_pid.h"
 #include <string.h>
+
+/* ── 辅助函数前置声明（定义在文件下方） ───────────────────────────── */
+static float pidClamp(float value, float minValue, float maxValue);
+static void  pidCheckTargetSign(Pid_t *p, float newTarget);
+static float pidCompute(Pid_t *p);
+static float pidFinalize(const Pid_t *p, float raw);
+
+/* ══════════════ 核心更新函数 ══════════════ */
+
+/**
+ * @brief  按 目标/实测 更新一次 PID（速度环用）—— 本文件核心之一。
+ * @param  p      PID 对象。
+ * @param  target 目标值，单位与被控量一致（速度环为 RPM）。
+ * @param  actual 实测值，单位同上。
+ * @return 本次输出。
+ * @note   **中断上下文**。顺序：先按目标符号判断要不要复位 -> 更新目标与
+ *         误差历史 -> 按模式算输出 -> 最后做归零与补偿。
+ *         actual_prev 在算完之后才更新，保证微分看到的是「上一周期」的测量值。
+ */
+float Pid_Update(Pid_t *p, float target, float actual)
+{
+    pidCheckTargetSign(p, target);
+
+    p->target = target;
+    p->actual = actual;
+
+    p->e2 = p->e1;
+    p->e1 = p->e0;
+    p->e0 = target - actual;
+
+    p->out = pidCompute(p);
+    p->actual_prev = actual;
+
+    return pidFinalize(p, p->out);
+}
+
+/**
+ * @brief  位置式的便捷入口，直接喂误差（循迹环用）—— 本文件核心之一。
+ * @param  p     PID 对象。
+ * @param  error 误差值，单位与被控量一致（循迹环为归一化位置，约 ±7）。
+ * @return 本次输出。
+ * @note   **中断上下文**。内部把 target 与 e0 都设成 error、actual 固定为 0，
+ *         这样两种模式共用 pidCompute() 的误差历史。
+ * @note   不调用 pidCheckTargetSign()：循迹误差正负交替是正常现象，
+ *         在这里复位会把跨过中心的连续性打断。循迹环的 reset_on_sign_change
+ *         也必须配成 0。
+ */
+float Pid_UpdatePosition(Pid_t *p, float error)
+{
+    float output;
+
+    p->target = error;
+    p->actual = 0.0f;
+
+    p->e2 = p->e1;
+    p->e1 = p->e0;
+    p->e0 = error;
+
+    output = pidCompute(p);
+    p->out = output;
+
+    return pidFinalize(p, output);
+}
+
+/* ══════════════ 辅助函数 ══════════════ */
 
 /**
  * @brief  把浮点值限制到闭区间内。
@@ -66,86 +132,6 @@ static void pidCheckTargetSign(Pid_t *p, float newTarget)
         p->integral = 0.0f;
         p->out = 0.0f;
     }
-}
-
-/**
- * @brief  用配置初始化 PID，运行时状态清零。
- * @param  p   PID 对象。
- * @param  cfg 配置，按值拷贝进对象，调用方此后可以丢弃它。
- * @note   配置一旦写入就不再变化（除非显式调 Pid_SetGain/Pid_SetLimits），
- *         所以传进来的 cfg 可以是 const 的静态结构。
- */
-void Pid_Init(Pid_t *p, const PidConfig_t *cfg)
-{
-    memset(p, 0, sizeof(*p));
-    p->cfg = *cfg;
-}
-
-/**
- * @brief  清空运行时状态，保留增益与配置。
- * @param  p PID 对象。
- * @note   停机、切换模式、从丢线恢复时调用。
- *         不停车就复位会让输出突然归零，所以只在状态切换的边界上调。
- */
-void Pid_Reset(Pid_t *p)
-{
-    p->target = 0.0f;
-    p->actual = 0.0f;
-    p->actual_prev = 0.0f;
-    p->e0 = 0.0f;
-    p->e1 = 0.0f;
-    p->e2 = 0.0f;
-    p->integral = 0.0f;
-    p->out = 0.0f;
-}
-
-/**
- * @brief  在线设置一个增益。
- * @param  p     PID 对象。
- * @param  field 要设置的增益，见 PidField_t。
- * @param  value 新值。
- * @note   越界的 field 被静默忽略。
- */
-void Pid_SetGain(Pid_t *p, PidField_t field, float value)
-{
-    switch (field) {
-    case PID_FIELD_KP: p->cfg.kp = value; break;
-    case PID_FIELD_KI: p->cfg.ki = value; break;
-    case PID_FIELD_KD: p->cfg.kd = value; break;
-    default: break;
-    }
-}
-
-/**
- * @brief  读取一个增益。
- * @param  p     PID 对象。
- * @param  field 要读的增益。
- * @return 当前增益值；field 越界时返回 0.0f。
- */
-float Pid_GetGain(const Pid_t *p, PidField_t field)
-{
-    switch (field) {
-    case PID_FIELD_KP: return p->cfg.kp;
-    case PID_FIELD_KI: return p->cfg.ki;
-    case PID_FIELD_KD: return p->cfg.kd;
-    default:           return 0.0f;
-    }
-}
-
-/**
- * @brief  修改输出限幅。
- * @param  p       PID 对象。
- * @param  out_min 输出下限。
- * @param  out_max 输出上限。
- * @note   主要用途有两个：
- *         - 循迹模式把下限收到 0，禁止轮子反转（见 app_speedloop.c）；
- *         - PWM 循迹测试临时改限幅复用循迹环（见 app_tracking.c）。
- *         增量式下改限幅会同时影响累加器的钳位，这正是抗饱和所依赖的。
- */
-void Pid_SetLimits(Pid_t *p, float out_min, float out_max)
-{
-    p->cfg.out_min = out_min;
-    p->cfg.out_max = out_max;
 }
 
 /**
@@ -228,57 +214,68 @@ static float pidFinalize(const Pid_t *p, float raw)
     return pidClamp(output, p->cfg.out_min, p->cfg.out_max);
 }
 
+/* ══════════════ 对外接口 ══════════════ */
+
 /**
- * @brief  按 目标/实测 更新一次 PID（速度环用）。
- * @param  p      PID 对象。
- * @param  target 目标值，单位与被控量一致（速度环为 RPM）。
- * @param  actual 实测值，单位同上。
- * @return 本次输出。
- * @note   顺序：先按目标符号判断要不要复位 -> 更新目标与误差历史 ->
- *         按模式算输出 -> 最后做归零与补偿。
- *         actual_prev 在算完之后才更新，保证微分看到的是「上一周期」的测量值。
+ * @brief  用配置初始化 PID，运行时状态清零。
+ * @param  p   PID 对象。
+ * @param  cfg 配置，按值拷贝进对象，调用方此后可以丢弃它。
+ * @note   配置一旦写入就不再变化（除非显式调 Pid_SetLimits），
+ *         所以传进来的 cfg 可以是 const 的静态结构。
  */
-float Pid_Update(Pid_t *p, float target, float actual)
+void Pid_Init(Pid_t *p, const PidConfig_t *cfg)
 {
-    pidCheckTargetSign(p, target);
-
-    p->target = target;
-    p->actual = actual;
-
-    p->e2 = p->e1;
-    p->e1 = p->e0;
-    p->e0 = target - actual;
-
-    p->out = pidCompute(p);
-    p->actual_prev = actual;
-
-    return pidFinalize(p, p->out);
+    memset(p, 0, sizeof(*p));
+    p->cfg = *cfg;
 }
 
 /**
- * @brief  位置式的便捷入口，直接喂误差（循迹环用）。
- * @param  p     PID 对象。
- * @param  error 误差值，单位与被控量一致（循迹环为归一化位置，约 ±7）。
- * @return 本次输出。
- * @note   内部把 target 与 e0 都设成 error、actual 固定为 0，
- *         这样两种模式共用 pidCompute() 的误差历史。
- * @note   不调用 pidCheckTargetSign()：循迹误差正负交替是正常现象，
- *         在这里复位会把跨过中心的连续性打断。循迹环的 reset_on_sign_change
- *         也必须配成 0。
+ * @brief  清空运行时状态，保留增益与配置。
+ * @param  p PID 对象。
+ * @note   停机、切换模式、从丢线恢复时调用。
+ *         不停车就复位会让输出突然归零，所以只在状态切换的边界上调。
  */
-float Pid_UpdatePosition(Pid_t *p, float error)
+void Pid_Reset(Pid_t *p)
 {
-    float output;
-
-    p->target = error;
+    p->target = 0.0f;
     p->actual = 0.0f;
+    p->actual_prev = 0.0f;
+    p->e0 = 0.0f;
+    p->e1 = 0.0f;
+    p->e2 = 0.0f;
+    p->integral = 0.0f;
+    p->out = 0.0f;
+}
 
-    p->e2 = p->e1;
-    p->e1 = p->e0;
-    p->e0 = error;
+/**
+ * @brief  读取一个增益。
+ * @param  p     PID 对象。
+ * @param  field 要读的增益。
+ * @return 当前增益值；field 越界时返回 0.0f。
+ * @note   只读。本工程不提供在线改增益的接口——参数在 app_config.h 里改。
+ */
+float Pid_GetGain(const Pid_t *p, PidField_t field)
+{
+    switch (field) {
+    case PID_FIELD_KP: return p->cfg.kp;
+    case PID_FIELD_KI: return p->cfg.ki;
+    case PID_FIELD_KD: return p->cfg.kd;
+    default:           return 0.0f;
+    }
+}
 
-    output = pidCompute(p);
-    p->out = output;
-
-    return pidFinalize(p, output);
+/**
+ * @brief  修改输出限幅。
+ * @param  p       PID 对象。
+ * @param  out_min 输出下限。
+ * @param  out_max 输出上限。
+ * @note   主要用途有两个：
+ *         - 循迹模式把下限收到 0，禁止轮子反转（见 app_speedloop.c）；
+ *         - PWM 循迹测试临时改限幅复用循迹环（见 app_tracking.c）。
+ *         增量式下改限幅会同时影响累加器的钳位，这正是抗饱和所依赖的。
+ */
+void Pid_SetLimits(Pid_t *p, float out_min, float out_max)
+{
+    p->cfg.out_min = out_min;
+    p->cfg.out_max = out_max;
 }
