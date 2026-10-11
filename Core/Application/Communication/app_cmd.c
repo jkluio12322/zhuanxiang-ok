@@ -1,26 +1,5 @@
-/**
- * @file    app_cmd.c
- * @brief   20 ms 按键任务 + 命令队列。
- *
- * @note    文件内排序：核心任务放最上方，辅助函数与对外接口放下面。
- *
- * @note    数据流（生产者与消费者分处中断和主循环，是本模块最需要小心的地方）：
- * @code
- *   生产者 A：TIM6 中断  AppCmd_Task20ms()       -> AppCmd_PushValue()
- *   生产者 B：主循环     AppConsole_Process()    -> AppCmd_PushValue()
- *   消费者  ：TIM6 中断  AppSpeedLoop_Task50ms() -> AppCmd_Pop()
- * @endcode
- *          队列满时**静默丢弃新命令**，不覆盖尚未执行的控制动作——这是有意的：
- *          丢弃比让"停车"指令被"启动"指令顶掉要安全。
- *
- * @note    两个生产者分处不同执行上下文，所以 AppCmd_Push() 对 commandHead 的
- *          「读-改-写」必须放进临界区——否则中断打断主循环的 Push 时，两边会
- *          读到同一个 commandHead，后写的那条覆盖前一条，表现为**偶发丢命令**。
- *          该临界区已在 AppCmd_Push() 内实现。
- *
- * @see     app_speedloop.c  命令的实际执行者
- * @see     app_console.c    生产者 B 的来源
- */
+/* 20 ms 按键任务 + 命令队列。生产者在中断/主循环，消费者在 50 ms 控制任务，
+   队列满时静默丢弃新命令（丢弃比让"停车"被"启动"顶掉安全）。 */
 
 #include "app_cmd.h"
 #include "app_config.h"
@@ -28,8 +7,7 @@
 #include "app_state.h"
 #include "key.h"
 
-/* 命令环形队列。容量 COMMAND_QUEUE_SIZE（8），实际可用 7 项——留一个空位
-   用于区分「空」和「满」，这是环形队列的标准做法。 */
+/* 命令环形队列。容量 COMMAND_QUEUE_SIZE(8)，实际可用 7 项——留一个空位区分空/满。 */
 static commandMessage_t commandQueue[COMMAND_QUEUE_SIZE];
 
 /* 写入位置，由生产者推进。ISR 与主循环都会写，故加 volatile。 */
@@ -38,28 +16,12 @@ static volatile uint8_t commandHead = 0;
 /* 读取位置，只由消费者（TIM6 中断）推进。 */
 static volatile uint8_t commandTail = 0;
 
-/* ── 辅助函数前置声明（定义在文件下方） ───────────────────────────── */
 static commandType_t appNextMode(void);
 
-/* ══════════════ 核心任务 ══════════════ */
-
-/**
- * @brief  20 ms 按键任务：扫描四路按键并产生对应命令 —— 本文件核心。
- * @note   在 TIM6 中断里执行，由 app_scheduler.c 的 20 ms 时隙调用，
- *         顺序为 Key_Tick() -> AppCmd_Task20ms()（先跑状态机再取事件）。
- *
- * @note   按键在各模式下的含义不同，因此按模式分三段处理：
- * @code
- *   KEY1 短按/长按 : 循环切换模式（所有模式通用）
- *   循迹模式        KEY2 启动/停止  KEY3 停止  KEY4 切换目标圈数（仅停车时）
- *   PWM 循迹模式    KEY2 切换模拟图案  KEY3 启动/停止  KEY4 短按/长按调基础占空比
- *   PWM 速度模式    KEY2 升档  KEY3 启动/停止
- * @endcode
- *
- * @note   在非循迹模式下有一句 (void)Key_CheckSingleOrLong(KEY_4)：KEY4 在这两个
- *         模式里用的是短按和长按事件，需要把「短按+长按」的合成事件吃掉，
- *         否则会残留到下次循环造成误触发。
- */
+/* 20 ms 按键任务（TIM6 中断）：按模式扫描按键产生命令。KEY1 通用切模式；循迹 KEY2 启停/
+   KEY3 停/KEY4 切圈数(仅停车)；PWM 循迹 KEY2 切图案/KEY3 启停/KEY4 短按加长按减；PWM 速度
+   KEY2 升档/KEY3 启停。各处 (void)Key_CheckSingleOrLong(KEY_4) 用于吃掉短按+长按合成事件，
+   否则残留到下次循环误触发。 */
 void AppCmd_Task20ms(void)
 {
     if (Key_CheckSingleOrLong(KEY_1)) {
@@ -67,12 +29,12 @@ void AppCmd_Task20ms(void)
     }
 
     if (AppState()->mode == modeTrack) {
-        /* 目标圈数只允许在停车状态下修改，运行中改会让计圈判据突然变化。 */
+        /* 目标圈数仅允许停车时改，运行中改会让计圈判据突变。 */
         if (Key_Check(KEY_4, KEY_SINGLE) && !AppState()->running) {
             AppCmd_PushValue(commandLapCycle, 0.0f);
         }
         (void)Key_CheckSingleOrLong(KEY_4);
-        /* KEY2 是启停切换键：当前状态决定发启动还是停止。 */
+        /* KEY2 启停切换：当前状态决定发启动还是停止。 */
         if (Key_Check(KEY_2, KEY_SINGLE)) {
             AppCmd_PushValue(AppState()->running ? commandStop : commandStart, 0.0f);
         }
@@ -83,7 +45,7 @@ void AppCmd_Task20ms(void)
     }
 
     if (AppState()->mode == modePwmTrack) {
-        /* KEY4 短按加、长按减，用于在线调整开环基础占空比。 */
+        /* KEY4 短按加、长按减，在线调整开环基础占空比。 */
         if (Key_Check(KEY_4, KEY_SINGLE)) {
             AppCmd_PushValue(commandPwmTrackBaseStep,
                                 (float)PWM_TRACK_BASE_STEP_PERCENT);
@@ -112,16 +74,9 @@ void AppCmd_Task20ms(void)
     }
 }
 
-/* ══════════════ 辅助函数 ══════════════ */
-
-/**
- * @brief  取模式循环里的下一个模式对应的切换命令。
- * @return commandModePwmSpeed / commandModePwmTrack / commandModeTrack。
- * @note   模式顺序为 TRACK -> PWM-SPEED -> PWM-TRACK -> TRACK。
- *         这里返回的是**命令**而非模式本身，因为模式切换必须经过队列、
- *         由 50 ms 控制任务统一执行复位和重新初始化。
- *         开机页的模式轮换走 AppState_NextMode()，两处顺序必须保持一致。
- */
+/* 取模式循环里的下一个模式对应的切换命令。顺序 TRACK -> PWM-SPEED -> PWM-TRACK -> TRACK。
+   返回命令而非模式本身：切换须经队列由 50 ms 控制任务统一复位/初始化；开机页的轮换走
+   AppState_NextMode()，两处顺序须一致。 */
 static commandType_t appNextMode(void)
 {
     if (AppState()->mode == modeTrack) return commandModePwmSpeed;
@@ -129,35 +84,16 @@ static commandType_t appNextMode(void)
     return commandModeTrack;
 }
 
-/* ══════════════ 对外接口 ══════════════ */
-
-/**
- * @brief  清空命令队列。
- * @note   把两个下标复位到 0 即视为空，不擦除数组内容。
- *         在中断放行之前、以及开机配置流程结束时调用。
- */
+/* 清空命令队列：两下标复位为 0 即视为空，不擦数组。中断放行前及开机配置结束时调用。 */
 void AppCmd_Init(void)
 {
     commandHead = 0;
     commandTail = 0;
 }
 
-/**
- * @brief  把一条命令写入队列尾部。
- * @param  message 待入队的命令，按值拷贝。
- * @return 1 表示已入队；0 表示队列已满，本条被丢弃。
- * @note   队列满时丢弃新命令——不应在正常运行时发生，若频繁出现说明生产
- *         速度超过了 50 ms 控制任务的消费速度。谁在意结果可以用返回值给出
- *         提示（串口 l/r/t 就靠它回显"队列满"），不在意就忽略。
- * @note   本函数可能被 UART 中断（经由主循环的 AppConsole_Process）与
- *         TIM6 中断（经由 AppCmd_Task20ms）交替调用，因此对 commandHead
- *         的「读-改-写」整体放进临界区。若省掉临界区，两个生产者会
- *         读到同一个 commandHead，后写的那条覆盖前一条，表现为**偶发丢命令**。
- * @note   临界区用保存/恢复 PRIMASK 的写法，所以在中断里调用也安全。注意
- *         不能像早先的注释那样说「中断里 PRIMASK 本来就是 1」——Cortex-M3
- *         上进 ISR 改的是异常优先级掩码，__get_PRIMASK() 在 ISR 里返回 0。
- *         之所以仍然安全，靠的是保存-恢复本身，不是「中断里它已经是 1」。
- */
+/* 写入一条命令到队尾。满时丢弃并返回 0（不应常发生，常发生说明生产快于 50 ms 消费）。
+   本函数会被 UART 中断与 TIM6 中断交替调用，对 commandHead 的读-改-写整体放进
+   保存/恢复 PRIMASK 的临界区，否则两生产者读到同一 head 会偶发丢命令。 */
 uint8_t AppCmd_Push(commandMessage_t message)
 {
     uint8_t  queued = 0U;
@@ -166,7 +102,7 @@ uint8_t AppCmd_Push(commandMessage_t message)
 
     __disable_irq();
 
-    /* 先算出新的 head，用「预满」判断：留一个空位区分空/满。 */
+    /* 预满判断：留一个空位区分空/满。 */
     next = (uint8_t)((commandHead + 1U) % COMMAND_QUEUE_SIZE);
     if (next != commandTail) {
         commandQueue[commandHead] = message;
@@ -179,13 +115,7 @@ uint8_t AppCmd_Push(commandMessage_t message)
     return queued;
 }
 
-/**
- * @brief  构造并写入一条命令的便捷入口。
- * @param  type  命令类型，取值见 app_types.h 的 commandType_t。
- * @param  value 命令参数；无参数的命令传 0.0f。
- * @return 1 表示已入队；0 表示队列已满，本条被丢弃。
- * @note   只是把两个字段打包后转交 AppCmd_Push()。
- */
+/* 构造并写入一条命令。type 取值见 commandType_t；无参数命令 value 传 0.0f。 */
 uint8_t AppCmd_PushValue(commandType_t type, float value)
 {
     commandMessage_t message;
@@ -194,12 +124,8 @@ uint8_t AppCmd_PushValue(commandType_t type, float value)
     return AppCmd_Push(message);
 }
 
-/**
- * @brief  从队列头部取出一条命令。
- * @param  message 输出参数，成功时写入取出的命令。
- * @return 0 表示成功；-1 表示队列为空（此时不修改 *message）。
- * @note   由 AppSpeedLoop_Task50ms() 在中断里循环调用，直到返回 -1。
- */
+/* 从队头取出一条命令。0 成功（message 写入取出命令），-1 空（不修改 *message）。
+   由 AppSpeedLoop_Task50ms() 在中断里循环调用到返回 -1。 */
 int AppCmd_Pop(commandMessage_t *message)
 {
     if (commandHead == commandTail) return -1;
@@ -208,10 +134,7 @@ int AppCmd_Pop(commandMessage_t *message)
     return 0;
 }
 
-/**
- * @brief  查询队列中待处理命令的条数。
- * @return 0 ~ COMMAND_QUEUE_SIZE-1 之间的条目数。
- */
+/* 查询待处理命令条数，0 ~ COMMAND_QUEUE_SIZE-1。 */
 uint8_t AppCmd_Available(void)
 {
     return (uint8_t)((commandHead + COMMAND_QUEUE_SIZE - commandTail)

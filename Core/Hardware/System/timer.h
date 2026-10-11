@@ -1,27 +1,12 @@
-/**
- * @file    timer.h
- * @brief   系统定时器模块头文件
- * @note    TIM5 驱动毫秒计数，TIM6 调度应用层周期任务。
- */
+/* 系统定时器：TIM5 驱动毫秒计数，TIM6 调度应用层周期任务 */
 
 #ifndef __BSP_TIMER_H
-#define __BSP_TIMER_H  /* 头文件保护宏，防止接口重复声明。 */
+#define __BSP_TIMER_H  /* 头文件保护 */
 #include "main.h"
 
-/** 毫秒时间戳 (TIM5 驱动, 1ms 精度, 持续递增) */
-extern volatile uint64_t milliseconds;
+extern volatile uint64_t milliseconds;   /* 毫秒时间戳 (TIM5 驱动, 1ms 精度, 持续递增) */
 
-/**
- * @brief  初始化并启动 TIM6 周期任务调度。
- * @note   TIM6 负责产生 10 ms 传感器、20 ms 按键、20 ms 循迹和
- *         50 ms 控制/遥测任务。
- */
-void Timer_Init(void);
-
-/**
- * @brief  初始化并启动 TIM5 毫秒计数。
- * @note   TIM5 每 1 ms 递增 milliseconds，用于超时和显示周期判断。
- */
-void TIM5_Init(void);
+void Timer_Init(void);   /* 启动 TIM6 中断，供应用层分频调度 */
+void TIM5_Init(void);    /* 启动 TIM5 毫秒计数 */
 
 #endif

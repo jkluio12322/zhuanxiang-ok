@@ -1,7 +1,4 @@
-/**
- * @file    bytestream.c
- * @brief   通用字节流输出实现。
- */
+/* 通用字节流输出实现。 */
 
 #include "bytestream.h"
 
@@ -13,13 +10,7 @@
 /* 字节流格式化输出临时缓冲区大小，单位字节。 */
 #define BYTE_STREAM_PRINTF_BUFFER_SIZE 128U
 
-/**
- * @brief  调用底层写回调发送一段数据。
- * @param  stream 字节流对象指针。
- * @param  data 待发送数据指针。
- * @param  length 待发送字节数。
- * @return 实际写入的字节数。
- */
+/* 调用底层写回调发送一段数据。返回实际写入字节数。 */
 uint16_t ByteStream_Write(ByteStream_t *stream,
                           const uint8_t *data,
                           uint16_t length)
@@ -32,22 +23,13 @@ uint16_t ByteStream_Write(ByteStream_t *stream,
     return stream->write(data, length);
 }
 
-/**
- * @brief  发送单个字节。
- * @param  stream 字节流对象指针。
- * @param  byte 待发送字节。
- */
+/* 发送单个字节。 */
 void ByteStream_SendByte(ByteStream_t *stream, uint8_t byte)
 {
     (void)ByteStream_Write(stream, &byte, 1U);
 }
 
-/**
- * @brief  发送字节数组。
- * @param  stream 字节流对象指针。
- * @param  data 数据指针。
- * @param  length 数据长度，单位字节。
- */
+/* 发送字节数组。 */
 void ByteStream_SendArray(ByteStream_t *stream,
                           const uint8_t *data,
                           uint16_t length)
@@ -55,11 +37,7 @@ void ByteStream_SendArray(ByteStream_t *stream,
     (void)ByteStream_Write(stream, data, length);
 }
 
-/**
- * @brief  发送以 '\0' 结尾的字符串。
- * @param  stream 字节流对象指针。
- * @param  string 待发送字符串。
- */
+/* 发送以 '\0' 结尾的字符串。 */
 void ByteStream_SendString(ByteStream_t *stream, const char *string)
 {
     size_t length;
@@ -78,12 +56,7 @@ void ByteStream_SendString(ByteStream_t *stream, const char *string)
                            (uint16_t)length);
 }
 
-/**
- * @brief  发送固定长度的十进制无符号整数。
- * @param  stream 字节流对象指针。
- * @param  number 待发送整数。
- * @param  length 固定输出位数。
- */
+/* 发送固定长度的十进制无符号整数。 */
 void ByteStream_SendNumber(ByteStream_t *stream,
                            uint32_t number,
                            uint8_t length)
@@ -104,13 +77,7 @@ void ByteStream_SendNumber(ByteStream_t *stream,
     }
 }
 
-/**
- * @brief  使用 va_list 进行有界格式化输出。
- * @param  stream 字节流对象指针。
- * @param  format printf 风格格式字符串。
- * @param  arguments 可变参数列表。
- * @note   固定使用 128 字节栈缓冲区，超长内容由 vsnprintf 截断。
- */
+/* 使用 va_list 进行有界格式化输出（128 字节栈缓冲，超长由 vsnprintf 截断）。 */
 void ByteStream_VPrintf(ByteStream_t *stream,
                         const char *format,
                         va_list arguments)
@@ -125,12 +92,7 @@ void ByteStream_VPrintf(ByteStream_t *stream,
     ByteStream_SendString(stream, string);
 }
 
-/**
- * @brief  使用可变参数进行有界格式化输出。
- * @param  stream 字节流对象指针。
- * @param  format printf 风格格式字符串。
- * @param  ... 可变参数。
- */
+/* 使用可变参数进行有界格式化输出。 */
 void ByteStream_Printf(ByteStream_t *stream, const char *format, ...)
 {
     va_list arguments;

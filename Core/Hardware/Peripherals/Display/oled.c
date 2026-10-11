@@ -1,11 +1,5 @@
-/**
- * @file    oled.c
- * @brief   SSD1306 0.96" OLED 128×64 I2C 驱动 (帧缓冲 + 非阻塞 IT)
- * @note    写屏 = RAM 帧缓冲 (瞬时) + I2C IT 突发 (非阻塞)
- *          I2C2: PB10=SCL, PB11=SDA, address 0x78
- *          字模: 8×16 像素, 4 行 × 16 列
- *          显示区域: 128 列 × 8 页 (每页 8 像素行)
- */
+/* SSD1306 128×64 I2C 驱动：写屏 = RAM 帧缓冲(瞬时) + I2C IT 突发(非阻塞)。
+   I2C2: PB10=SCL, PB11=SDA, 地址 0x78；8×16 字模 4 行×16 列，128 列×8 页。 */
 
 #include "oled.h"
 #include "oled_font.h"
@@ -15,27 +9,20 @@
 
 extern I2C_HandleTypeDef hi2c2;
 
-/* OLED I2C 控制字节：后续数据为命令。 */
+/* OLED I2C 控制字节：0x00=命令 */
 #define OLED_CMD  0x00
 
-/* OLED I2C 控制字节：后续数据为显示数据。 */
+/* OLED I2C 控制字节：0x40=数据 */
 #define OLED_DATA 0x40
 
-/* ── 帧缓冲: 128 列 × 8 页 = 1024 字节 ─────────────── */
+/* 帧缓冲: 128 列 × 8 页 = 1024 字节 */
 static uint8_t oled_fb[1024];
-static uint8_t oled_dirty = 0;
+static uint8_t oled_dirty = 0;   /* 待刷新标志 */
 
-/* IT 发送缓冲: [0]=0x40(数据标识) + [1..1024]=帧缓冲 */
+/* IT 发送缓冲: [0]=0x40 数据标识 + [1..1024]=帧缓冲 */
 static uint8_t oled_tx_buf[1 + 1024];
 
-/* ════════════════════════════════════════════════════════
- * I2C 总线死锁恢复
- * ════════════════════════════════════════════════════════ */
-
-/**
- * @brief  通过软件翻转 SCL 恢复 I2C 总线死锁。
- * @note   当从机将 SDA 持续拉低时，主机发送若干时钟脉冲释放总线。
- */
+/* 软件翻转 SCL 释放被从机拉死的总线 */
 static void I2C_BusRecover(void)
 {
     GPIO_InitTypeDef GPIO_InitStruct = {0};
@@ -69,16 +56,7 @@ static void I2C_BusRecover(void)
     MX_I2C2_Init();
 }
 
-/* ════════════════════════════════════════════════════════
- * 阻塞命令写 (仅初始化用, 不可进 ISR)
- * ════════════════════════════════════════════════════════ */
-
-/**
- * @brief  通过 I2C2 向 SSD1306 写入一条命令。
- * @param  Command SSD1306 命令字节。
- * @return HAL 返回状态。
- * @note   使用阻塞 I2C，仅用于初始化和刷新窗口设置，不可在中断中调用。
- */
+/* 阻塞 I2C 写命令，仅初始化/刷新窗口用，不可进中断 */
 static HAL_StatusTypeDef OLED_WriteCommand(uint8_t Command)
 {
     uint8_t buf[2] = {OLED_CMD, Command};
@@ -92,14 +70,7 @@ static HAL_StatusTypeDef OLED_WriteCommand(uint8_t Command)
     return status;
 }
 
-/**
- * @brief  按指定进制显示固定长度的无符号整数。
- * @param  Line 行号，1 起始。
- * @param  Column 列号，1 起始。
- * @param  Number 待显示数值。
- * @param  Length 输出位数。
- * @param  Base 进制，支持 2、10 和 16。
- */
+/* 按指定进制显示定长无符号整数 (Base 支持 2/10/16) */
 static void OLED_ShowUintBase(uint8_t Line, uint8_t Column,
                               uint32_t Number, uint8_t Length,
                               uint32_t Base)
@@ -122,14 +93,7 @@ static void OLED_ShowUintBase(uint8_t Line, uint8_t Column,
     }
 }
 
-/* ════════════════════════════════════════════════════════
- * 初始化 (阻塞, 仅启动时调用一次)
- * ════════════════════════════════════════════════════════ */
-
-/**
- * @brief  初始化 SSD1306 并清空本地帧缓冲。
- * @note   包含设备探测、命令配置和首次全屏阻塞刷新。
- */
+/* 初始化 SSD1306 并清帧缓冲；阻塞，仅启动时调用一次 */
 void OLED_Init(void)
 {
     HAL_Delay(100);
@@ -154,8 +118,7 @@ void OLED_Init(void)
     OLED_WriteCommand(0x20); OLED_WriteCommand(0x00);  /* 水平寻址模式 */
     OLED_WriteCommand(0xAF);  /* 开启显示 */
 
-    /* 清帧缓冲 */
-    memset(oled_fb, 0, sizeof(oled_fb));
+    memset(oled_fb, 0, sizeof(oled_fb));   /* 清帧缓冲 */
 
     /* 首次全屏刷新 (阻塞) */
     oled_tx_buf[0] = OLED_DATA;
@@ -167,27 +130,13 @@ void OLED_Init(void)
     oled_dirty = 0;
 }
 
-/* ════════════════════════════════════════════════════════
- * 帧缓冲字符渲染 (RAM 操作, 瞬时, ISR 安全)
- * ════════════════════════════════════════════════════════ */
-
-/**
- * @brief  清空 OLED 本地帧缓冲并标记为待刷新。
- */
-void OLED_Clear(void)
+void OLED_Clear(void)   /* 清帧缓冲并标记待刷新 */
 {
     memset(oled_fb, 0, sizeof(oled_fb));
     oled_dirty = 1;
 }
 
-/**
- * @brief  在本地帧缓冲中写入一个 8x16 字符。
- * @param  Line 行号，1 起始。
- * @param  Column 列号，1 起始。
- * @param  Char 字符，有效范围由字模表决定。
- * @note   本函数只修改 RAM 帧缓冲，不直接发送 I2C 数据。
- */
-void OLED_ShowChar(uint8_t Line, uint8_t Column, char Char)
+void OLED_ShowChar(uint8_t Line, uint8_t Column, char Char)   /* 写 8×16 字符到帧缓冲 (只改 RAM，不碰 I2C) */
 {
     uint8_t page = (Line - 1) * 2;               /* 每字符占 2 页 */
     uint8_t col  = (Column - 1) * 8;             /* 每字符 8 像素宽 */
@@ -199,25 +148,13 @@ void OLED_ShowChar(uint8_t Line, uint8_t Column, char Char)
     oled_dirty = 1;
 }
 
-/**
- * @brief  在本地帧缓冲中写入以 '\0' 结尾的 8x16 字符串。
- * @param  Line 起始行号，1 起始。
- * @param  Column 起始列号，1 起始。
- * @param  String 字符串指针。
- */
-void OLED_ShowString(uint8_t Line, uint8_t Column, char *String)
+void OLED_ShowString(uint8_t Line, uint8_t Column, char *String)   /* 写 8×16 字符串 */
 {
     for (uint8_t i = 0; String[i] != '\0'; i++)
         OLED_ShowChar(Line, Column + i, String[i]);
 }
 
-/**
- * @brief  在本地帧缓冲中写入一个 6x8 小字符。
- * @param  Line 页行号，1~8。
- * @param  Column 字符列号，1 起始。
- * @param  Char 要显示的字符，范围外字符显示为空格。
- */
-void OLED_ShowCharSmall(uint8_t Line, uint8_t Column, char Char)
+void OLED_ShowCharSmall(uint8_t Line, uint8_t Column, char Char)   /* 写 6×8 小字符，范围外显示空格 */
 {
     uint8_t index;
     uint8_t page;
@@ -239,41 +176,19 @@ void OLED_ShowCharSmall(uint8_t Line, uint8_t Column, char Char)
     oled_dirty = 1;
 }
 
-/**
- * @brief  在本地帧缓冲中写入以 '\0' 结尾的 6x8 小字符串。
- * @param  Line 页行号，1~8。
- * @param  Column 起始字符列号，1 起始。
- * @param  String 字符串指针。
- */
-void OLED_ShowStringSmall(uint8_t Line, uint8_t Column, char *String)
+void OLED_ShowStringSmall(uint8_t Line, uint8_t Column, char *String)   /* 写 6×8 小字符串 */
 {
     for (uint8_t i = 0; String[i] != '\0'; i++) {
         OLED_ShowCharSmall(Line, (uint8_t)(Column + i), String[i]);
     }
 }
 
-/* ── 数字显示 (基于 OLED_ShowChar, 均为帧缓冲操作) ── */
-
-/**
- * @brief  显示固定长度的无符号十进制数。
- * @param  Line 行号，1 起始。
- * @param  Column 列号，1 起始。
- * @param  Number 待显示数值。
- * @param  Length 十进制位数。
- */
-void OLED_ShowNum(uint8_t Line, uint8_t Column, uint32_t Number, uint8_t Length)
+void OLED_ShowNum(uint8_t Line, uint8_t Column, uint32_t Number, uint8_t Length)   /* 定长无符号十进制 */
 {
     OLED_ShowUintBase(Line, Column, Number, Length, 10U);
 }
 
-/**
- * @brief  显示带符号十进制数。
- * @param  Line 行号，1 起始。
- * @param  Column 符号列号，1 起始。
- * @param  Number 待显示数值。
- * @param  Length 除符号外的十进制位数。
- */
-void OLED_ShowSignedNum(uint8_t Line, uint8_t Column, int32_t Number, uint8_t Length)
+void OLED_ShowSignedNum(uint8_t Line, uint8_t Column, int32_t Number, uint8_t Length)   /* 带符号十进制 */
 {
     uint32_t Number1;
     if (Number >= 0) { OLED_ShowChar(Line, Column, '+'); Number1 = (uint32_t)Number; }
@@ -281,39 +196,17 @@ void OLED_ShowSignedNum(uint8_t Line, uint8_t Column, int32_t Number, uint8_t Le
     OLED_ShowUintBase(Line, (uint8_t)(Column + 1U), Number1, Length, 10U);
 }
 
-/**
- * @brief  显示固定长度的十六进制数。
- * @param  Line 行号，1 起始。
- * @param  Column 列号，1 起始。
- * @param  Number 待显示数值。
- * @param  Length 十六进制位数。
- */
-void OLED_ShowHexNum(uint8_t Line, uint8_t Column, uint32_t Number, uint8_t Length)
+void OLED_ShowHexNum(uint8_t Line, uint8_t Column, uint32_t Number, uint8_t Length)   /* 定长十六进制 */
 {
     OLED_ShowUintBase(Line, Column, Number, Length, 16U);
 }
 
-/**
- * @brief  显示固定长度的二进制数。
- * @param  Line 行号，1 起始。
- * @param  Column 列号，1 起始。
- * @param  Number 待显示数值。
- * @param  Length 二进制位数。
- */
-void OLED_ShowBinNum(uint8_t Line, uint8_t Column, uint32_t Number, uint8_t Length)
+void OLED_ShowBinNum(uint8_t Line, uint8_t Column, uint32_t Number, uint8_t Length)   /* 定长二进制 */
 {
     OLED_ShowUintBase(Line, Column, Number, Length, 2U);
 }
 
-/* ════════════════════════════════════════════════════════
- * 非阻塞刷新: 帧缓冲 → SSD1306 (I2C IT)
- * ════════════════════════════════════════════════════════ */
-
-/**
- * @brief  将帧缓冲发送到 SSD1306 (非阻塞 IT, 主循环任意频率调用)
- * @note   仅在 oled_dirty=1 且 I2C2 空闲时启动传输
- *         1025 字节 ≈ 23ms @ 400kHz, 完成后 I2C 自动恢复 READY
- */
+/* 帧缓冲 → SSD1306 (非阻塞 IT)。dirty=1 且 I2C2 空闲才发；1025 字节 ≈ 23ms @400kHz */
 void OLED_Flush(void)
 {
     if (!oled_dirty) return;
@@ -331,13 +224,8 @@ void OLED_Flush(void)
     oled_dirty = 0;
 }
 
-/**
- * @brief I2C 主机发送完成回调 (HAL 框架, I2C ISR 上下文)
- * @param hi2c 触发回调的 I2C 句柄。
- * @note  仅清除 busy 状态, 下一帧由 OLED_Flush 自动启动
- */
+/* I2C 发送完成回调 (ISR)：HAL 已置 READY，无需额外操作 */
 void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c)
 {
-    /* I2C2 传输完成, HAL 已自动将 State 置为 READY, 无需额外操作 */
     (void)hi2c;
 }

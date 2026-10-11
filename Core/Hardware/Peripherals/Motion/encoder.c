@@ -1,53 +1,24 @@
-/**
- * @file    encoder.c
- * @brief   JGB37-520 霍尔编码器驱动 + 速度/位置解算
- * @note    使用 TIM2/TIM3 编码器模式 (4倍频)
- *          - TIM3: 编码器 (PA6=CH1, PA7=CH2) —— 绑给**右轮**
- *          - TIM2: 编码器 (PA0=CH1, PA1=CH2) —— 绑给**左轮**
- *
- * @warning 哪个定时器绑哪个轮子由 app_motion.c 决定，**以那里为准**：
- *          encoderRight 取 TIM3、encoderLeft 取 TIM2。本文件与 README §2.1 的
- *          早期版本都把这两个写反了；实车调通的是 app_motion.c 的绑定，
- *          别照旧注释"理顺"，改动前先架空车轮验证轮向与编码器符号。
- *
- *          转速计算公式:
- *            RPM = count_increment / (multiple * ratio * ppr) * 1000 / T * 60
- *
- *          轮子参数 (JGB37-520):
- *            multiple = 4 (4倍频), ppr = 11 (编码器线数)
- *            reduction_ratio = 56 (减速比), r = 0.065m (轮子半径)
- */
+/* JGB37-520 霍尔编码器 + 速度/位置解算。TIM2=左轮、TIM3=右轮（以 app_motion.c 为准），4 倍频。
+   RPM = count/(multiple*ratio*ppr)*1000/T*60；multiple=4, ppr=11, ratio=56, r=0.065m。 */
 
 #include "encoder.h"
 
-/* 圆周率常量，用于把轮子圈数换算为线速度和距离。 */
+/* 圆周率，用于把圈数换算为线速度和距离 */
 #define PI  3.14159265358979323846f
 
 extern TIM_HandleTypeDef htim2;
 extern TIM_HandleTypeDef htim3;
 
-/** 编码器定时器溢出计数器 (用于长距离累积, 当前未使用) */
-volatile int32_t overflow_count_TIM2 = 0;
+volatile int32_t overflow_count_TIM2 = 0;   /* 溢出计数，当前未用 */
 volatile int32_t overflow_count_TIM3 = 0;
 
-/**
- * @brief  启动 TIM2、TIM3 的编码器接口。
- * @note   本函数只启动编码器计数；当前速度解算使用周期差分，
- *         不依赖定时器溢出中断。
- */
-void Encoder_Init_TIM_All(void)
+void Encoder_Init_TIM_All(void)   /* 启动 TIM2/TIM3 编码器；速度解算用周期差分，不依赖溢出中断 */
 {
     HAL_TIM_Encoder_Start(&htim2, TIM_CHANNEL_ALL);
     HAL_TIM_Encoder_Start(&htim3, TIM_CHANNEL_ALL);
 }
 
-/**
- * @brief  读取编码器计数器相对上一次调用的有符号增量。
- * @param  TIMx 编码器定时器 TIM2 或 TIM3。
- * @return 16 位有符号脉冲增量，正值和负值分别表示两个旋转方向。
- * @note   函数内部为两个定时器分别保存上次 CNT 值。
- */
-int16_t Encoder_Get(TIM_TypeDef *TIMx)
+int16_t Encoder_Get(TIM_TypeDef *TIMx)   /* 有符号脉冲增量（内部按定时器分别保存上次 CNT） */
 {
     static uint16_t last_TIM2 = 0;
     static uint16_t last_TIM3 = 0;
@@ -70,12 +41,7 @@ int16_t Encoder_Get(TIM_TypeDef *TIMx)
 }
 /* TIM2/TIM3 溢出 ISR 已移至 stm32f1xx_it.c (CubeMX 管理) */
 
-/**
- * @brief  初始化编码器数据结构
- * @param  ecd   编码器对象指针
- * @param  param 编码器物理参数 (倍频/减速比/线数/轮半径)
- */
-void initEncoder(Encoder *ecd, const Parameter param)
+void initEncoder(Encoder *ecd, const Parameter param)   /* 初始化编码器对象 */
 {
     ecd->param = param;
     ecd->velocity.angular = 0;      /* 角速度 (RPM) */
@@ -89,39 +55,24 @@ void initEncoder(Encoder *ecd, const Parameter param)
     ecd->counter.count_total = 0;   /* 总脉冲累积 */
 }
 
-/**
- * @brief  更新编码器: 读取脉冲并计算速度/位置 (简化版, 仅用当前值)
- * @param  ecd         编码器对象指针
- * @param  loop_period 采样周期 (ms)
- * @param  TIMx        编码器定时器 (TIM3=左轮, TIM2=右轮)
- *
- * @note   速度计算:
- *           RPM = count / (multiple * ratio * ppr) * (1000/T) * 60
- *           线速度 (m/s) = RPM / 60 * PI * 2 * r
- *         位置计算:
- *           圈数 = total_count / (multiple * ratio * ppr)
- *           角度 = 圈数 * 360
- *           距离 = 圈数 * PI * 2 * r  (单位: m)
- */
+/* 读脉冲并算速度/位置。RPM=count/(multiple*ratio*ppr)*1000/T*60，
+   线速度=RPM/60*PI*2*r，圈数=total/(multiple*ratio*ppr)。 */
 void updateEncoderLoopSimpleVersion(Encoder *ecd, uint16_t loop_period, TIM_TypeDef *TIMx)
 {
     ecd->counter.count_now = Encoder_Get(TIMx);
 
-    /* TIM3 那一路正转时计数为负，取反统一到"前进为正"。
-       这里按**定时器**描述而不是按轮子——TIM3 绑给右轮，见 app_motion.c。 */
+    /* TIM3 一路正转计负，取反统一为"前进为正"（TIM3 绑右轮，见 app_motion.c） */
     if (TIMx == TIM3)
         ecd->counter.count_now = -ecd->counter.count_now;
 
     ecd->counter.count_increment = ecd->counter.count_now;
     ecd->counter.count_total += ecd->counter.count_increment;
 
-    /* --- 位置解算 --- */
     ecd->position.rotations = (double)ecd->counter.count_total
         / ((double)ecd->param.multiple * ecd->param.reduction_ratio * ecd->param.ppr);
     ecd->position.angle = ecd->position.rotations * 360.0;
     ecd->position.distance = ecd->position.rotations * PI * 2.0 * ecd->param.r;
 
-    /* --- 速度解算 (RPM & m/s) --- */
     ecd->velocity.angular = (float)(ecd->counter.count_increment
         / ((float)ecd->param.multiple * ecd->param.reduction_ratio * ecd->param.ppr)
         * 1000.0 / loop_period * 60);

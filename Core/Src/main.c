@@ -1,11 +1,4 @@
-/* USER CODE BEGIN Header */
-/**
-  ******************************************************************************
-  * @file           : main.c
-  * @brief          : BlueCar application entry and task scheduling.
-  ******************************************************************************
-  */
-/* USER CODE END Header */
+/* BlueCar 程序入口与任务编排。 */
 
 #include "main.h"
 #include "dma.h"
@@ -44,16 +37,11 @@ void SystemClock_Config(void);
 
 /* USER CODE END 0 */
 
-/**
- * @brief  程序入口。
- * @return 正常情况下不会返回。
- * @note   完成 HAL、CubeMX 外设和应用模块初始化后进入主循环。
- *         主循环只做延后任务（遥测发送、OLED 刷新）和串口命令行解析——
- *         中断里不做 snprintf 与 I2C，避免压住串口接收。
- */
+/* 程序入口，正常情况下不会返回。
+   主循环只做延后任务（遥测发送、OLED 刷新）和串口命令行解析——
+   中断里不做 snprintf 与 I2C，避免压住串口接收。 */
 int main(void)
 {
-  /* HAL 和 CubeMX 外设初始化。 */
   HAL_Init();
 
   SystemClock_Config();
@@ -71,7 +59,6 @@ int main(void)
   MX_USART1_UART_Init();
 
   /* USER CODE BEGIN 2 */
-  /* 初始化显示、电机、传感器、编码器、通信、遥测与命令行模块。 */
   OLED_Init();
   HAL_Delay(APP_OLED_BOOT_DELAY_MS);
 
@@ -91,7 +78,6 @@ int main(void)
   AppConsole_Init();
   Buzzer_Init();
 
-    /* 初始化应用层状态和命令队列。 */
   AppState_Init();
   AppCmd_Init();
   AppTelemetry_Init();
@@ -115,31 +101,22 @@ int main(void)
   while (1)
   {
     /* USER CODE BEGIN 3 */
-    /* 遥测发送和 OLED 刷新由调度器置标志，在这里执行；
-       中断里不做 snprintf 和 I2C，避免压住串口接收。 */
-    AppDeferred_Run();
+    AppDeferred_Run();       /* 遥测发送和 OLED 刷新（由调度器置标志） */
 
-    /* 串口命令行的解析与响应。 */
-    AppConsole_Process();
+    AppConsole_Process();    /* 串口命令行解析与响应 */
     AppConsole_Flush();
 
-    /* OLED 缓冲写入。 */
-    OLED_Flush();
+    OLED_Flush();            /* OLED 缓冲写入 */
     /* USER CODE END 3 */
   }
 }
 
-/**
- * @brief  配置 STM32F103 系统时钟。
- * @note   使用 8 MHz 外部晶振，经 PLL 九倍频得到 72 MHz 系统时钟；
- *         APB1 二分频为 36 MHz，APB2 保持 72 MHz。
- */
+/* 8 MHz 外部晶振经 PLL 九倍频得到 72 MHz 系统时钟；APB1 二分频 36 MHz，APB2 保持 72 MHz。 */
 void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
-  /* 使用 8 MHz 外部晶振，经 PLL 倍频得到 72 MHz 系统时钟。 */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;
@@ -165,10 +142,7 @@ void SystemClock_Config(void)
   }
 }
 
-/**
- * @brief  HAL 或应用初始化失败时进入的错误处理函数。
- * @note   关闭全局中断后停留在死循环，便于调试器定位错误现场。
- */
+/* HAL 或应用初始化失败时进入：关全局中断后停在这里，便于调试器定位现场。 */
 void Error_Handler(void)
 {
   __disable_irq();
@@ -178,12 +152,7 @@ void Error_Handler(void)
 }
 
 #ifdef USE_FULL_ASSERT
-/**
- * @brief  启用完整断言时的参数检查失败回调。
- * @param  file 触发断言的源文件名。
- * @param  line 触发断言的行号。
- * @note   当前实现不执行额外动作，只显式忽略参数，便于在此处设置断点。
- */
+/* 完整断言下的参数检查失败回调。当前不执行额外动作，便于在此设断点。 */
 void assert_failed(uint8_t *file, uint32_t line)
 {
   (void)file;

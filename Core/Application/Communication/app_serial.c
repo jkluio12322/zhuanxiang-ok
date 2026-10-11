@@ -1,16 +1,7 @@
-/**
- * @file    serial.c
- * @brief   USART1 串口调试/VOFA+ 通信模块 (中断 TX, 非阻塞)
- * @note    USART1: PA9=TX, PA10=RX, 115200bps
- *
- *          数据流:
- *            fputc/printf -> TX RingBuf (1024B) -> HAL IT buffer (256B)
- *            -> USART1 TX -> TX Complete ISR -> 自动接力下一块
- *
- *          生产者为主循环或周期任务，消费者为 USART1 发送完成中断。
- *          多个生产者通过 PRIMASK 临界区串行化，避免并发修改环形缓冲区。
- *          环形缓冲区满时静默丢弃剩余字节，保证控制循环不被串口阻塞。
- */
+/* USART1 串口调试/VOFA 通信：fputc/printf -> TX 环形缓冲(1024B) -> HAL IT 缓冲(256B)
+   -> TX Complete ISR 自动接力下一块。生产者主循环/任务，消费者发送完成中断，多生产者靠
+   PRIMASK 临界区串行化；环满静默丢弃，保证控制循环不被串口阻塞。USART1: PA9=TX PA10=RX
+   115200bps。 */
 
 #include "app_serial.h"
 #include "app_console.h"
@@ -23,7 +14,6 @@ static UART_HandleTypeDef *serial_uart = NULL;
 /* 单字节接收中断的落点，由 HAL_UART_RxCpltCallback 转交给命令行模块。 */
 static uint8_t serialRxByte = 0U;
 
-/* TX 环形缓冲区 (生产者: 主循环/任务, 消费者: UART TX Complete ISR)。 */
 /* 串口发送环形缓冲区容量，单位字节。 */
 #define TX_RING_SIZE  1024
 static uint8_t tx_ring_buf[TX_RING_SIZE];
@@ -34,16 +24,10 @@ static RingBuf  tx_ring;
 static uint8_t  txLinearBuf[TX_LINEAR_BUF_SIZE];
 static volatile uint8_t txBusy = 0;
 
-/** USART1 通用字节流适配器。 */
+/* USART1 通用字节流适配器。 */
 static ByteStream_t serialByteStream;
 
-/**
- * @brief  将通用字节流写入 USART1 非阻塞环形发送缓冲区。
- * @param  data 待发送数据指针。
- * @param  length 待发送字节数。
- * @return 实际写入缓冲区的字节数。
- * @note   底层继续使用 Serial_Write()，不会在应用中阻塞等待发送完成。
- */
+/* 将通用字节流写入 USART1 非阻塞环形发送缓冲。 */
 static uint16_t Serial_ByteStreamWrite(const uint8_t *data, uint16_t length)
 {
     int written = Serial_Write(data, length);
@@ -51,10 +35,7 @@ static uint16_t Serial_ByteStreamWrite(const uint8_t *data, uint16_t length)
     return (written > 0) ? (uint16_t)written : 0U;
 }
 
-/**
- * @brief  关闭中断并返回进入临界区前的 PRIMASK 状态。
- * @return 进入临界区前的 PRIMASK 值。
- */
+/* 关中断并返回进入临界区前的 PRIMASK 状态。 */
 static uint32_t Serial_EnterCritical(void)
 {
     uint32_t primask = __get_PRIMASK();
@@ -63,10 +44,7 @@ static uint32_t Serial_EnterCritical(void)
     return primask;
 }
 
-/**
- * @brief  根据保存的 PRIMASK 状态恢复中断。
- * @param  primask Serial_EnterCritical 返回的 PRIMASK 值。
- */
+/* 按保存的 PRIMASK 状态恢复中断（原为 0 才重新开）。 */
 static void Serial_ExitCritical(uint32_t primask)
 {
     if (primask == 0U) {
@@ -74,13 +52,8 @@ static void Serial_ExitCritical(uint32_t primask)
     }
 }
 
-/* ---- 内部: 从环形缓冲区取数据并启动下一批中断发送 ---- */
-/**
- * @brief  从发送环形缓冲区取出一批数据并启动下一次中断发送。
- * @note   使用 HAL_UART_Transmit_IT，不配置发送 DMA；当前发送未完成时直接返回。
- *         调用方必须持有串口临界区，确保环形缓冲区读取和发送状态更新不会被
- *         其它生产者或发送完成中断并发修改。
- */
+/* 从发送环形缓冲取一批数据并启动下一次中断发送。当前发送未完成时直接返回；
+   调用方须持串口临界区，保证环形缓冲读取与发送状态更新不被并发修改。 */
 static void Serial_StartTransmit(void)
 {
     if (txBusy) return;
@@ -99,10 +72,7 @@ static void Serial_StartTransmit(void)
     HAL_UART_Transmit_IT(serial_uart, txLinearBuf, n);
 }
 
-/**
- * @brief  串口初始化: 初始化 TX 环形缓冲区并启动单字节接收中断
- * @param  huart 用于收发的 UART 句柄。
- */
+/* 初始化 TX 环形缓冲并启动单字节接收中断。 */
 void Serial_Init(UART_HandleTypeDef *huart)
 {
     serial_uart = huart;
@@ -114,12 +84,8 @@ void Serial_Init(UART_HandleTypeDef *huart)
     HAL_UART_Receive_IT(serial_uart, &serialRxByte, 1);
 }
 
-/**
- * @brief  UART 接收完成回调（中断上下文）
- * @param  huart 触发回调的 UART 句柄。
- * @note   本工程只用 USART1；USART2 保留给蓝牙但应用未使用。
- *         回调里只把字节转交给命令行模块并重新装填，不做任何解析。
- */
+/* UART 接收完成回调（中断上下文）。本工程只用 USART1；USART2 保留给蓝牙未使用。
+   只转交字节并重新装填，不做解析。 */
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
     if (huart->Instance == USART1) {
@@ -128,11 +94,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
     }
 }
 
-/**
- * @brief  UART 发送完成回调（中断上下文）
- * @param  huart 触发回调的 UART 句柄。
- * @note   TX 完成后接力发送环形缓冲区里剩下的数据。
- */
+/* UART 发送完成回调（中断上下文）：TX 完成后接力发送环形缓冲剩余数据。 */
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 {
     if (huart->Instance == USART1) {
@@ -140,12 +102,7 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
     }
 }
 
-/**
- * @brief  批量写入数据到 TX 环形缓冲区 (非阻塞)
- * @param  data 数据指针
- * @param  len  字节数
- * @return 实际写入的字节数，范围为 0~len；空间不足时返回已写入数量。
- */
+/* 批量写入数据到 TX 环形缓冲（非阻塞）。返回实际写入字节数 0~len，空间不足时返回已写入数。 */
 int Serial_Write(const uint8_t *data, uint16_t len)
 {
     uint16_t written = 0;
@@ -160,52 +117,31 @@ int Serial_Write(const uint8_t *data, uint16_t len)
     return written;
 }
 
-/**
- * @brief  发送单字节 (非阻塞, 写入 ring buf)
- * @param  Byte 待发送字节。
- * @note   缓冲区满时静默丢弃该字节。
- */
+/* 发送单字节（非阻塞，写环形缓冲）。缓冲满时静默丢弃。 */
 void Serial_SendByte(uint8_t Byte)
 {
     ByteStream_SendByte(&serialByteStream, Byte);
 }
 
-/**
- * @brief  发送字节数组 (非阻塞)
- * @param  Array 数据指针。
- * @param  Length 数据长度，单位字节。
- */
+/* 发送字节数组（非阻塞）。 */
 void Serial_SendArray(uint8_t *Array, uint16_t Length)
 {
     ByteStream_SendArray(&serialByteStream, Array, Length);
 }
 
-/**
- * @brief  发送字符串 (非阻塞)
- * @param  String 以 '\0' 结尾的字符串。
- * @note   环形缓冲区满时在当前位置停止，剩余字符不会发送。
- */
+/* 发送字符串（非阻塞）。环形缓冲满时在当前位置停止，剩余字符不发送。 */
 void Serial_SendString(char *String)
 {
     ByteStream_SendString(&serialByteStream, String);
 }
 
-/**
- * @brief  发送无符号整数
- * @param  Number 待发送数值。
- * @param  Length 固定输出位数。
- */
+/* 发送无符号整数（固定位数）。 */
 void Serial_SendNumber(uint32_t Number, uint8_t Length)
 {
     ByteStream_SendNumber(&serialByteStream, Number, Length);
 }
 
-/**
- * @brief  格式化串口打印。
- * @param  format printf 风格格式字符串。
- * @param  ... 可变参数。
- * @note   通过通用 ByteStream 使用 128 字节有界缓冲区。
- */
+/* 格式化串口打印（经 ByteStream 用 128 字节有界缓冲）。 */
 void Serial_Printf(char *format, ...)
 {
     va_list arg;
@@ -215,12 +151,7 @@ void Serial_Printf(char *format, ...)
     va_end(arg);
 }
 
-/**
- * @brief  printf 重定向 → 非阻塞 Serial_Write
- * @param  ch 待输出字符。
- * @param  f 标准流指针，函数不使用。
- * @return 传入的字符值。
- */
+/* printf 重定向 -> 非阻塞 Serial_Write。 */
 int fputc(int ch, FILE *f)
 {
     (void)f;
@@ -228,11 +159,7 @@ int fputc(int ch, FILE *f)
     return ch;
 }
 
-/**
- * @brief  TX 完成回调 (USART1 TX Complete ISR → HAL_UART_TxCpltCallback 调用)
- * @note   检查 ring buf 中是否有待发数据, 有则接力启动下一次发送
- *         该函数运行在中断上下文，只允许执行缓冲区操作和启动下一次发送。
- */
+/* TX 完成回调：清 busy 并检查环形缓冲有无待发数据，有则接力启动下一批（中断上下文）。 */
 void Serial_TX_Done(void)
 {
     uint32_t primask = Serial_EnterCritical();

@@ -1,20 +1,12 @@
-/**
- * @file    app_types.h
- * @brief   应用层共享的枚举与结构体定义。
- * @note    只依赖 <stdint.h>，不包含任何硬件头。
- */
+/* 应用层共享的枚举与结构体定义。只依赖 <stdint.h>，不包含任何硬件头。 */
 #ifndef __APP_TYPES_H
 #define __APP_TYPES_H
 
 #include <stdint.h>
 
-/**
- * @brief  命令队列里的命令类型。
- * @note   两个来源都往同一个队列里放：按键任务（app_cmd.c）和串口命令行
- *         （app_console.c）。执行方是 50 ms 控制任务（app_speedloop.c）。
- * @note   删命令时**不能对号入座地删枚举**——有些枚举值命令行已经不用了，
- *         但按键路径还在发。当前每个值的来源见注释。
- */
+/* 命令队列里的命令类型。两个来源（按键 app_cmd.c / 串口 app_console.c）都往同一队列放，
+   执行方是 50 ms 控制任务(app_speedloop.c)。枚举值不能对号入座删——有的命令行已不用但
+   按键仍在发；各值来源见行尾注释。 */
 typedef enum {
     commandNone = 0,
     commandStart,            /* 按键：KEY2（循迹/PWM循迹）；命令行已不提供 */

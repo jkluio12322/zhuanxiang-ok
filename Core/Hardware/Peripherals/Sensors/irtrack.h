@@ -1,42 +1,26 @@
-/**
- * @file    irtrack.h
- * @brief   八路数字循迹传感器接口。
- */
+/* 八路数字循迹传感器接口 */
+
 #ifndef __IRTRACK_H
 #define __IRTRACK_H
 
 #include "main.h"
 
-/* 循迹通道数量。 */
+/* 通道数量 */
 #define IRTRACK_CHANNELS  8
 
-/**
- * @brief  八路循迹采样、位置和计算结果。
- */
+/* 八路采样与计算结果 */
 typedef struct {
-    uint8_t   raw[IRTRACK_CHANNELS];    /* 物理逻辑值：0=黑线，1=白线。 */
-    int8_t    weight_sum;               /* 各通道权重之和。 */
-    float     position;                 /* 归一化位置，范围约为 -7...+7。 */
-    uint8_t   black_count;              /* 检测到黑线的通道数量。 */
-    uint8_t   pattern;                  /* 黑线掩码，bit0 对应 IR1。 */
+    uint8_t   raw[IRTRACK_CHANNELS];    /* 0=黑线，1=白线 */
+    int8_t    weight_sum;               /* 权重和 */
+    float     position;                 /* 归一化位置，约 -7..+7 */
+    uint8_t   black_count;              /* 黑线通道数 */
+    uint8_t   pattern;                  /* 黑线掩码，bit0=IR1 */
 } IRTrack_Data_t;
 
-/* 最新一次循迹采样结果。 */
-extern IRTrack_Data_t ir_data;
+extern IRTrack_Data_t ir_data;   /* 最新采样结果 */
 
-/**
- * @brief  初始化循迹数据。
- */
-void IRTrack_Init(void);
-
-/**
- * @brief  采集八路红外输入。
- */
-void IRTrack_Read(void);
-
-/**
- * @brief  计算黑线图案、位置、通道数量和权重和。
- */
-void IRTrack_Compute(void);
+void IRTrack_Init(void);     /* 初始化 */
+void IRTrack_Read(void);     /* 采集八路输入 */
+void IRTrack_Compute(void);  /* 计算图案/位置/通道数/权重和 */
 
 #endif

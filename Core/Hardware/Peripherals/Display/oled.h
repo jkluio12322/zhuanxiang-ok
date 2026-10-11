@@ -1,96 +1,22 @@
-/**
- * @file    oled.h
- * @brief   SSD1306 0.96" OLED 128×64 I2C 显示屏驱动 (帧缓冲 + 非阻塞 IT)
- */
+/* SSD1306 128×64 I2C 显示屏驱动 (帧缓冲 + 非阻塞 IT) */
 
 #ifndef __BSP_OLED_H
-#define __BSP_OLED_H  /* 头文件保护宏，防止 OLED 接口重复声明。 */
+#define __BSP_OLED_H  /* 头文件保护 */
 #include "main.h"
 
-/* SSD1306 在 8 位 I2C 地址格式下的设备地址。 */
+/* SSD1306 8 位 I2C 地址 */
 #define OLED_ADDR  0x78
 
-/**
- * @brief  初始化 OLED 显示屏和帧缓冲。
- */
-void OLED_Init(void);
-
-/**
- * @brief  清空 OLED 帧缓冲。
- */
-void OLED_Clear(void);
-
-/**
- * @brief  在指定行列显示一个字符。
- * @param  Line 页行号，1~8。
- * @param  Column 字符列号，1 起始。
- * @param  Char 要显示的字符。
- */
-void OLED_ShowChar(uint8_t Line, uint8_t Column, char Char);
-
-/**
- * @brief  在指定行列显示字符串。
- * @param  Line 页行号，1~8。
- * @param  Column 起始字符列号，1 起始。
- * @param  String 以 '\0' 结尾的字符串。
- */
-void OLED_ShowString(uint8_t Line, uint8_t Column, char *String);
-
-/**
- * @brief  在指定行列显示一个 6x8 小字符。
- * @param  Line 页行号，1~8。
- * @param  Column 字符列号，1 起始。
- * @param  Char 要显示的字符。
- */
-void OLED_ShowCharSmall(uint8_t Line, uint8_t Column, char Char);
-
-/**
- * @brief  在指定行列显示 6x8 小字符串。
- * @param  Line 页行号，1~8。
- * @param  Column 起始字符列号，1 起始。
- * @param  String 以 '\0' 结尾的字符串。
- */
-void OLED_ShowStringSmall(uint8_t Line, uint8_t Column, char *String);
-
-/**
- * @brief  显示固定长度的无符号十进制数。
- * @param  Line 行号，1 起始。
- * @param  Column 列号，1 起始。
- * @param  Number 待显示数值。
- * @param  Length 十进制位数。
- */
-void OLED_ShowNum(uint8_t Line, uint8_t Column, uint32_t Number, uint8_t Length);
-
-/**
- * @brief  在指定行列显示有符号十进制数。
- * @param  Line 行号，1 起始。
- * @param  Column 列号，1 起始。
- * @param  Number 待显示数值。
- * @param  Length 十进制位数。
- */
-void OLED_ShowSignedNum(uint8_t Line, uint8_t Column, int32_t Number, uint8_t Length);
-
-/**
- * @brief  在指定行列显示十六进制数。
- * @param  Line 行号，1 起始。
- * @param  Column 列号，1 起始。
- * @param  Number 待显示数值。
- * @param  Length 十六进制位数。
- */
-void OLED_ShowHexNum(uint8_t Line, uint8_t Column, uint32_t Number, uint8_t Length);
-
-/**
- * @brief  在指定行列显示二进制数。
- * @param  Line 行号，1 起始。
- * @param  Column 列号，1 起始。
- * @param  Number 待显示数值。
- * @param  Length 二进制位数。
- */
-void OLED_ShowBinNum(uint8_t Line, uint8_t Column, uint32_t Number, uint8_t Length);
-
-/**
- * @brief  非阻塞刷新帧缓冲到 SSD1306。
- */
-void OLED_Flush(void);
+void OLED_Init(void);                                               /* 初始化 + 清帧缓冲 */
+void OLED_Clear(void);                                              /* 清帧缓冲 */
+void OLED_ShowChar(uint8_t Line, uint8_t Column, char Char);        /* 写 8×16 字符 */
+void OLED_ShowString(uint8_t Line, uint8_t Column, char *String);   /* 写 8×16 字符串 */
+void OLED_ShowCharSmall(uint8_t Line, uint8_t Column, char Char);   /* 写 6×8 小字符 (Line 1~8) */
+void OLED_ShowStringSmall(uint8_t Line, uint8_t Column, char *String);  /* 写 6×8 小字符串 */
+void OLED_ShowNum(uint8_t Line, uint8_t Column, uint32_t Number, uint8_t Length);       /* 定长无符号十进制 */
+void OLED_ShowSignedNum(uint8_t Line, uint8_t Column, int32_t Number, uint8_t Length);  /* 带符号十进制 */
+void OLED_ShowHexNum(uint8_t Line, uint8_t Column, uint32_t Number, uint8_t Length);    /* 定长十六进制 */
+void OLED_ShowBinNum(uint8_t Line, uint8_t Column, uint32_t Number, uint8_t Length);    /* 定长二进制 */
+void OLED_Flush(void);                                              /* 帧缓冲 → SSD1306 (非阻塞 IT) */
 
 #endif

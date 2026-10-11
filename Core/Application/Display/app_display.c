@@ -1,20 +1,5 @@
-/**
- * @file    app_display.c
- * @brief   OLED 开机页与三个模式状态页。
- *
- * @note    文件内排序：核心任务放最上方，辅助函数与对外接口放下面。
- *
- * @note    本模块只有两类工作：开机时等待用户选模式，以及运行中每 100 ms
- *          刷新一页状态。所有内容都来自只读快照（AppState()、
- *          AppTracking_Output()、telemetryData），不读也不写任何硬件状态。
- *
- * @note    执行上下文：AppDisplay_Task100ms() 由 AppDeferred_Run() 在主循环里
- *          调用——OLED 走 I2C，可能耗时上 ms，绝不能放进中断。
- *          而 AppDisplay_BootConfig() 是阻塞式的，只在开机上电阶段运行一次。
- *
- * @note    I2C 写屏是「先写缓冲、再 Flush」两段式：本模块只往 OLED 的帧缓冲
- *          里写字符，真正的总线传输由 main.c 每轮调 OLED_Flush() 完成。
- */
+/* OLED 开机页与三个模式状态页。只读快照（AppState/Tracking/telemetry），不读不写硬件状态。
+   100 ms 任务在主循环（I2C 不能放中断）；BootConfig 阻塞式只在开机跑。写屏是先写缓冲再 Flush。 */
 
 #include "app_display.h"
 #include "app_cmd.h"
@@ -31,22 +16,14 @@
 
 #include <stdio.h>
 
-/* ── 辅助函数前置声明（定义在文件下方） ───────────────────────────── */
 static void showVoltageLine(uint8_t row);
 static void cycleBootMode(void);
 static void showTrackPage(void);
 static void showPwmSpeedPage(void);
 static void showPwmTrackPage(void);
 
-/* ══════════════ 核心任务 ══════════════ */
-
-/**
- * @brief  100 ms 显示任务：按当前模式刷新对应的一页 —— 本文件核心。
- * @note   由 AppDeferred_Run() 在主循环调用（OLED 走 I2C，不能放中断）。
- *         整屏重绘前先 OLED_Clear()，不存在残影问题。
- * @note   三个模式各占一个 static 函数，而不是塞进一个长函数里用 if-else
- *         包住整段绘制代码——这样每页的字段布局能一眼看清。
- */
+/* 100 ms 显示任务：按当前模式刷新一页。主循环里调（I2C 不能放中断）。
+   三模式各占一个 static 函数，每页字段布局一眼看清。 */
 void AppDisplay_Task100ms(void)
 {
     OLED_Clear();
@@ -60,14 +37,7 @@ void AppDisplay_Task100ms(void)
     }
 }
 
-/* ══════════════ 辅助函数 ══════════════ */
-
-/**
- * @brief  在指定行显示「命令电压 L/R」。
- * @param  row 显示行号（OLED 的行，从 1 开始）。
- * @note   三个模式页都要显示这一行，抽出来避免同一段 snprintf 抄三遍。
- *         内容来自遥测快照，是 PWM 百分比按标称电压换算出来的近似值。
- */
+/* 在指定行显示「命令电压 L/R」。三页共用；内容来自遥测快照，是 PWM 百分比按标称电压换算的近似值。 */
 static void showVoltageLine(uint8_t row)
 {
     char buffer[OLED_TEXT_BUFFER_SIZE];
@@ -78,35 +48,21 @@ static void showVoltageLine(uint8_t row)
     OLED_ShowStringSmall(row, 1, buffer);
 }
 
-/**
- * @brief  切到模式循环里的下一个模式并复位。
- * @note   模式顺序由 AppState_NextMode() 统一给出，与按键路径共用一份逻辑。
- * @note   必须跟着调 AppSpeedLoop_ResetModeState()：切换模式要停电机、
- *         复位循迹状态机和两个测试模式，否则切换后残留的输出会立刻驱动电机。
- * @note   开机阶段调度器已经放行，但命令队列还没有被消费
- *         （控制任务要等下一次 50 ms 时隙），所以这里直接改状态而不是发命令。
- */
+/* 切到下一个模式并复位。必须跟 ResetModeState（停电机/复位循迹/测试），否则残留输出会立刻驱电机。
+   开机阶段命令队列还没消费，这里直接改状态而非发命令。 */
 static void cycleBootMode(void)
 {
     uint32_t primask = __get_PRIMASK();
 
-    /* 临界区：这两句写的 mode 与 PID/循迹/测试模式对象，同时也是 TIM6 里的
-       控制任务在碰的东西。开机阶段 running 恒为 0、两边写的都是同一组复位值，
-       所以本来也不会出事——但那是巧合，把写序列整体挡住中断就不靠巧合了。 */
+    /* 临界区：这里写的 mode 与 PID/循迹/测试对象，也是 TIM6 控制任务在碰的东西。开机 running 恒 0、
+       两边写的是同一组复位值，本来不会出事——但那是巧合，挡住中断就不靠巧合。 */
     __disable_irq();
     AppState_SetMode(AppState_NextMode());
     AppSpeedLoop_ResetModeState();
     __set_PRIMASK(primask);
 }
 
-/**
- * @brief  读一次毫秒时间戳（TIM5 ISR 在自增，64 位读会撕裂）。
- * @return 一致的 64 位时间戳。
- * @note   `milliseconds` 是 volatile uint64_t，在 TIM5 中断里自增；主循环里直接
- *         读会被拆成两条 32 位 loads，中断插在中间就得到撕裂值。开机页的 100 ms
- *         重绘判据虽然只在乎低位，但撕裂值可能让判据跳一下，所以在这里统一用
- *         临界区读——只在开机页用，成本可以忽略。
- */
+/* 读一致的 64 位时间戳。milliseconds 是 volatile uint64_t，直接读会被拆成两条 32 位 load 撕裂。 */
 static uint64_t bootTick(void)
 {
     uint32_t primask = __get_PRIMASK();
@@ -119,22 +75,15 @@ static uint64_t bootTick(void)
     return value;
 }
 
-/**
- * @brief  显示循迹页。
- * @note   四行依次是：运行状态与圈数进度、八路红外状态位、循迹差速、命令电压。
- *         IR 那一行把八路开关量铺成 0/1 串，方便现场确认哪几路压线。
- * @note   八路状态取自循迹快照的 pattern 字段，**不直接读 ir_data**——
- *         驱动层全局只允许 app_tracking.c 读，显示要用就从快照转发，
- *         这样传感器只有一处解读，显示和控制看到的必然是同一份采样。
- */
+/* 显示循迹页。IR 那行取自循迹快照 pattern，不直接读 ir_data——传感器只允许 app_tracking.c 读，
+   显示与控制看同一份采样。 */
 static void showTrackPage(void)
 {
     char buffer[OLED_TEXT_BUFFER_SIZE];
     char irBits[IRTRACK_CHANNELS + 1U];
     uint8_t pattern = AppTracking_Output()->pattern;
 
-    /* 保持原有的显示习惯：压黑显示 '0'、白线显示 '1'。
-       pattern 的位是「压黑置 1」，所以这里取反。 */
+    /* 保持原有的显示习惯：压黑显示 '0'、白线显示 '1'。pattern 的位是「压黑置 1」，所以取反。 */
     for (uint8_t i = 0; i < IRTRACK_CHANNELS; i++) {
         irBits[i] = ((pattern >> i) & 0x01U) ? '0' : '1';
     }
@@ -155,13 +104,7 @@ static void showTrackPage(void)
     showVoltageLine(4);
 }
 
-/**
- * @brief  显示 PWM 速度测试页。
- * @note   目标转速按当前相位显示正负：反转相位显示成负数，
- *         便于和实际轮向对照。
- * @note   手动转速模式下自动相位已停，相位字段不再变化，
- *         但页面仍然有效——目标值是从 AppState 读的，跟着命令走。
- */
+/* 显示 PWM 速度测试页。目标转速按相位显示正负，便于与轮向对照。手动模式下相位不变，目标仍跟命令走。 */
 static void showPwmSpeedPage(void)
 {
     char buffer[OLED_TEXT_BUFFER_SIZE];
@@ -182,13 +125,8 @@ static void showPwmSpeedPage(void)
     showVoltageLine(3);
 }
 
-/**
- * @brief  显示 PWM 循迹测试页。
- * @note   第二行把当前注入的八路图案按 IR1→IR8 逐位展开（1 = 压黑），
- *         这是本页最要看的东西——它决定循迹模块收到什么数据。
- * @note   本模式的参数（图案、基础占空比）**只能用按键改**，
- *         串口命令行不再提供对应命令。
- */
+/* 显示 PWM 循迹测试页。第二行把注入图案按 IR1→IR8 逐位展开（1=压黑），是本页最要看的东西。
+   参数（图案、基础占空比）只能用按键改。 */
 static void showPwmTrackPage(void)
 {
     char    buffer[OLED_TEXT_BUFFER_SIZE];
@@ -217,12 +155,7 @@ static void showPwmTrackPage(void)
     showVoltageLine(4);
 }
 
-/* ══════════════ 对外接口 ══════════════ */
-
-/**
- * @brief  显示开机页：当前模式、档位和按键提示。
- * @note   只写帧缓冲并调用一次 OLED_Flush()，因为开机阶段没有主循环在跑。
- */
+/* 显示开机页：模式、档位、按键提示。只写缓冲并 Flush 一次（开机阶段无主循环在跑）。 */
 void AppDisplay_ShowBoot(void)
 {
     char buffer[OLED_TEXT_BUFFER_SIZE];
@@ -237,19 +170,9 @@ void AppDisplay_ShowBoot(void)
     OLED_Flush();
 }
 
-/**
- * @brief  开机配置阶段：等待用户选好模式后退出。
- * @note   **阻塞式**，只在 main() 的初始化阶段调用一次。
- * @code
- *   KEY1      循环切换 循迹 / PWM 速度 / PWM 循迹
- *   KEY2、KEY3 退出，进入正常运行
- * @endcode
- * @note   每 100 ms 无条件重绘一次开机页，保证按键改变模式后显示能跟上；
- *         这个 100 ms 是写死的（不是 APP_DISPLAY_PERIOD_MS），
- *         因为此时调度器还没有规律地跑显示任务。
- * @note   退出前会复位模式状态并重新清空命令队列：开机期间用户可能已经按下
- *         若干按键，那些命令不该带到运行阶段执行。
- */
+/* 开机配置：阻塞式，只在 main() 初始化阶段调一次。KEY1 循环切模式，KEY2/KEY3 退出。
+   每 100 ms 无条件重绘开机页（写死 100ms，非 APP_DISPLAY_PERIOD_MS，此时调度器还没规律跑显示）。
+   退出前复位模式状态并清空命令队列，避免开机期间按下的命令带到运行阶段。 */
 void AppDisplay_BootConfig(void)
 {
     uint8_t exitRequested = 0;
