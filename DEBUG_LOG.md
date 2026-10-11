@@ -86,6 +86,43 @@
   （注释不参与编译，这正是本阶段的安全网）。
 - `app_config.h` 单行宏仍为 **83** 个（`tools/simulate_*.py` 靠正则解析它们，不能被破坏）。
 
+### 同日续：目录拍平 + 去 APP 前缀（阶段二）
+
+**背景**：`Core/Application/` 下 7 个子目录 + `Core/Hardware/Peripherals/{Display,IO,Motion,Sensors}`
+共 14 个叶子目录、最深三层；函数名一律带 `App` 前缀、文件名一律带 `app_`。
+
+**改动**：拍成五层平铺，文件名/函数名/宏名一起去前缀。
+
+```
+Core/user/         main.c  main.h  isr.c  isr.h
+Core/system/       config.h  types.h  board.h  sched  state  timer  filter  ringbuf  bytestream
+Core/interaction/  console  cmd  serial  telemetry  display  key
+Core/logic/        pid  track  testmode  speed_loop  motion
+Core/hardware/     motor  encoder  irtrack  mpu6050  imu  oled(+字模)  buzzer
+Core/Src + Core/Inc  CubeMX 生成，保持原样
+```
+
+命名规则：`AppScheduler_OnTick` → `sched_tick`、`AppMotion_Apply` → `motion_apply`、
+`Motor_SetSpeedA` → `motor_a_set`、`OLED_ShowString` → `oled_show_string`、
+`APP_CONTROL_PERIOD_MS` → `CONTROL_PERIOD_MS`。寄存器宏（`MPU6050_WHO_AM_I`、
+`OLED_ADDR` 等）和 CubeMX 引脚宏不动。
+
+**踩到的坑，记下来免得下次再犯**：
+
+- `bluecar.uvprojx` 与 `.eide/eide.yml` 都改了；但**命令行 `unify_builder` 不读 eide.yml**，
+  它读的是 VSCode 扩展生成的 `build/bluecar/builder.params`，命令行构建时必须手工同步。
+- `Core/Hardware/` → `Core/hardware/` 是仅大小写的重命名，Windows 文件系统不区分，
+  必须 `git mv Core/Hardware Core/hw_tmp` 再 `git mv Core/hw_tmp Core/hardware` 两步走。
+- `Core/Src/{gpio,tim,usart}.c` 也是 `#include "app_config.h"`，改名时容易漏。 
+- `MX_TIM5_Init` 与要改的 `TIM5_Init` 只差一个 `MX_` 前缀，替换规则必须带词边界。
+
+**验证**：`Code=50700 RO-data=4032 RW-data=236 ZI-data=6916`，`0 Error(s), 0 Warning(s)`。
+与改动前的 `50708/4032/240/6920` 相差几字节，**这不是语义变化** ——
+对比两次构建的 map，每个 `.o` 的 Code/RO/RW/ZI 完全相同，变的是
+`(incl. Padding)` 行（RW 14→10、ZI 5→1），即段名变化导致链接器段序改变、
+段间对齐填充随之变化。两个主机侧仿真（`simulate_tracking.py` / `simulate_pwm_tests.py`）
+输出与改动前一致。
+
 ## 2026-10-02: 应用层重写
 
 ### 背景

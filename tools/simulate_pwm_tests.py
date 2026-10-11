@@ -15,9 +15,9 @@ from pathlib import Path
 import re
 
 ROOT = Path(__file__).resolve().parents[1]
-CONFIG = ROOT / "Core/Application/Config/app_config.h"
-IRTRACK = ROOT / "Core/Hardware/Peripherals/Sensors/irtrack.c"
-TESTMODE = ROOT / "Core/Application/Control/app_testmode.c"
+CONFIG = ROOT / "Core/system/config.h"
+IRTRACK = ROOT / "Core/hardware/irtrack.c"
+TESTMODE = ROOT / "Core/logic/testmode.c"
 
 CHANNELS = 8
 # 循迹模块判无效的压黑通道上限，对应 TRACK_LINE_VALID_MAX_BLACK。
@@ -95,7 +95,7 @@ def main() -> int:
     macros.update(read_macros(IRTRACK))
 
     phase_ms = int(macros["PWM_SPEED_TEST_PHASE_MS"])
-    control_ms = int(macros["APP_CONTROL_PERIOD_MS"])
+    control_ms = int(macros["CONTROL_PERIOD_MS"])
     voltage = macros["MOTOR_SUPPLY_VOLTAGE"]
     weights = [macros[f"IR_WEIGHT_CH{i}"] for i in range(1, CHANNELS + 1)]
     failures = []

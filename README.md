@@ -45,7 +45,7 @@ JGB37-520 12V、178 RPM、1:56 减速版本和 11 PPR 编码器为准。
 B 通道驱动物理**左轮**；B 轮的两个方向脚在宏定义层面就和 A 轮相反
 （`pwm2_1` / `pwm2_0`），这是按实车接线处理的，不要在函数体里再"理顺"一次。
 
-**编码器与物理轮的对应**（`app_motion.c`）：`encoderRight` 取 TIM3、
+**编码器与物理轮的对应**（`motion.c`）：`encoderRight` 取 TIM3、
 `encoderLeft` 取 TIM2——**和早期版本的本文写反了**。左轮编码器在
 `encoder.c` 里取反，统一到前进方向为正。这些映射是实车调通的，
 改动前先架空车轮验证。
@@ -101,17 +101,17 @@ Display / Comm  ->  State  ->  Control / Motion  ->  Scheduler  ->  Hardware
 
 | 目录 | 模块 |
 | --- | --- |
-| `Config/` | `app_config.h`（全部可调参数）、`app_types.h`、`board.h`（引脚别名） |
-| `Scheduler/` | `app_scheduler`（中断分发、延后任务、ConfirmCounter） |
-| `State/` | `app_state`（唯一可变状态）、`app_imu`（MPU6050 采样） |
-| `Motion/` | `app_motion`（编码器、滤波、电机输出）、`app_speedloop`（50 ms 控制） |
-| `Control/` | `app_pid`、`app_tracking`（循迹）、`app_testmode`（开环测试） |
-| `Comm/` | `app_serial`、`app_console`（命令行）、`app_cmd`（按键与命令队列）、`app_telemetry` |
-| `Display/` | `app_display` |
+| `Config/` | `config.h`（全部可调参数）、`types.h`、`board.h`（引脚别名） |
+| `Scheduler/` | `sched`（中断分发、延后任务、ConfirmCounter） |
+| `State/` | `state`（唯一可变状态）、`imu`（MPU6050 采样） |
+| `Motion/` | `motion`（编码器、滤波、电机输出）、`speed_loop`（50 ms 控制） |
+| `Control/` | `pid`、`track`（循迹）、`testmode`（开环测试） |
+| `interaction/` | `serial`、`console`（命令行）、`cmd`（按键与命令队列）、`telemetry` |
+| `interaction/` | `display` |
 
 ### 4.1 任务与执行位置
 
-TIM5 提供 1 ms 时间戳；TIM6 每秒触发 1000 次，由 `app_scheduler.c` 分频。
+TIM5 提供 1 ms 时间戳；TIM6 每秒触发 1000 次，由 `sched.c` 分频。
 
 | 周期 | 任务 | 执行位置 |
 | --- | --- | --- |
@@ -128,9 +128,9 @@ TIM5 提供 1 ms 时间戳；TIM6 每秒触发 1000 次，由 `app_scheduler.c` 
 接收导致丢字节。而速度环和循迹环按**固定周期常数**（50 ms、`dt = 0.02`）
 计算，挪到主循环产生抖动就会算错，所以必须留在中断里。
 
-主循环只有：`AppDeferred_Run()`（跑延后任务）+ 串口命令行 + `OLED_Flush()`。
+主循环只有：`deferred_run()`（跑延后任务）+ 串口命令行 + `oled_flush()`。
 
-中断在 `AppScheduler_Init()` 之前不放行任何任务，避免改到还没初始化的对象。
+中断在 `sched_init()` 之前不放行任何任务，避免改到还没初始化的对象。
 
 ### 4.2 命令队列
 
@@ -142,7 +142,7 @@ USART1 命令行**同样没有绕开队列的路径**：`l`/`r`/`t`/`stop`/`quie
 速度环抢同一份状态——`l 30` 在主循环解析，而轮速目标被 50 ms 控制任务读写，
 直接改就是一处竞争。
 
-在线改 PID 参数的路径已经删除：参数只在 `app_config.h` 的定义处改，改完重新
+在线改 PID 参数的路径已经删除：参数只在 `config.h` 的定义处改，改完重新
 编译烧录，因此不存在"运行时改了、掉电就丢"的临时状态。
 
 ### 4.3 八路数字循迹
@@ -264,7 +264,7 @@ PWM 循迹测试**复用循迹环的同一个 PID**，所以测试和实战的�
 计算链：驱动层算归一化质心（`e_y`，公式见 §4.3.1）→ 循迹模块判线路合法性 →
 同一个 PID 算差速。所以误差的量纲天然和实车一致，没有任何手工标定的映射系数。
 
-图案表共 12 项（`app_testmode.c` 的 `patternTable[]`），按 IR1→IR8 从左到右写，
+图案表共 12 项（`testmode.c` 的 `patternTable[]`），按 IR1→IR8 从左到右写，
 `1` = 压黑：
 
 | 图案 | 场景 | `e_y` |
@@ -301,13 +301,13 @@ BASE:50% ERR:+00.0   第 3 行：基础占空比 + 循迹环算出的 e_y
 `RIGHT` 表示注入的是它的左右镜像。
 
 > **OLED 一行能放多少字符**：小字是 6×8 点阵，`128 / 6` = **21 个**；驱动的
-> `OLED_ShowStringSmall()` 到 `col + 5 >= 128` 就停止写入，**超出的部分被静默丢弃**。
+> `oled_show_string_small()` 到 `col + 5 >= 128` 就停止写入，**超出的部分被静默丢弃**。
 > 别把 `OLED_TEXT_BUFFER_SIZE = 24` 当成显示上限——那只是 `snprintf` 的缓冲区大小
 > （23 字符 + 结尾符），两者不是一回事。本页最长的一行 `P:00000000 PH:RIGHT` 是 20 个字符。
 
 **PWM 速度测试的转向控制权。** 默认 5 秒自动来回换向；也可以用串口 `l`/`r`/`t`
-手动指定单轮转速（见 §7）。发这类命令会调用 `AppTestMode_SetAutoPhase(0)` 关掉
-自动换向，`stop` 或切换模式时经 `AppSpeedLoop_ResetModeState()` 自动恢复。台架
+手动指定单轮转速（见 §7）。发这类命令会调用 `testmode_set_auto_phase(0)` 关掉
+自动换向，`stop` 或切换模式时经 `speed_loop_ResetModeState()` 自动恢复。台架
 测单轮正反转就用 `l 30` / `l -30`。
 
 ## 5. 当前运行配置
@@ -352,7 +352,7 @@ USART1 使用 PA9/PA10、115200 bps、8N1：
 
 - TX 走环形缓冲区，`HAL_UART_Transmit_IT` 完成后自动接力。
 - RX 用单字节中断接收，中断里只缓存字节转交命令行模块，不解析。
-- `HAL_UART_RxCpltCallback` / `HAL_UART_TxCpltCallback` 定义在 `app_serial.c`。
+- `HAL_UART_RxCpltCallback` / `HAL_UART_TxCpltCallback` 定义在 `serial.c`。
 
 USART2 的 CubeMX 初始化保留在 `usart.c`，但**应用未使用**（早期版本的蓝牙
 手动控制链路已删除）。
@@ -360,7 +360,7 @@ USART2 的 CubeMX 初始化保留在 `usart.c`，但**应用未使用**（早期
 ## 7. 串口命令
 
 命令通过 USART1 输入，以回车或换行结束。**本工程没有在线调参命令**——PID 参数
-在 `app_config.h` 里改，重新编译烧录；串口只负责看数据和台架手动转轮。
+在 `config.h` 里改，重新编译烧录；串口只负责看数据和台架手动转轮。
 
 | 命令 | 作用 |
 | --- | --- |
@@ -383,7 +383,7 @@ USART2 的 CubeMX 初始化保留在 `usart.c`，但**应用未使用**（早期
 
 这三条命令**走命令队列**：主循环解析、50 ms 控制任务执行，避免和速度环抢状态。
 执行时还会关掉 PWM-SPEED 的 5 秒自动换向，把转向控制权交给命令；`stop` 或切换
-模式时经 `AppSpeedLoop_ResetModeState()` 自动恢复。
+模式时经 `speed_loop_ResetModeState()` 自动恢复。
 
 命令名不认识回复 `? '<名字>' (type 'help')`，缺参数回复 `? <名字> needs a value`。
 
@@ -412,7 +412,7 @@ tgtRpmL,rpmFL,voltL,tgtRpmR,rpmFR,voltR,steerRpm,diffRpm,yawDeg,trackError,mode,
 | `turnPhase` | 枚举 | 循迹状态机状态（原为"转弯阶段"，语义已变） |
 | `rpmL` / `rpmR` | RPM | 原始速度，未滤波 |
 
-表头由 `AppTelemetry_BootHeader()` 统一发出，不要在别处硬编码。
+表头由 `telemetry_boot_header()` 统一发出，不要在别处硬编码。
 
 ## 9. 构建与调试
 
@@ -440,7 +440,7 @@ python tools\simulate_tracking.py     # 八路循迹算法
 python tools\simulate_pwm_tests.py    # PWM 测试模式算术
 ```
 
-两个脚本都直接解析 `Core/Application/Config/app_config.h`，改宏后重跑即可验证，
+两个脚本都直接解析 `Core/system/config.h`，改宏后重跑即可验证，
 不需要重新编译固件。**因此该文件里的宏必须是单行的 `#define 名字 数值`**。
 
 ### 9.4 串口调试
@@ -451,7 +451,7 @@ python tools\simulate_pwm_tests.py    # PWM 测试模式算术
 
 ### 9.5 实车调参
 
-PID 参数都在 `app_config.h` 的定义处改，改完重新编译烧录（没有在线调参命令）。
+PID 参数都在 `config.h` 的定义处改，改完重新编译烧录（没有在线调参命令）。
 **必须按这个顺序**，否则两个环会互相激发振荡：
 
 1. **先整定左右速度环**。架空车轮，发 `t 30` 看左右轮是否都能稳到 30 RPM、
@@ -472,5 +472,5 @@ PID 参数都在 `app_config.h` 的定义处改，改完重新编译烧录（没
 - **直行航向闭环（陀螺仪）**：MPU6050 只做采样并送遥测的 `yawDeg` 字段，
   不参与任何控制。
 - **速度环死区、单周期限速率、前馈 `kf`**：未实现。
-- **电机堵转保护**：`app_config.h` 里保留了 `MOTOR_STALL_*` 宏，但没有任何
+- **电机堵转保护**：`config.h` 里保留了 `MOTOR_STALL_*` 宏，但没有任何
   代码使用它们。

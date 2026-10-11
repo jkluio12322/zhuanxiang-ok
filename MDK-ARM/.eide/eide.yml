@@ -8,101 +8,65 @@ virtualFolder:
   name: <virtual_root>
   files: []
   folders:
-    - name: Application
-      files: []
-      folders:
-        - name: MDK-ARM
-          files:
-            - path: startup_stm32f103xe.s
-          folders: []
-        - name: Communication
-          files:
-            - path: ../Core/Application/Communication/app_cmd.c
-            - path: ../Core/Application/Communication/app_telemetry.c
-            - path: ../Core/Application/Communication/app_console.c
-            - path: ../Core/Application/Communication/app_serial.c
-            - path: ../Core/Application/Communication/bytestream.c
-          folders: []
-        - name: Control
-          files:
-            - path: ../Core/Application/Control/app_tracking.c
-            - path: ../Core/Application/Control/app_pid.c
-            - path: ../Core/Application/Control/app_testmode.c
-          folders: []
-        - name: Scheduler
-          files:
-            - path: ../Core/Application/Scheduler/app_scheduler.c
-          folders: []
-        - name: State
-          files:
-            - path: ../Core/Application/State/app_state.c
-            - path: ../Core/Application/State/app_imu.c
-          folders: []
-        - name: Motion
-          files:
-            - path: ../Core/Application/Motion/app_motion.c
-            - path: ../Core/Application/Motion/app_speedloop.c
-          folders: []
-        - name: Config
-          files:
-            - path: ../Core/Application/Config/app_config.h
-            - path: ../Core/Application/Config/app_types.h
-            - path: ../Core/Application/Config/board.h
-          folders: []
-        - name: Display
-          files:
-            - path: ../Core/Application/Display/app_display.c
-          folders: []
-        - name: User
-          files: []
-          folders:
-            - name: Core
-              files:
-                - path: ../Core/Src/main.c
-                - path: ../Core/Src/gpio.c
-                - path: ../Core/Src/dma.c
-                - path: ../Core/Src/i2c.c
-                - path: ../Core/Src/tim.c
-                - path: ../Core/Src/usart.c
-                - path: ../Core/Src/stm32f1xx_it.c
-                - path: ../Core/Src/stm32f1xx_hal_msp.c
-              folders: []
+    - name: User
+      files:
+        - path: ../Core/user/main.c
+        - path: ../Core/user/isr.c
+      folders: []
+    - name: System
+      files:
+        - path: ../Core/system/sched.c
+        - path: ../Core/system/state.c
+        - path: ../Core/system/timer.c
+        - path: ../Core/system/filter.c
+        - path: ../Core/system/ringbuf.c
+        - path: ../Core/system/bytestream.c
+        - path: ../Core/system/config.h
+        - path: ../Core/system/types.h
+        - path: ../Core/system/board.h
+      folders: []
+    - name: Interaction
+      files:
+        - path: ../Core/interaction/console.c
+        - path: ../Core/interaction/cmd.c
+        - path: ../Core/interaction/serial.c
+        - path: ../Core/interaction/telemetry.c
+        - path: ../Core/interaction/display.c
+        - path: ../Core/interaction/key.c
+      folders: []
+    - name: Logic
+      files:
+        - path: ../Core/logic/track.c
+        - path: ../Core/logic/pid.c
+        - path: ../Core/logic/testmode.c
+        - path: ../Core/logic/motion.c
+        - path: ../Core/logic/speed_loop.c
+      folders: []
     - name: Hardware
-      files: []
-      folders:
-        - name: Buffers
-          files:
-            - path: ../Core/Hardware/Buffers/ringbuf.c
-          folders: []
-        - name: Peripherals
-          files: []
-          folders:
-            - name: Motion
-              files:
-                - path: ../Core/Hardware/Peripherals/Motion/motor.c
-                - path: ../Core/Hardware/Peripherals/Motion/encoder.c
-              folders: []
-            - name: Sensors
-              files:
-                - path: ../Core/Hardware/Peripherals/Sensors/irtrack.c
-                - path: ../Core/Hardware/Peripherals/Sensors/mpu6050.c
-                - path: ../Core/Hardware/Peripherals/Sensors/filter.c
-              folders: []
-            - name: Display
-              files:
-                - path: ../Core/Hardware/Peripherals/Display/oled.c
-                - path: ../Core/Hardware/Peripherals/Display/oled_font.h
-                - path: ../Core/Hardware/Peripherals/Display/oled_font_small.h
-              folders: []
-            - name: IO
-              files:
-                - path: ../Core/Hardware/Peripherals/IO/key.c
-                - path: ../Core/Hardware/Peripherals/IO/buzzer.c
-              folders: []
-        - name: System
-          files:
-            - path: ../Core/Hardware/System/timer.c
-          folders: []
+      files:
+        - path: ../Core/hardware/motor.c
+        - path: ../Core/hardware/encoder.c
+        - path: ../Core/hardware/irtrack.c
+        - path: ../Core/hardware/mpu6050.c
+        - path: ../Core/hardware/imu.c
+        - path: ../Core/hardware/oled.c
+        - path: ../Core/hardware/oled_font.h
+        - path: ../Core/hardware/oled_font_small.h
+        - path: ../Core/hardware/buzzer.c
+      folders: []
+    - name: MDK-ARM
+      files:
+        - path: startup_stm32f103xe.s
+      folders: []
+    - name: CubeMX
+      files:
+        - path: ../Core/Src/gpio.c
+        - path: ../Core/Src/dma.c
+        - path: ../Core/Src/i2c.c
+        - path: ../Core/Src/tim.c
+        - path: ../Core/Src/usart.c
+        - path: ../Core/Src/stm32f1xx_hal_msp.c
+      folders: []
     - name: Drivers
       files: []
       folders:
@@ -143,19 +107,11 @@ targets:
         - STM32F103xE
       incList:
         - ../Core/Inc
-        - ../Core/Application/Communication
-        - ../Core/Application/Control
-        - ../Core/Application/Config
-        - ../Core/Application/Display
-        - ../Core/Application/Motion
-        - ../Core/Application/Scheduler
-        - ../Core/Application/State
-        - ../Core/Hardware/Buffers
-        - ../Core/Hardware/Peripherals/Motion
-        - ../Core/Hardware/Peripherals/Sensors
-        - ../Core/Hardware/Peripherals/Display
-        - ../Core/Hardware/Peripherals/IO
-        - ../Core/Hardware/System
+        - ../Core/user
+        - ../Core/system
+        - ../Core/interaction
+        - ../Core/logic
+        - ../Core/hardware
         - ../Drivers/STM32F1xx_HAL_Driver/Inc
         - ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy
         - ../Drivers/CMSIS/Device/ST/STM32F1xx/Include

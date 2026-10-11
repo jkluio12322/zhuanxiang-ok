@@ -6,7 +6,7 @@
   - 单个位置式 PD 输出差速 RPM
   - 计圈用「|e_y| 持续超过阈值」的事件计数，起点横线因 e_y≈0 天然不计
 
-参数全部从 Core/Application/Config/app_config.h 解析，改宏后直接重跑，
+参数全部从 Core/system/config.h 解析，改宏后直接重跑，
 不需要重新编译固件。
 """
 
@@ -18,8 +18,8 @@ import re
 
 
 ROOT = Path(__file__).resolve().parents[1]
-CONFIG_PATH = ROOT / "Core/Application/Config/app_config.h"
-IRTRACK_PATH = ROOT / "Core/Hardware/Peripherals/Sensors/irtrack.c"
+CONFIG_PATH = ROOT / "Core/system/config.h"
+IRTRACK_PATH = ROOT / "Core/hardware/irtrack.c"
 
 DEFINE_RE = re.compile(r"^\s*#\s*define\s+([A-Za-z_]\w*)\s+([^\s/]+)")
 

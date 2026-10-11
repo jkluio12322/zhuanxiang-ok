@@ -34,9 +34,10 @@ UV4.exe -r MDK-ARM/bluecar.uvprojx -j0 -o build.log
 # 单文件语法快检（不产出固件，最快的错误检查手段）
 # 在仓库根目录执行；这条已在 MDK-ARM/.claude/settings.local.json 白名单里，照抄可免授权
 arm-none-eabi-gcc -fsyntax-only -c -std=c11 -mcpu=cortex-m3 -DSTM32F103xE -DUSE_HAL_DRIVER \
-  -I Core/Inc -I Core/Hardware -I Drivers/STM32F1xx_HAL_Driver/Inc \
+  -I Core/Inc -I Core/user -I Core/system -I Core/interaction -I Core/logic -I Core/hardware \
+  -I Drivers/STM32F1xx_HAL_Driver/Inc \
   -I Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I Drivers/CMSIS/Device/ST/STM32F1xx/Include \
-  -I Drivers/CMSIS/Include -I MDK-ARM/.cmsis/include -I MDK-ARM/RTE/_bluecar Core/Src/main.c
+  -I Drivers/CMSIS/Include -I MDK-ARM/.cmsis/include -I MDK-ARM/RTE/_bluecar Core/user/main.c
 
 # 主机侧算法仿真（不需要重新编译）
 python tools/simulate_tracking.py
@@ -61,7 +62,7 @@ Keil（`bluecar.uvprojx`，`<uAC6>0</uAC6>`）和 EIDE（`.eide/eide.yml` → `t
 `MDK-ARM/bluecar.uvprojx` 和 `MDK-ARM/.eide/eide.yml` **都要同步修改**，包括 `IncludePath`/`incList`。
 EIDE 此前出现过回退文件的情况，两个文件都视为 source of truth。
 
-### 3. `app_config.h` 的宏必须是单行
+### 3. `config.h` 的宏必须是单行
 
 `tools/simulate_*.py` 用正则直接解析该文件：
 
@@ -72,7 +73,7 @@ DEFINE_RE = re.compile(r"^\s*#\s*define\s+([A-Za-z_]\w*)\s+([^\s/]+)")
 写成多行或加复杂表达式会让仿真脚本静默取不到值。当前该文件有 83 个符合条件的宏定义。
 
 ```bash
-grep -cE "^\s*#\s*define\s+([A-Za-z_]\w*)\s+([^\s/]+)" Core/Application/Config/app_config.h
+grep -cE "^\s*#\s*define\s+([A-Za-z_]\w*)\s+([^\s/]+)" Core/system/config.h
 ```
 
 ## 分层架构不变量
@@ -80,44 +81,46 @@ grep -cE "^\s*#\s*define\s+([A-Za-z_]\w*)\s+([^\s/]+)" Core/Application/Config/a
 依赖**只能向下**，这是全工程最重要的结构约束：
 
 ```
-Display / Comm  →  State  →  Control / Motion  →  Scheduler  →  Hardware
+user  →  interaction  →  logic  →  system  →  hardware
 ```
 
 | 目录 | 模块 |
 | --- | --- |
-| `Config/` | `app_config.h`（全部可调参数）、`app_types.h`、`board.h`（引脚别名） |
-| `Scheduler/` | `app_scheduler`（中断分发、延后任务） |
-| `State/` | `app_state`（唯一可变状态）、`app_imu` |
-| `Motion/` | `app_motion`（编码器、滤波、电机输出）、`app_speedloop`（50 ms 控制） |
-| `Control/` | `app_pid`、`app_tracking`、`app_testmode` |
-| `Comm/` | `app_serial`、`app_console`、`app_cmd`、`app_telemetry` |
-| `Display/` | `app_display` |
+| `Core/user/` | `main.c`（入口与初始化编排）、`isr.c`（中断向量处理函数） |
+| `Core/system/` | `config.h`（全部可调参数）、`types.h`、`board.h`（引脚别名）、`sched`（中断分发、延后任务）、`state`（唯一可变状态）、`timer`、`filter`、`ringbuf`、`bytestream` |
+| `Core/interaction/` | `console`、`cmd`、`serial`、`telemetry`、`display`、`key` |
+| `Core/logic/` | `pid`、`track`（循迹环）、`testmode`（开环测试）、`speed_loop`（50 ms 控制）、`motion`（编码器、滤波、电机输出） |
+| `Core/hardware/` | `motor`、`encoder`、`irtrack`、`mpu6050`、`imu`、`oled`（+字模）、`buzzer` |
+| `Core/Src` + `Core/Inc` | CubeMX 生成的外设初始化，保持原样不动 |
+
+只有两处例外，都在 `system/` 里，而且是有意的：`sched` 反过来拉起各层任务
+（它是唯一的总编排点），`timer` 只调 `sched`。其余越层 include 基本都是 bug。
 
 **谁只能碰什么**（越界读写基本就是 bug）：
 
-- **写电机分两层**：`app_speedloop.c` 是唯一决定 PWM 的模块，它调
-  `AppMotion_Apply()` / `AppMotion_Stop()`；`app_motion.c` 是唯一直接调用
-  `Motor_SetSpeedA/B` 的模块。别把这两层混为一谈
-- 只有 `app_state` 拥有可变状态：读用 `AppState()->字段`，写用 `AppState_SetXxx()`
+- **写电机分两层**：`logic/speed_loop.c` 是唯一决定 PWM 的模块，它调
+  `motion_apply()` / `motion_stop()`；`logic/motion.c` 是唯一直接调用
+  `motor_a_set()` / `motor_b_set()` 的模块。别把这两层混为一谈
+- 只有 `system/state.c` 拥有可变状态：读用 `state_view()->字段`，写用 `state_set_xxx()`
 - 不引入 `extern` 可变全局
 
 两条可自动验证的规律：
 
 ```bash
-# 除驱动层自身定义外，应该只有 app_motion.c 调用
-grep -rn "Motor_SetSpeedA" Core/
-# → app_motion.c:107,186 + motor.c/motor.h 的定义与声明
+# 除驱动层自身定义外，应该只有 motion.c 调用
+grep -rn "motor_a_set\|motor_b_set" Core/
+# → logic/motion.c + hardware/motor.c/motor.h 的定义与声明
 
-# 除驱动层 irtrack.c 外，应该只有 app_tracking.c 读写
+# 除驱动层 irtrack.c 外，应该只有 track.c 读写
 grep -rn "ir_data" Core/ --include=*.c
-# → app_tracking.c + irtrack.c（定义处）
+# → logic/track.c + hardware/irtrack.c（定义处）
 ```
 
 结果多出来几行，说明有人破坏了分层。
 
 ## 时序与中断模型
 
-TIM5 提供 1 ms 时间戳；TIM6 以 1 kHz 触发，由 `app_scheduler.c` 分频。
+TIM5 提供 1 ms 时间戳；TIM6 以 1 kHz 触发，由 `sched.c` 分频。
 
 | 周期 | 任务 | 位置 |
 | --- | --- | --- |
@@ -133,10 +136,10 @@ TIM5 提供 1 ms 时间戳；TIM6 以 1 kHz 触发，由 `app_scheduler.c` 分�
 OLED 刷屏可能上 ms —— 放进最高优先级中断会压住串口接收导致丢字节。而速度环/循迹环按
 **固定周期常数**（50 ms、`dt = 0.02`）计算，挪到主循环产生抖动就会算错。
 
-**规则：中断里绝不能放 `snprintf` 或 I2C I/O。** 主循环只有 `AppDeferred_Run()` +
-串口命令行 + `OLED_Flush()`。
+**规则：中断里绝不能放 `snprintf` 或 I2C I/O。** 主循环只有 `deferred_run()` +
+串口命令行 + `oled_flush()`。
 
-中断在 `AppScheduler_Init()` 之前不放行任何任务。
+中断在 `sched_init()` 之前不放行任何任务。
 
 ## 命令队列
 
@@ -146,7 +149,7 @@ OLED 刷屏可能上 ms —— 放进最高优先级中断会压住串口接收�
 USART1 命令行走**同一个队列**（`l`/`r`/`t`/`stop`/`quiet`/`log`），`show` 只读。
 不要在命令行解析处直接改轮速目标——那是与中断里速度环的竞争点。
 
-**在线改 PID 的路径已删除**：参数只在 `app_config.h` 定义处改，改完重新编译烧录。
+**在线改 PID 的路径已删除**：参数只在 `config.h` 定义处改，改完重新编译烧录。
 
 ## 提交信息约定
 
@@ -165,7 +168,7 @@ USART1 命令行走**同一个队列**（`l`/`r`/`t`/`stop`/`quiet`/`log`），`
 
 - **直行航向闭环（陀螺仪）**：MPU6050 只采样并送遥测的 `yawDeg` 字段，不参与控制
 - **速度环死区、单周期限速率、前馈 `kf`**：未实现
-- **电机堵转保护**：`app_config.h` 保留 `MOTOR_STALL_*` 宏，但无任何代码使用
+- **电机堵转保护**：`config.h` 保留 `MOTOR_STALL_*` 宏，但无任何代码使用
 
 ## Claude Code 相关
 

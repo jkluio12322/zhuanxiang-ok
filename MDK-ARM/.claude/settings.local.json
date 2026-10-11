@@ -10,8 +10,8 @@
       "Read(//c/Program Files/STMicroelectronics/STM32Cube/STM32CubeMX/**)",
       "Bash(dir \"C:\\\\Program Files\\\\STMicroelectronics\\\\\" 2>/dev/null)",
       "Bash(where arm-none-eabi-gcc *)",
-      "Bash(arm-none-eabi-gcc -fsyntax-only -c -std=c11 -mcpu=cortex-m3 -DSTM32F103xE -DUSE_HAL_DRIVER -I Core/Inc -I Core/Hardware -I Drivers/STM32F1xx_HAL_Driver/Inc -I Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I Drivers/CMSIS/Device/ST/STM32F1xx/Include -I Drivers/CMSIS/Include -I MDK-ARM/.cmsis/include -I MDK-ARM/RTE/_bluecar Core/Src/main.c)",
-      "Bash(arm-none-eabi-gcc -fsyntax-only -c -std=c11 -mcpu=cortex-m3 -mfloat-abi=hard -DSTM32F103xE -DUSE_HAL_DRIVER -I ../Core/Inc -I ../Core/Hardware -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include -I .cmsis/include -I RTE/_bluecar ../Core/Src/main.c)"
+      "Bash(arm-none-eabi-gcc -fsyntax-only -c -std=c11 -mcpu=cortex-m3 -DSTM32F103xE -DUSE_HAL_DRIVER -I Core/Inc -I Core/user -I Core/system -I Core/interaction -I Core/logic -I Core/hardware -I Drivers/STM32F1xx_HAL_Driver/Inc -I Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I Drivers/CMSIS/Device/ST/STM32F1xx/Include -I Drivers/CMSIS/Include -I MDK-ARM/.cmsis/include -I MDK-ARM/RTE/_bluecar Core/Src/main.c)",
+      "Bash(arm-none-eabi-gcc -fsyntax-only -c -std=c11 -mcpu=cortex-m3 -mfloat-abi=hard -DSTM32F103xE -DUSE_HAL_DRIVER -I ../Core/Inc -I ../Core/user -I ../Core/system -I ../Core/interaction -I ../Core/logic -I ../Core/hardware -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include -I .cmsis/include -I RTE/_bluecar ../Core/Src/main.c)"
     ]
   }
 }
