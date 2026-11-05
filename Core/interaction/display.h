@@ -1,12 +1,15 @@
 /* OLED 应用显示接口。 */
 #ifndef __DISPLAY_H
 #define __DISPLAY_H  /* 头文件保护宏，防止接口重复声明。 */
+#include <stdint.h>
 
 /* 显示开机页：车辆名称、模式、档位与按键提示。 */
 void display_show_boot(void);
 
-/* 运行开机配置页并等待用户启动。阻塞主流程，退出时复位运动状态并清空旧命令。 */
-void display_boot_config(void);
+/* 开机配置菜单：begin 画首页并记时；poll 每轮调一次、立即返回，1 = 已结束。
+   两者都不阻塞，由 main() 的主循环驱动，退出时复位运动状态并清空旧命令。 */
+void    display_boot_begin(void);
+uint8_t display_boot_poll(void);
 
 /* 按当前工作模式刷新 OLED 状态页。主循环里调。 */
 void display_task(void);

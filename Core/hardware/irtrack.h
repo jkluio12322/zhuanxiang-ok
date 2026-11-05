@@ -13,6 +13,7 @@ typedef struct {
     uint8_t   raw[IRTRACK_CHANNELS];    /* 0=黑线，1=白线 */
     int8_t    weight_sum;               /* 权重和 */
     float     position;                 /* 归一化位置，约 -7..+7 */
+    float     normalized_position;      /* 稳定分母归一化位置，-1..+1 */
     uint8_t   black_count;              /* 黑线通道数 */
     uint8_t   pattern;                  /* 黑线掩码，bit0=IR1 */
 } IRTrack_Data_t;

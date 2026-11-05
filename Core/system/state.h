@@ -27,7 +27,7 @@ const StateView *state_view(void);      /* 取只读状态视图 */
 void state_init(void);                  /* 初始化到默认值 */
 void state_set_mode(Mode mode);    /* 设置工作模式 */
 
-/* 取模式循环里的下一个：modeTrack -> modePwmSpeed -> modePwmTrack -> modeTrack。
+/* 取模式循环里的下一个：TRACK -> PWM-SPEED -> PWM-TRACK -> LOOP-TEST -> EIGHT。
    按键轮换和开机页轮换共用这一处，避免两套循环逻辑各自漂移。 */
 Mode state_next_mode(void);
 
@@ -39,6 +39,7 @@ void state_set_vofa(uint8_t on);         /* 设置 VOFA 遥测开关 */
 uint8_t state_set_gear(uint8_t gear);    /* 设置档位，越界回绕；返回 1 表示档位变了 */
 void state_step_gear(int8_t direction);  /* 按方向增减档位，越界回绕 */
 void state_cycle_lap_target(void);        /* 目标圈数循环加一 */
+uint8_t state_set_lap_target(uint8_t target);
 void state_increment_lap(void);          /* 完成圈数加一，不超过目标圈数 */
 void state_reset_lap_progress(void);      /* 清除圈数进度 */
 void state_set_wheel_targets(float left_rpm, float right_rpm);
@@ -51,7 +52,7 @@ uint8_t state_take_stop_event(StopReason *reason);  /* 取走并清除；1 = 有
 void state_clear_stop_event(void);                       /* 清除停车事件标志 */
 
 /* 取走并清除「请求停车」标志。上报停车事件和真正执行停车是两件事：
-   循迹模块只上报，由 50 ms 控制任务取走这个标志后执行停车，避免两边互相依赖。 */
+循迹模块只上报，由 5 ms 控制任务取走这个标志后执行停车，避免两边互相依赖。 */
 uint8_t state_take_stop_request(void);
 
 #endif

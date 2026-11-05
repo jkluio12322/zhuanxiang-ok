@@ -41,13 +41,16 @@ virtualFolder:
         - path: ../Core/logic/testmode.c
         - path: ../Core/logic/motion.c
         - path: ../Core/logic/speed_loop.c
+        - path: ../Core/logic/speed_calibration.c
+        - path: ../Core/logic/position_loop.c
+        - path: ../Core/logic/loop_test.c
+        - path: ../Core/logic/eight.c
       folders: []
     - name: Hardware
       files:
         - path: ../Core/hardware/motor.c
         - path: ../Core/hardware/encoder.c
         - path: ../Core/hardware/irtrack.c
-        - path: ../Core/hardware/mpu6050.c
         - path: ../Core/hardware/imu.c
         - path: ../Core/hardware/oled.c
         - path: ../Core/hardware/oled_font.h
@@ -61,6 +64,7 @@ virtualFolder:
     - name: CubeMX
       files:
         - path: ../Core/Src/gpio.c
+        - path: ../Core/Src/spi.c
         - path: ../Core/Src/dma.c
         - path: ../Core/Src/i2c.c
         - path: ../Core/Src/tim.c
@@ -87,6 +91,7 @@ virtualFolder:
             - path: ../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_tim.c
             - path: ../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_tim_ex.c
             - path: ../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_uart.c
+            - path: ../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_spi.c
           folders: []
         - name: CMSIS
           files:
@@ -106,8 +111,8 @@ targets:
         - USE_HAL_DRIVER
         - STM32F103xE
       incList:
-        - ../Core/Inc
         - ../Core/user
+        - ../Core/Inc
         - ../Core/system
         - ../Core/interaction
         - ../Core/logic

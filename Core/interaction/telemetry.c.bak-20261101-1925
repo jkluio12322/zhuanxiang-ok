@@ -1,0 +1,199 @@
+/* VOFA CSV 遥测：50 ms 中断 telemetry_publish() 纯赋值填字段置 fresh，主循环
+   telemetry_send() 临界区拷副本+清 fresh 再 snprintf 发送（格式化 16 个浮点要
+   100~300 µs，放进中断会压住串口丢字节）。一致性靠临界区整体拷贝，fresh 只回答"有无
+   新数据"。读 motion_view()/imu_get() 只读视图是只读跨层，避免填遥测传 10 个参数。 */
+
+#include "telemetry.h"
+#include "config.h"
+#include "imu.h"
+#include "motion.h"
+#include "serial.h"
+#include "state.h"
+
+#include <math.h>
+#include <stdio.h>
+#include <string.h>
+
+/* 遥测快照本体。写它的只有本文件的 Publish()，读它的有 Send() 和显示模块。 */
+telemetryData_t telemetry_data;
+
+static const char *telemetryStopReasonName(StopReason reason);
+
+/* 心跳标志：由 telemetry_heartbeat() 置位，说明这条快照必须发出去（不受停车抑制）。 */
+static volatile uint8_t idleHeartbeat = 0U;
+
+/* 把遥测快照格式化为 VOFA CSV 并发送（主循环，deferred_run 调用）。发送优先级：
+   VOFA 关不发；有停车事件发 [STOP]（绕过零转速抑制，只有整行写进发送缓冲才清事件）；
+   无新快照不发；停车且左右转速接近 0 不发。读 17 个字段的整体拷贝+清标志在临界区做。 */
+void telemetry_send(void)
+{
+    StopReason stopReason;
+    telemetryData_t snapshot;
+
+    if (!state_view()->vofa) return;
+
+    /* 停车事件优先于普通 CSV，并且绕过停车后零转速抑制。
+       只有完整写入发送缓冲区后才清除事件；否则下个周期重试。 */
+    if (state_take_stop_event(&stopReason)) {
+        char stopBuffer[TELEMETRY_BUFFER_SIZE];
+        int stopLength = snprintf(stopBuffer,
+                                  sizeof(stopBuffer),
+                                  "#STOP reason=%s code=%d\r\n",
+                                  telemetryStopReasonName(stopReason),
+                                  (int)stopReason);
+
+        if ((stopLength > 0) && (stopLength < (int)sizeof(stopBuffer))) {
+            int written = serial_write((const uint8_t *)stopBuffer,
+                                       (uint16_t)stopLength);
+
+            if (written == stopLength) {
+                state_clear_stop_event();
+            }
+        }
+
+        return;
+    }
+
+    /* 无新数据或停车且转速接近 0 时不发送普通遥测。
+       这两次读只是"值不值得发"的判断，读到新旧混合无所谓，所以不保护。 */
+    if (!telemetry_data.fresh) return;
+    if ((idleHeartbeat == 0U)
+        && !state_view()->running
+        && fabsf(telemetry_data.actualRightRpm) < TELEMETRY_STOP_RPM_EPSILON
+        && fabsf(telemetry_data.actualLeftRpm) < TELEMETRY_STOP_RPM_EPSILON) {
+        return;
+    }
+
+    /* 整体拷贝 + 清标志放在同一个临界区里，之后一律从副本格式化。
+       顺序很关键：先清标志再逐个读字段的话，标志根本保护不了快照。 */
+    {
+        uint32_t primask = __get_PRIMASK();
+
+        __disable_irq();
+        snapshot = telemetry_data;
+        telemetry_data.fresh = 0;
+        idleHeartbeat = 0U;
+        __set_PRIMASK(primask);
+    }
+
+    char buffer[TELEMETRY_BUFFER_SIZE];
+    int length;
+
+    /* CSV 顺序与单位：tgtRpmL,rpmFL,voltL,tgtRpmR,rpmFR,voltR,steerRpm,diffRpm,
+       yawDeg,trackError,mode,run,gear,turnPhase,rpmL,rpmR。 */
+    length = snprintf(buffer, sizeof(buffer),
+        "%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,"
+        "%d,%d,%d,%d,%.1f,%.1f\r\n",
+        snapshot.targetLeftRpm,
+        snapshot.filteredLeftRpm,
+        snapshot.commandVoltageLeft,
+        snapshot.targetRightRpm,
+        snapshot.filteredRightRpm,
+        snapshot.commandVoltageRight,
+        snapshot.steerRpm,
+        snapshot.actualDiffRpm,
+        snapshot.yawAngleDeg,
+        snapshot.trackError,
+        (int)snapshot.mode,
+        (int)snapshot.runFlag,
+        (int)snapshot.gear,
+        (int)snapshot.turnPhase,
+        snapshot.actualLeftRpm,
+        snapshot.actualRightRpm);
+
+    if (length > 0 && length < (int)sizeof(buffer)) {
+        serial_write((const uint8_t *)buffer, (uint16_t)length);
+    }
+}
+
+/* 获取停车原因对应的 ASCII 名称。未知值返回 UNKNOWN。 */
+static const char *telemetryStopReasonName(StopReason reason)
+{
+    switch (reason) {
+    case stopReasonUser:
+        return "USER";
+    case stopReasonTargetLaps:
+        return "TARGET_LAPS";
+    case stopReasonAllWhite:
+        return "ALL_WHITE";
+    case stopReasonCornerTimeout:
+        return "CORNER_TIMEOUT";
+    case stopReasonModeSwitch:
+        return "MODE_SWITCH";
+    case stopReasonNone:
+    default:
+        return "UNKNOWN";
+    }
+}
+
+/* 用本周期控制结果填充遥测快照（中断上下文，50 ms 控制任务调用，只赋值不格式化）。
+   参数单位 RPM/百分比；速度与姿态字段直接读只读视图，其余由调用方传入。最后置 fresh=1
+   是通知主循环"有新快照可发"的唯一入口。commandVoltage 是 PWM 百分比按标称电压换算的
+   近似值，仅供观察趋势（本工程无母线电压采样）。 */
+void telemetry_publish(float targetLeft, float targetRight,
+                          int16_t leftPwm, int16_t rightPwm,
+                          float steerRpm, float trackError,
+                          int16_t turnPhase, float rpmDifference)
+{
+    telemetry_data.targetLeftRpm = targetLeft;
+    telemetry_data.targetRightRpm = targetRight;
+    telemetry_data.actualLeftRpm = motion_view()->left_rpm_raw;
+    telemetry_data.actualRightRpm = motion_view()->right_rpm_raw;
+    telemetry_data.filteredLeftRpm = motion_view()->left_rpm;
+    telemetry_data.filteredRightRpm = motion_view()->right_rpm;
+    telemetry_data.steerRpm = steerRpm;
+    telemetry_data.actualDiffRpm = rpmDifference;
+    telemetry_data.yawAngleDeg = imu_get()->yaw;
+    telemetry_data.trackError = trackError;
+    telemetry_data.mode = (int16_t)state_view()->mode;
+    telemetry_data.runFlag = state_view()->running;
+    telemetry_data.gear = (int16_t)state_view()->gear;
+    telemetry_data.turnPhase = turnPhase;
+    telemetry_data.commandVoltageLeft =
+        (float)leftPwm * MOTOR_SUPPLY_VOLTAGE / 100.0f;
+    telemetry_data.commandVoltageRight =
+        (float)rightPwm * MOTOR_SUPPLY_VOLTAGE / 100.0f;
+    telemetry_data.fresh = 1;
+}
+
+/* 停车心跳：控制任务在 !running 时提前返回、不产生快照，于是 VOFA+ 里一片空白，
+   看起来像"收不到数据"。这里用当前实测值填一条（目标/占空比/差速为 0），并置
+   idleHeartbeat 绕过停车零速抑制，让 500 ms 至少有一帧可解析的 CSV。 */
+void telemetry_heartbeat(void)
+{
+    telemetry_data.targetLeftRpm = 0.0f;
+    telemetry_data.targetRightRpm = 0.0f;
+    telemetry_data.actualLeftRpm = motion_view()->left_rpm_raw;
+    telemetry_data.actualRightRpm = motion_view()->right_rpm_raw;
+    telemetry_data.filteredLeftRpm = motion_view()->left_rpm;
+    telemetry_data.filteredRightRpm = motion_view()->right_rpm;
+    telemetry_data.steerRpm = 0.0f;
+    telemetry_data.actualDiffRpm = motion_view()->left_rpm - motion_view()->right_rpm;
+    telemetry_data.yawAngleDeg = imu_get()->yaw;
+    telemetry_data.trackError = 0.0f;
+    telemetry_data.mode = (int16_t)state_view()->mode;
+    telemetry_data.runFlag = state_view()->running;
+    telemetry_data.gear = (int16_t)state_view()->gear;
+    telemetry_data.turnPhase = 0;
+    telemetry_data.commandVoltageLeft = 0.0f;
+    telemetry_data.commandVoltageRight = 0.0f;
+    telemetry_data.fresh = 1;
+    idleHeartbeat = 1U;
+}
+
+/* 发送开机横幅和 VOFA CSV 表头。字段顺序必须与 telemetry_send() 格式串一致，
+   这里是表头唯一来源，不要在别处硬编码。 */
+void telemetry_boot_header(void)
+{
+    /* 字段顺序与 Send 里的 snprintf 格式串一致，共 16 项。 */
+    serial_printf("BOOT OK\r\n");
+    serial_printf("#tgtRpmL,rpmFL,voltL,tgtRpmR,rpmFR,voltR,"
+                  "steerRpm,diffRpm,yawDeg,trackError,"
+                  "mode,run,gear,turnPhase,rpmL,rpmR\r\n");
+}
+
+/* 初始化遥测快照：全部字段清零，保证首次发送前数据有效。 */
+void telemetry_init(void)
+{
+    memset(&telemetry_data, 0, sizeof(telemetry_data));
+}

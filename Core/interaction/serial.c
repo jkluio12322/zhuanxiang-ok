@@ -13,6 +13,7 @@ static UART_HandleTypeDef *serial_uart = NULL;
 
 /* 单字节接收中断的落点，由 HAL_UART_RxCpltCallback 转交给命令行模块。 */
 static uint8_t serialRxByte = 0U;
+static volatile uint8_t serialRxRestartPending = 0U;
 
 /* 串口发送环形缓冲区容量，单位字节。 */
 #define TX_RING_SIZE  1024
@@ -26,6 +27,19 @@ static volatile uint8_t txBusy = 0;
 
 /* USART1 通用字节流适配器。 */
 static ByteStream_t serialByteStream;
+
+static uint8_t serial_arm_rx(void)
+{
+    if ((serial_uart == NULL) || (serial_uart->RxState != HAL_UART_STATE_READY)) {
+        return 0U;
+    }
+    if (HAL_UART_Receive_IT(serial_uart, &serialRxByte, 1U) == HAL_OK) {
+        serialRxRestartPending = 0U;
+        return 1U;
+    }
+    serialRxRestartPending = 1U;
+    return 0U;
+}
 
 /* 将通用字节流写入 USART1 非阻塞环形发送缓冲。 */
 static uint16_t serial_byte_stream_write(const uint8_t *data, uint16_t length)
@@ -57,6 +71,7 @@ static void serial_exit_critical(uint32_t primask)
 static void serial_start_transmit(void)
 {
     if (txBusy) return;
+    if (serial_uart == NULL) return;
 
     uint16_t avail = ringbuf_available(&tx_ring);
     if (avail == 0) return;
@@ -65,11 +80,18 @@ static void serial_start_transmit(void)
                  ? avail
                  : TX_LINEAR_BUF_SIZE;
     for (uint16_t i = 0; i < n; i++) {
-        ringbuf_get(&tx_ring, &txLinearBuf[i]);
+        if (ringbuf_peek(&tx_ring, i, &txLinearBuf[i]) < 0) {
+            return;
+        }
     }
 
-    txBusy = 1;
-    HAL_UART_Transmit_IT(serial_uart, txLinearBuf, n);
+    if (HAL_UART_Transmit_IT(serial_uart, txLinearBuf, n) == HAL_OK) {
+        txBusy = 1;
+        for (uint16_t i = 0; i < n; i++) {
+            uint8_t discarded;
+            ringbuf_get(&tx_ring, &discarded);
+        }
+    }
 }
 
 /* 初始化 TX 环形缓冲并启动单字节接收中断。 */
@@ -81,7 +103,8 @@ void serial_init(UART_HandleTypeDef *huart)
     txBusy = 0;
 
     /* 中断里只缓存一个字节，解析在主循环里做。 */
-    HAL_UART_Receive_IT(serial_uart, &serialRxByte, 1);
+    serialRxRestartPending = 1U;
+    (void)serial_arm_rx();
 }
 
 /* UART 接收完成回调（中断上下文）。本工程只用 USART1；USART2 保留给蓝牙未使用。
@@ -90,7 +113,16 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
     if (huart->Instance == USART1) {
         console_rx_byte(serialRxByte);
-        HAL_UART_Receive_IT(huart, &serialRxByte, 1);
+        (void)serial_arm_rx();
+    }
+}
+
+/* UART 错误回调：ORE/帧错误/噪声错误可能结束 HAL 的接收状态。
+   这里只置恢复请求，主循环退出中断后统一 Abort 并重挂接收。 */
+void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
+{
+    if (huart->Instance == USART1) {
+        serialRxRestartPending = 1U;
     }
 }
 
@@ -165,6 +197,36 @@ void serial_tx_done(void)
     uint32_t primask = serial_enter_critical();
 
     txBusy = 0;
+    serial_start_transmit();
+    serial_exit_critical(primask);
+}
+
+void serial_process(void)
+{
+    uint32_t primask = serial_enter_critical();
+
+    if (serial_uart != NULL) {
+        if (((serial_uart->Instance->CR1 & USART_CR1_RE) == 0U)
+            || ((serial_uart->Instance->CR1 & USART_CR1_RXNEIE) == 0U)
+            || ((serial_uart->Instance->CR3 & USART_CR3_EIE) == 0U)
+            || (__HAL_UART_GET_FLAG(serial_uart, UART_FLAG_ORE) != RESET)) {
+            serialRxRestartPending = 1U;
+        }
+        if ((serialRxRestartPending != 0U)
+            && (serial_uart->RxState != HAL_UART_STATE_READY)) {
+            (void)HAL_UART_AbortReceive(serial_uart);
+        }
+        if (serialRxRestartPending != 0U) {
+            __HAL_UART_CLEAR_OREFLAG(serial_uart);
+            serial_uart->ErrorCode = HAL_UART_ERROR_NONE;
+        }
+        if ((serial_uart->RxState == HAL_UART_STATE_READY)
+            || (serialRxRestartPending != 0U)) {
+            HAL_NVIC_EnableIRQ(USART1_IRQn);
+            (void)serial_arm_rx();
+        }
+    }
+
     serial_start_transmit();
     serial_exit_critical(primask);
 }

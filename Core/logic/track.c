@@ -1,62 +1,189 @@
-/* 八路数字循迹：归一化质心 + 单个位置式 PD + 计时计圈。误差取归一化质心 e_y = ir_data.position
-   （已除压黑路数，量纲恒定 ±7），不直接驱电机，只发布 base_rpm 与 steer_rpm。20 ms 任务在 TIM6 中断里。 */
+/* 八路数字循迹：稳定分母归一化质心、位置式转向 PD、陀螺仪阻尼和计圈。
+   本模块只生成左右轮速度意图，位置与速度闭环由 position_loop/speed_loop 执行。 */
 
 #include "track.h"
 #include "config.h"
+#include "imu.h"
+#include "motion.h"
+#include "position_loop.h"
 #include "sched.h"
 #include "state.h"
 #include "irtrack.h"
 
-/* 一次采样的线路判定结果。只在本文件内使用。 */
+#include <math.h>
+
 typedef struct {
-    uint8_t pattern;      /* bit0..7 对应 IR1..8，压黑置 1。 */
-    uint8_t black_count;  /* 压黑通道数，0~8。 */
-    uint8_t contiguous;   /* 是否为单一连续黑线段。 */
-    uint8_t valid;        /* 压黑 1~TRACK_LINE_VALID_MAX_BLACK 路且连续。 */
-    uint8_t all_white;    /* 八路全白。 */
-    float   e_y;          /* 归一化横向偏差，直接取 ir_data.position，范围约 ±7。 */
+    uint8_t pattern;
+    uint8_t black_count;
+    uint8_t contiguous;
+    uint8_t valid;
+    float   line_error;
 } LineSample_t;
 
-static LineSample_t   sample;                 /* 本周期采样结果。 */
-static Pid_t          pid;                    /* 循迹位置环。 */
-static TrackState_t   trackState = TRK_STOPPED; /* 状态机当前状态。 */
-static TrackOutput_t  output;                 /* 对外发布的只读快照。 */
-static float          lastSteer;              /* 最近一次有效舵量，丢线时保持不变。 */
-static ConfirmCounter invalidCounter;         /* 线路无效确认，连续 N 次转入 LOST。 */
-static ConfirmCounter allWhiteCounter;        /* 八路全白确认，连续 N 次停车。 */
-static ConfirmCounter lostStopCounter;        /* 丢线持续确认，连续 N 次超时停车。 */
-static ConfirmCounter cornerCounter;          /* 「偏到一侧」确认，用于计圈。 */
-static uint16_t       cornerGap;              /* 计弯后的间隔，防止一个弯计成多个。 */
-static uint8_t        lapCorners;             /* 本圈已累计的弯数，到 4 计一圈。 */
-static uint8_t        startupTicks;           /* 起步直行计时。 */
-static float          steerRpmToPwmGain = TRACK_STEER_RPM_TO_PWM_DEFAULT;
+static LineSample_t sample;
+static TrackState_t trackState = TRK_STOPPED;
+static TrackOutput_t output;
+static ConfirmCounter cornerCounter;
+static uint16_t cornerGap;
+static uint8_t lapCorners;
 
-/* 循迹环配置：位置式 PD，输出限幅 ±TRACK_FOLLOW_DIFF_LIMIT_RPM（差速上限）。
-   zero_target_hold 与 out_offset 必须 0——它们是速度环用的，套上会把小偏差吃掉。 */
-static const PidConfig_t trackPidConfig = {
-    .kp = TRACK_PID_KP,
-    .ki = TRACK_PID_KI,
-    .kd = TRACK_PID_KD,
-    .dt = TRACK_PID_PERIOD_SECONDS,
-    .out_min = -TRACK_FOLLOW_DIFF_LIMIT_RPM,
-    .out_max = TRACK_FOLLOW_DIFF_LIMIT_RPM,
-    .zero_target_hold = 0.0f,
-    .out_offset = 0.0f,
-    .mode = PID_MODE_POSITIONAL,
-    .reset_on_sign_change = 0U,        /* 误差正负交替是正常的，不能复位。 */
-    .derivative_on_measurement = 0U,   /* 位置式的微分作用于误差。 */
-};
+static float trackKp = TRACK_PID_KP;
+static float trackKd = TRACK_PID_KD;
+static float trackGyroKp = TRACK_GYRO_KP;
+static float lineErrorPrevious;
+static float derivativeFiltered;
+static uint8_t derivativeInitialized;
+static float lastSteerRatio;
+static float baseRpm;
 
-static uint8_t line_is_contiguous(uint8_t pattern);
+static float lostLastYaw;
+static float lostYawDeg;
+static uint8_t lostYawInitialized;
+static float steerRpmToPwmGain = TRACK_STEER_RPM_TO_PWM_DEFAULT;
+
 static void    evaluate_line(void);
 static void    sample_line(void);
 static void    inject_pattern(uint8_t pattern);
-static uint8_t run_line_quality(void);
+static uint8_t run_line_quality(uint32_t now_ms);
+static uint8_t line_is_contiguous(uint8_t pattern);
+static float   wrap_yaw_delta(float delta);
+static uint8_t update_lost_heading(uint32_t now_ms);
+static float   slew_base_rpm(float current, float target);
+static float   update_steering(float line_error, uint32_t now_ms,
+                               uint8_t allow_gyro);
+static void    track_apply_velocity(float desired_left_rpm,
+                                    float desired_right_rpm);
 
-/* 20 ms 循迹任务：采样→判线路→跑状态机→发快照。TIM6 中断里，非循迹模式直接返回，顺序勿调。
-   采样与线路质量两步被 PWM 循迹测试借用，改这里会同时改到测试模式。 */
+static float clampf(float value, float low, float high)
+{
+    if (value > high) return high;
+    if (value < low) return low;
+    return value;
+}
+
+static uint8_t imu_damping_ready(const imu_data_t *imu, uint32_t now_ms)
+{
+    return (uint8_t)((imu->ok != 0U)
+                     && (imu->cal_status == IMU_CAL_READY)
+                     && ((uint32_t)(now_ms - imu->sample_ms)
+                         <= TRACK_LOST_IMU_STALE_MS));
+}
+
+static void reset_steering_runtime(void)
+{
+    derivativeInitialized = 0U;
+    lineErrorPrevious = 0.0f;
+    derivativeFiltered = 0.0f;
+    lastSteerRatio = 0.0f;
+    output.steer_ratio = 0.0f;
+    output.steer_rpm = 0.0f;
+}
+
+static float slew_base_rpm(float current, float target)
+{
+    float step = TRACK_BASE_ACCEL_RPM_S
+                 * ((float)CONTROL_PERIOD_MS * 0.001f);
+
+    if (target > current + step) return current + step;
+    if (target < current - step) return current - step;
+    return target;
+}
+
+static float update_steering(float line_error, uint32_t now_ms,
+                             uint8_t allow_gyro)
+{
+    const imu_data_t *imu = imu_get();
+    float control_error = line_error * TRACK_STEERING_SIGN;
+    float derivative_raw;
+    float derivative;
+    float gyro_damping = 0.0f;
+    float command;
+    float alpha;
+    float dt = (float)CONTROL_PERIOD_MS * 0.001f;
+
+    if (derivativeInitialized == 0U) {
+        lineErrorPrevious = control_error;
+        derivativeFiltered = 0.0f;
+        derivativeInitialized = 1U;
+    }
+    derivative_raw = (control_error - lineErrorPrevious) / dt;
+    lineErrorPrevious = control_error;
+    alpha = dt / (((float)TRACK_D_FILTER_MS * 0.001f) + dt);
+    derivativeFiltered += alpha * (derivative_raw - derivativeFiltered);
+    derivative = derivativeFiltered;
+
+    output.imu_active = 0U;
+    if ((allow_gyro != 0U) && (imu_damping_ready(imu, now_ms) != 0U)) {
+        output.imu_active = 1U;
+        gyro_damping = TRACK_GYRO_SIGN * trackGyroKp * imu->gyro_dps[2];
+        output.yaw_rate_dps = imu->gyro_dps[2];
+    } else {
+        output.yaw_rate_dps = 0.0f;
+    }
+
+    command = trackKp * control_error
+              + trackKd * derivative
+              - gyro_damping;
+    command = clampf(command,
+                     -TRACK_STEER_RATIO_LIMIT,
+                     TRACK_STEER_RATIO_LIMIT);
+    lastSteerRatio = command;
+    output.steer_ratio = command;
+    return command;
+}
+
+static void differential_from_ratio(float base, float ratio,
+                                    float *left, float *right)
+{
+    float magnitude = fabsf(ratio);
+
+    if (ratio >= 0.0f) {
+        *left = base * (1.0f - magnitude);
+        *right = base * (1.0f + TRACK_OUTER_WHEEL_GAIN * magnitude);
+    } else {
+        *left = base * (1.0f + TRACK_OUTER_WHEEL_GAIN * magnitude);
+        *right = base * (1.0f - magnitude);
+    }
+
+    *left = clampf(*left, 0.0f, SPEED_TARGET_LIMIT_RPM);
+    *right = clampf(*right, 0.0f, SPEED_TARGET_LIMIT_RPM);
+}
+
+void track_wheel_targets_from_ratio(float base_rpm, float ratio,
+                                    float *left_rpm, float *right_rpm)
+{
+    if ((left_rpm == 0) || (right_rpm == 0)) {
+        return;
+    }
+    differential_from_ratio(base_rpm, ratio, left_rpm, right_rpm);
+}
+
+static void track_apply_velocity(float desired_left_rpm,
+                                 float desired_right_rpm)
+{
+    const MotionView_t *motion = motion_view();
+    const PositionLoopView_t *position;
+
+    position_loop_track_step(desired_left_rpm, desired_right_rpm,
+                             motion->left_angle_deg, motion->right_angle_deg,
+                             motion->left_rpm, motion->right_rpm,
+                             0.0f, SPEED_TARGET_LIMIT_RPM);
+    position = position_loop_view();
+    output.desired_left_rpm = desired_left_rpm;
+    output.desired_right_rpm = desired_right_rpm;
+    output.target_left_rpm = position->axis[POSITION_LEFT].rpm_cmd;
+    output.target_right_rpm = position->axis[POSITION_RIGHT].rpm_cmd;
+    output.steer_rpm =
+        0.5f * (output.desired_right_rpm - output.desired_left_rpm);
+    state_set_wheel_targets(output.target_left_rpm, output.target_right_rpm);
+}
+
 void track_task(void)
 {
+    uint32_t now_ms = HAL_GetTick();
+    float desired_left;
+    float desired_right;
+
     if (state_view()->mode != modeTrack) {
         return;
     }
@@ -64,55 +191,58 @@ void track_task(void)
     sample_line();
 
     if (!state_view()->running) {
-        pid_reset(&pid);
         trackState = TRK_STOPPED;
+        baseRpm = 0.0f;
+        reset_steering_runtime();
+        output.base_rpm = 0.0f;
+        output.line_error = sample.line_error;
+        output.lost_yaw_deg = 0.0f;
         output.state = trackState;
+        output.pattern = sample.pattern;
+        state_set_wheel_targets(0.0f, 0.0f);
         return;
     }
 
-    if (run_line_quality() != 0U) {
+    if (run_line_quality(now_ms) != 0U) {
+        output.base_rpm = 0.0f;
+        output.line_error = sample.line_error;
+        output.state = trackState;
+        output.pattern = sample.pattern;
+        state_set_wheel_targets(0.0f, 0.0f);
         return;
     }
 
-    if (trackState == TRK_ACQUIRE) {
-        if (++startupTicks >= TRACK_START_FORWARD_TICKS) {
-            trackState = TRK_FOLLOW;
-        }
-    } else if ((trackState == TRK_FOLLOW) && (sample.valid != 0U)) {
+    baseRpm = slew_base_rpm(baseRpm, state_view()->gear_rpm);
 
-        /* 唯一的转向计算。 */
-        lastSteer = pid_update_position(&pid, sample.e_y);
+    if (sample.valid != 0U) {
+        (void)update_steering(sample.line_error, now_ms, 1U);
 
-        /* 唯一的计圈逻辑：e_y 偏到一侧即过弯（起点横线八路全压 e_y≈0 天然不计）。
-           判据用持续时间不用幅度——斜穿横线单侧压黑也能超阈值，但横线一闪而过（约 30ms），
-           转弯持续几十到几百 ms，3 周期确认窗口能把两者分开。 */
         if (cornerGap > 0U) {
-            /* 刚计过一个弯，本次不判定，防止一个弯被计成多个。 */
             cornerGap--;
         } else if (confirm_update(&cornerCounter,
-                                  (uint8_t)((sample.e_y >= TRACK_CORNER_E_Y_MIN)
-                                            || (sample.e_y <= -TRACK_CORNER_E_Y_MIN)))
-                   != 0U) {
+                                  (uint8_t)(fabsf(sample.line_error)
+                                            >= TRACK_CORNER_ERROR_MIN)) != 0U) {
             confirm_reset(&cornerCounter, TRACK_CORNER_CONFIRM_TICKS);
             cornerGap = TRACK_CORNER_GAP_TICKS;
-
             if (++lapCorners >= TRACK_CORNERS_PER_LAP) {
                 lapCorners = 0U;
                 state_increment_lap();
             }
         }
+    } else {
+        output.steer_ratio = lastSteerRatio;
     }
-    /* TRK_LOST：什么都不做，lastSteer 保持丢线前的值。 */
 
-    output.base_rpm = state_view()->gear_rpm;
-    output.steer_rpm = lastSteer;
-    output.e_y = sample.e_y;
+    differential_from_ratio(baseRpm, lastSteerRatio,
+                            &desired_left, &desired_right);
+    track_apply_velocity(desired_left, desired_right);
+
+    output.base_rpm = baseRpm;
+    output.line_error = sample.line_error;
     output.state = trackState;
     output.pattern = sample.pattern;
 }
 
-/* 判断压黑图案是否连成一段。数字量传感器易出「两头黑中间白」断续图案（斜穿横线/岔路口），
-   必须判无效，否则质心会算出「居中」的假象。 */
 static uint8_t line_is_contiguous(uint8_t pattern)
 {
     uint8_t first = 0U;
@@ -142,67 +272,83 @@ static uint8_t line_is_contiguous(uint8_t pattern)
     return 1U;
 }
 
-/* 把 ir_data 现有读数判定成线路样本。只读 pattern/black_count/position，不碰 GPIO，
-   读数怎么来的不管——实车与 PWM 循迹测试共用。e_y 直接用驱动层算好的归一化质心。 */
 static void evaluate_line(void)
 {
     sample.pattern = ir_data.pattern;
     sample.black_count = ir_data.black_count;
-    sample.e_y = ir_data.position;
-    sample.contiguous = line_is_contiguous(ir_data.pattern);
-
-    /* 有效 = 压黑 1~7 路且连续。压满 8 路视为横线，不作为循迹线路。 */
-    sample.valid = (uint8_t)((ir_data.black_count >= 1U)
-                             && (ir_data.black_count <= TRACK_LINE_VALID_MAX_BLACK)
+    sample.line_error = ir_data.normalized_position;
+    sample.contiguous = line_is_contiguous(sample.pattern);
+    sample.valid = (uint8_t)((sample.black_count >= 1U)
+                             && (sample.black_count
+                                 <= TRACK_LINE_VALID_MAX_BLACK)
                              && (sample.contiguous != 0U));
-    sample.all_white = (ir_data.black_count == 0U) ? 1U : 0U;
 }
 
-/* 读八路传感器并完成线路判定（实车路径）。 */
 static void sample_line(void)
 {
     ir_read();
     ir_compute();
-
     evaluate_line();
 }
 
-/* 把图案当传感器读数写进驱动层（仅 PWM 循迹测试）。走与实车相同的计算链，误差量纲一致。
-   raw[] 是反相表示（0 = 压黑），这里逐位取反填入。
-   注入后不能再调 ir_read()，否则读数立刻被 GPIO 覆盖——两条路径不能混走。 */
+uint8_t track_sample_line(float *line_error, uint8_t *pattern)
+{
+    sample_line();
+    output.line_error = sample.line_error;
+    output.pattern = sample.pattern;
+    if (line_error != 0) *line_error = sample.line_error;
+    if (pattern != 0) *pattern = sample.pattern;
+    return sample.valid;
+}
+
+float track_follow_update(float line_error)
+{
+    (void)update_steering(line_error, HAL_GetTick(), 1U);
+    trackState = TRK_FOLLOW;
+    output.state = trackState;
+    return lastSteerRatio;
+}
+
+void track_follow_reset(void)
+{
+    reset_steering_runtime();
+    trackState = TRK_STOPPED;
+    output.state = trackState;
+}
+
 static void inject_pattern(uint8_t pattern)
 {
     for (uint8_t i = 0U; i < IRTRACK_CHANNELS; i++) {
         ir_data.raw[i] = ((pattern & (uint8_t)(1U << i)) != 0U) ? 0U : 1U;
     }
-
     ir_compute();
 }
 
-/* 线路质量判定与停车规则。实车与 PWM 循迹测试共用：无效确认转 LOST，恢复有效回 FOLLOW 并复位 PID；
-   全白连续达阈值请求停车（视为终点线）；丢线超时只在 LOST 里计时。不含计圈（只属实车）。 */
-static uint8_t run_line_quality(void)
+static float wrap_yaw_delta(float delta)
 {
-    if (sample.valid != 0U) {
-        /* 线路恢复有效：两个确认计时清零，避免旧计数残留。 */
-        confirm_reset(&invalidCounter, TRACK_LINE_INVALID_CONFIRM_TICKS);
-        confirm_reset(&lostStopCounter, TRACK_LINE_LOST_STOP_TICKS);
-        if (trackState == TRK_LOST) {
-            pid_reset(&pid);
-            trackState = TRK_FOLLOW;
-        }
-    } else if (confirm_update(&invalidCounter, 1U) != 0U) {
-        /* 连续无效达到阈值才判定丢线，滤掉单帧噪声。 */
-        trackState = TRK_LOST;
-    }
+    while (delta > 180.0f) delta -= 360.0f;
+    while (delta < -180.0f) delta += 360.0f;
+    return delta;
+}
 
-    if (confirm_update(&allWhiteCounter, sample.all_white) != 0U) {
-        state_report_stop(stopReasonAllWhite);
+static uint8_t update_lost_heading(uint32_t now_ms)
+{
+    const imu_data_t *imu = imu_get();
+
+    if (imu_damping_ready(imu, now_ms) == 0U) {
+        state_report_stop(stopReasonCornerTimeout);
         return 1U;
     }
 
-    if (trackState == TRK_LOST) {
-        if (confirm_update(&lostStopCounter, 1U) != 0U) {
+    if (lostYawInitialized == 0U) {
+        lostLastYaw = imu->yaw;
+        lostYawDeg = 0.0f;
+        lostYawInitialized = 1U;
+    } else {
+        lostYawDeg += wrap_yaw_delta(imu->yaw - lostLastYaw);
+        lostLastYaw = imu->yaw;
+        output.lost_yaw_deg = lostYawDeg;
+        if (fabsf(lostYawDeg) >= TRACK_LOST_YAW_LIMIT_DEG) {
             state_report_stop(stopReasonCornerTimeout);
             return 1U;
         }
@@ -211,119 +357,166 @@ static uint8_t run_line_quality(void)
     return 0U;
 }
 
-/* 取只读循迹快照。 */
+static uint8_t run_line_quality(uint32_t now_ms)
+{
+    if (sample.valid != 0U) {
+        if (trackState == TRK_LOST) {
+            derivativeInitialized = 0U;
+            lostYawInitialized = 0U;
+            lostYawDeg = 0.0f;
+            output.lost_yaw_deg = 0.0f;
+        }
+        trackState = TRK_FOLLOW;
+        return 0U;
+    }
+
+    trackState = TRK_LOST;
+    confirm_reset(&cornerCounter, TRACK_CORNER_CONFIRM_TICKS);
+    return update_lost_heading(now_ms);
+}
+
 const TrackOutput_t *track_output(void)
 {
     return &output;
 }
 
-/* 初始化循迹环并复位状态。 */
 void track_init(void)
 {
-    pid_init(&pid, &trackPidConfig);
     track_reset_state();
 }
 
-/* 复位状态机、PID、确认计数与计时器。也重写 PID 限幅为 ±TRACK_FOLLOW_DIFF_LIMIT_RPM——pid_init
-   只在初始化读一次配置，限幅被改过就得靠这里恢复（目前无路径在运行时改它，这步是兜底，别删）。
-   复位后为 TRK_STOPPED，要跑须再调 track_start。 */
 void track_reset_state(void)
 {
-    pid_reset(&pid);
-    pid_set_limits(&pid, -TRACK_FOLLOW_DIFF_LIMIT_RPM, TRACK_FOLLOW_DIFF_LIMIT_RPM);
-
-    confirm_reset(&invalidCounter, TRACK_LINE_INVALID_CONFIRM_TICKS);
-    confirm_reset(&allWhiteCounter, TRACK_ALL_WHITE_STOP_TICKS);
-    confirm_reset(&lostStopCounter, TRACK_LINE_LOST_STOP_TICKS);
     confirm_reset(&cornerCounter, TRACK_CORNER_CONFIRM_TICKS);
-
     cornerGap = 0U;
     lapCorners = 0U;
-    startupTicks = 0U;
-    lastSteer = 0.0f;
+    baseRpm = 0.0f;
+    lostLastYaw = 0.0f;
+    lostYawDeg = 0.0f;
+    lostYawInitialized = 0U;
     trackState = TRK_STOPPED;
+    reset_steering_runtime();
 
     output.base_rpm = 0.0f;
     output.steer_rpm = 0.0f;
-    output.e_y = 0.0f;
+    output.steer_ratio = 0.0f;
+    output.line_error = 0.0f;
+    output.yaw_rate_dps = 0.0f;
+    output.desired_left_rpm = 0.0f;
+    output.desired_right_rpm = 0.0f;
+    output.target_left_rpm = 0.0f;
+    output.target_right_rpm = 0.0f;
+    output.lost_yaw_deg = 0.0f;
+    output.imu_active = 0U;
     output.state = trackState;
     output.pattern = 0U;
+    state_set_wheel_targets(0.0f, 0.0f);
 }
 
-/* 启动循迹：先复位再进 ACQUIRE 起步直行（约 1 秒），让车在转向之前先摆正。 */
 void track_start(void)
 {
+    const MotionView_t *motion = motion_view();
+
     track_reset_state();
-    trackState = TRK_ACQUIRE;
+    position_loop_track_begin(motion->left_angle_deg, motion->right_angle_deg);
+    trackState = TRK_FOLLOW;
     output.state = trackState;
 }
 
-/* 读循迹环增益。只读，无在线改增益接口。 */
 float track_get_gain(PidField_t field)
 {
-    return pid_get_gain(&pid, field);
+    if (field == PID_FIELD_KP) return trackKp;
+    if (field == PID_FIELD_KI) return 0.0f;
+    if (field == PID_FIELD_KD) return trackKd;
+    return 0.0f;
 }
 
-/* 设「差速 RPM 换算 PWM 百分比」增益（%/RPM）。只影响 PWM 循迹测试（旁路速度环直接出 PWM）。 */
+uint8_t track_set_gain(PidField_t field, float value)
+{
+    if (!((value >= 0.0f) && (value <= 1000.0f))) {
+        return 0U;
+    }
+
+    if (field == PID_FIELD_KP) trackKp = value;
+    else if (field == PID_FIELD_KI) return 0U;
+    else if (field == PID_FIELD_KD) trackKd = value;
+    else return 0U;
+
+    reset_steering_runtime();
+    return 1U;
+}
+
+float track_get_gyro_gain(void)
+{
+    return trackGyroKp;
+}
+
+uint8_t track_set_gyro_gain(float value)
+{
+    if (!((value >= 0.0f) && (value <= 10.0f))) {
+        return 0U;
+    }
+    trackGyroKp = value;
+    return 1U;
+}
+
 void track_set_steer_rpm_to_pwm_gain(float gain)
 {
     steerRpmToPwmGain = gain;
 }
 
-/* 读上面的换算增益，单位 %/RPM。 */
 float track_get_steer_rpm_to_pwm_gain(void)
 {
     return steerRpmToPwmGain;
 }
 
-/* PWM 循迹测试一步：把图案当传感器读数，走与实车相同的判定与输出。TIM6 20 ms 时隙，与 Task20ms 互斥。
-   差速用循迹 PID 自己的限幅（±TRACK_FOLLOW_DIFF_LIMIT_RPM）——不要为测试另设限幅，早先做法会原地
-   改写共享 PID 配置，某次模式切换没复位就把真实循迹的差速上限永久改掉了。 */
-uint8_t track_test_step20ms(uint8_t pattern)
+uint8_t track_test_step(uint8_t pattern)
 {
+    uint32_t now_ms = HAL_GetTick();
+
     if (!state_view()->running) {
-        pid_reset(&pid);
         trackState = TRK_STOPPED;
+        reset_steering_runtime();
         output.state = trackState;
+        state_set_wheel_targets(0.0f, 0.0f);
         return 1U;
     }
 
     inject_pattern(pattern);
     evaluate_line();
 
-    if (run_line_quality() != 0U) {
-        return 1U;
-    }
-
-    /* 测试没有起步直行阶段：没丢线就一直算。 */
-    if (trackState != TRK_LOST) {
+    if (sample.valid != 0U) {
+        if (trackState == TRK_LOST) {
+            derivativeInitialized = 0U;
+        }
         trackState = TRK_FOLLOW;
+    } else {
+        trackState = TRK_LOST;
     }
 
-    if ((trackState == TRK_FOLLOW) && (sample.valid != 0U)) {
-        track_set_pwm_steer(pid_update_position(&pid, sample.e_y));
+    if (sample.valid != 0U) {
+        float ratio = update_steering(sample.line_error, now_ms, 0U);
+        track_set_pwm_steer(ratio * TRACK_PWM_TEST_STEER_SCALE_RPM);
     }
-    /* TRK_LOST：什么都不做，lastSteer 保持丢线前的值。 */
 
-    /* 发布快照。测试是开环的，不吃目标转速，base_rpm 恒 0；e_y 与 pattern 必须发出去，
-       否则 OLED 的 ERR 和遥测 trackError 会一直显示上一次循迹模式留下的陈旧值。 */
     output.base_rpm = 0.0f;
-    output.e_y = sample.e_y;
+    output.line_error = sample.line_error;
     output.state = trackState;
     output.pattern = sample.pattern;
-
     return 0U;
 }
 
-/* 写本周期差速输出，同时更新 lastSteer（丢线保持取最新值，而非上一次循迹残留）。 */
 void track_set_pwm_steer(float steerRpm)
 {
-    lastSteer = steerRpm;
     output.steer_rpm = steerRpm;
 }
 
-/* 读当前差速输出，单位 RPM。 */
 float track_get_steer(void)
 {
     return output.steer_rpm;
+}
+
+float track_get_steer_ratio(void)
+{
+    return lastSteerRatio;
 }

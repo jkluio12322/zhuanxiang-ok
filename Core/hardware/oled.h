@@ -7,7 +7,10 @@
 /* SSD1306 8 位 I2C 地址 */
 #define OLED_ADDR  0x78
 
-void oled_init(void);                                               /* 初始化 + 清帧缓冲 */
+void oled_init_begin(void);                                         /* 启动非阻塞初始化序列 */
+uint8_t oled_init_poll(void);                                       /* 推进初始化，1 = 已结束 */
+void oled_recover_begin(void);                                      /* 主动启动 I2C 总线恢复 */
+void oled_recover_poll(void);                                       /* 推进非阻塞 I2C 总线恢复 */
 void oled_clear(void);                                              /* 清帧缓冲 */
 void oled_show_char(uint8_t Line, uint8_t Column, char Char);        /* 写 8×16 字符 */
 void oled_show_string(uint8_t Line, uint8_t Column, char *String);   /* 写 8×16 字符串 */

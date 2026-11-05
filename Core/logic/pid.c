@@ -6,11 +6,17 @@
 
 static float pidClamp(float value, float minValue, float maxValue);
 static void  pidCheckTargetSign(Pid_t *p, float newTarget);
-static float pidCompute(Pid_t *p);
+static float pidCompute(Pid_t *p, float incremental_integral_scale);
 static float pidFinalize(const Pid_t *p, float raw);
 
 /* 按 目标/实测 更新一次 PID（速度环用）。中断上下文。 */
 float pid_update(Pid_t *p, float target, float actual)
+{
+    return pid_update_scaled(p, target, actual, 1.0f);
+}
+
+float pid_update_scaled(Pid_t *p, float target, float actual,
+                        float incremental_integral_scale)
 {
     pidCheckTargetSign(p, target);
 
@@ -21,7 +27,7 @@ float pid_update(Pid_t *p, float target, float actual)
     p->e1 = p->e0;
     p->e0 = target - actual;
 
-    p->out = pidCompute(p);
+    p->out = pidCompute(p, incremental_integral_scale);
     p->actual_prev = actual;
 
     return pidFinalize(p, p->out);
@@ -40,7 +46,7 @@ float pid_update_position(Pid_t *p, float error)
     p->e1 = p->e0;
     p->e0 = error;
 
-    output = pidCompute(p);
+    output = pidCompute(p, 1.0f);
     p->out = output;
 
     return pidFinalize(p, output);
@@ -78,7 +84,7 @@ static void pidCheckTargetSign(Pid_t *p, float newTarget)
 
 /* 按模式算原始输出。增量式累加器必须钳位——否则输出饱和期间累加器继续涨，
    误差反向时要爬很久才回来（积分饱和）；微分默认作用于测量值，避免目标突变冲击。 */
-static float pidCompute(Pid_t *p)
+static float pidCompute(Pid_t *p, float incremental_integral_scale)
 {
     float derivative;
     float output;
@@ -102,7 +108,7 @@ static float pidCompute(Pid_t *p)
     }
 
     p->out += p->cfg.kp * (p->e0 - p->e1)
-              + p->cfg.ki * p->e0
+              + p->cfg.ki * p->e0 * incremental_integral_scale
               + derivative;
 
     /* 累加器限幅——少了这步输出饱和后累加器会继续增长，形成积分饱和。 */
@@ -162,6 +168,27 @@ float pid_get_gain(const Pid_t *p, PidField_t field)
     case PID_FIELD_KI: return p->cfg.ki;
     case PID_FIELD_KD: return p->cfg.kd;
     default:           return 0.0f;
+    }
+}
+
+uint8_t pid_set_gain(Pid_t *p, PidField_t field, float value)
+{
+    if ((p == 0) || !((value >= 0.0f) && (value <= 1000.0f))) {
+        return 0U;
+    }
+
+    switch (field) {
+    case PID_FIELD_KP:
+        p->cfg.kp = value;
+        return 1U;
+    case PID_FIELD_KI:
+        p->cfg.ki = value;
+        return 1U;
+    case PID_FIELD_KD:
+        p->cfg.kd = value;
+        return 1U;
+    default:
+        return 0U;
     }
 }
 

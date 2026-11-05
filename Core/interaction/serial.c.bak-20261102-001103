@@ -1,0 +1,302 @@
+/* USART1 串口调试/VOFA 通信：fputc/printf -> TX 环形缓冲(2048B) -> HAL IT 缓冲(256B)
+   -> TX Complete ISR 自动接力下一块。生产者主循环/任务，消费者发送完成中断，多生产者靠
+   PRIMASK 临界区串行化；环满静默丢弃，保证控制循环不被串口阻塞。USART1: PA9=TX PA10=RX
+   115200bps。
+
+   发送链自愈（三段加固）：
+   ① HAL_UART_Transmit_IT 只在 gState==READY 时才启动；返回非 HAL_OK 时若不回滚 txBusy，
+      就只有 TxCpltCallback 能清 -> TX 永久死亡。因此先窥视、启动成功后才出队。
+   ② serial_poll() 由 1 ms 调度调用：txBusy 超时、或 gState 长期不是 READY（TxCplt 救不了
+      的另一条路径）时，强制 AbortTransmit 并接力。
+   ③ HAL_UART_ErrorCallback()：ORE/NE/FE 走 HAL 错误路径不产生 TxCpltCallback，必须在这里
+      清 ORE、解锁发送并重挂接收，否则 TX/RX 一起永久停摆。 */
+
+#include "serial.h"
+#include "console.h"
+#include "bytestream.h"
+#include "ringbuf.h"
+#include <stdarg.h>
+
+static UART_HandleTypeDef *serial_uart = NULL;
+
+/* 单字节接收中断的落点，由 HAL_UART_RxCpltCallback 转交给命令行模块。 */
+static uint8_t serialRxByte = 0U;
+
+/* 串口发送环形缓冲区容量，单位字节。给主循环偶发变慢留足余量。 */
+#define TX_RING_SIZE  2048
+static uint8_t tx_ring_buf[TX_RING_SIZE];
+static RingBuf  tx_ring;
+
+/* 单次 HAL UART 中断发送使用的线性缓冲区容量，单位字节。 */
+#define TX_LINEAR_BUF_SIZE  256
+static uint8_t  txLinearBuf[TX_LINEAR_BUF_SIZE];
+static volatile uint8_t txBusy = 0;
+
+/* 发送看门狗：单块 256 B @115200 约 22 ms，超过 SERIAL_TX_TIMEOUT_MS 仍未完成即判卡死。 */
+#define SERIAL_TX_TIMEOUT_MS  50U
+static volatile uint32_t txStartTick = 0U;      /* 本次 IT 发送的起始时刻 */
+static volatile uint8_t  txBlocked = 0U;        /* 1 = gState 长期不是 READY，环里有数据发不出去 */
+static volatile uint32_t txBlockedSince = 0U;   /* txBlocked 置位时刻 */
+static volatile uint32_t txBytesSent = 0U;      /* 累计交给 HAL 的字节数，诊断用 */
+static volatile uint32_t txStalls = 0U;         /* 看门狗复位次数，诊断用 */
+
+/* USART1 通用字节流适配器。 */
+static ByteStream_t serialByteStream;
+
+/* 将通用字节流写入 USART1 非阻塞环形发送缓冲。 */
+static uint16_t serial_byte_stream_write(const uint8_t *data, uint16_t length)
+{
+    int written = serial_write(data, length);
+
+    return (written > 0) ? (uint16_t)written : 0U;
+}
+
+/* 关中断并返回进入临界区前的 PRIMASK 状态。 */
+static uint32_t serial_enter_critical(void)
+{
+    uint32_t primask = __get_PRIMASK();
+
+    __disable_irq();
+    return primask;
+}
+
+/* 按保存的 PRIMASK 状态恢复中断（原为 0 才重新开）。 */
+static void serial_exit_critical(uint32_t primask)
+{
+    if (primask == 0U) {
+        __enable_irq();
+    }
+}
+
+/* 从发送环形缓冲取一批数据并启动下一次中断发送。调用方须持串口临界区。
+   顺序不能反：先 peek 到线性缓冲，HAL 启动成功后才出队。反过来的话，HAL 返回
+   HAL_BUSY 时字节已经丢了，而 txBusy 又没人清，就是"发一阵后永久静默"的根因。 */
+static void serial_start_transmit(void)
+{
+    if (txBusy || (serial_uart == NULL)) {
+        return;
+    }
+
+    /* HAL 状态机不在 READY 时不要动环里的数据，只记下阻塞起点交给 serial_poll() 兜底。 */
+    if (serial_uart->gState != HAL_UART_STATE_READY) {
+        if (txBlocked == 0U) {
+            txBlocked = 1U;
+            txBlockedSince = HAL_GetTick();
+        }
+        return;
+    }
+    txBlocked = 0U;
+
+    uint16_t avail = ringbuf_available(&tx_ring);
+    if (avail == 0U) {
+        return;
+    }
+
+    uint16_t n = (avail < TX_LINEAR_BUF_SIZE)
+                 ? avail
+                 : TX_LINEAR_BUF_SIZE;
+    for (uint16_t i = 0U; i < n; i++) {
+        if (ringbuf_peek(&tx_ring, i, &txLinearBuf[i]) < 0) {
+            n = i;
+            break;
+        }
+    }
+    if (n == 0U) {
+        return;
+    }
+
+    txBusy = 1;
+    txStartTick = HAL_GetTick();
+
+    if (HAL_UART_Transmit_IT(serial_uart, txLinearBuf, n) != HAL_OK) {
+        /* HAL_BUSY / HAL_ERROR：字节仍留在环里，回滚忙标志，下一次再试。 */
+        txBusy = 0;
+        return;
+    }
+
+    /* 只有真正交给 HAL 之后才出队，保证"环里有数据"与"正在发"永远一致。 */
+    for (uint16_t i = 0U; i < n; i++) {
+        uint8_t dropped = 0U;
+        (void)ringbuf_get(&tx_ring, &dropped);
+    }
+    txBytesSent += n;
+}
+
+/* 初始化 TX 环形缓冲并启动单字节接收中断。 */
+void serial_init(UART_HandleTypeDef *huart)
+{
+    serial_uart = huart;
+    serialByteStream.write = serial_byte_stream_write;
+    ringbuf_init(&tx_ring, tx_ring_buf, TX_RING_SIZE);
+    txBusy = 0;
+    txStartTick = 0U;
+    txBlocked = 0U;
+    txBlockedSince = 0U;
+    txBytesSent = 0U;
+    txStalls = 0U;
+
+    /* 中断里只缓存一个字节，解析在主循环里做。 */
+    HAL_UART_Receive_IT(serial_uart, &serialRxByte, 1);
+}
+
+/* 发送链看门狗，由 1 ms 调度调用。覆盖两条卡死路径：
+   ① txBusy 长时间为 1（TxCpltCallback 没来）；
+   ② txBusy 为 0 但 gState 长期不是 READY 且环里有数据（TxCplt 根本救不了）。
+   本 HAL 版本的 HAL_UART_AbortTransmit() 没有等待循环：只关 TXEIE/TCIE、把 gState 置回
+   READY（本工程 hdmatx == NULL，不会走 DMA 阻塞分支），所以在 1 ms 中断里调用是安全的。 */
+void serial_poll(void)
+{
+    uint32_t now;
+    uint32_t primask;
+
+    if (serial_uart == NULL) {
+        return;
+    }
+
+    now = HAL_GetTick();
+
+    if (txBusy != 0U) {
+        if ((uint32_t)(now - txStartTick) < SERIAL_TX_TIMEOUT_MS) {
+            return;
+        }
+    } else if ((txBlocked != 0U)
+               && ((uint32_t)(now - txBlockedSince) >= SERIAL_TX_TIMEOUT_MS)) {
+        /* 落在这一支说明 gState 卡死且环里有数据待发。 */
+    } else {
+        return;
+    }
+
+    primask = serial_enter_critical();
+    (void)HAL_UART_AbortTransmit(serial_uart);
+    txBusy = 0;
+    txBlocked = 0U;
+    txStalls++;
+    serial_start_transmit();
+    serial_exit_critical(primask);
+}
+
+/* 诊断计数：累计交给 HAL 的字节数与看门狗复位次数（可传 NULL 忽略）。 */
+void serial_stats(uint32_t *sent, uint32_t *stalls)
+{
+    if (sent != NULL) {
+        *sent = txBytesSent;
+    }
+    if (stalls != NULL) {
+        *stalls = txStalls;
+    }
+}
+
+/* 发送环形缓冲剩余空间，单位字节。供需要整行写入的模块先判断能否一次放下。 */
+int serial_free_space(void)
+{
+    return (int)ringbuf_free(&tx_ring);
+}
+
+/* UART 接收完成回调（中断上下文）。本工程只用 USART1；USART2 保留给蓝牙未使用。
+   只转交字节并重新装填，不做解析。 */
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+    if (huart->Instance == USART1) {
+        console_rx_byte(serialRxByte);
+        HAL_UART_Receive_IT(huart, &serialRxByte, 1);
+    }
+}
+
+/* UART 发送完成回调（中断上下文）：TX 完成后接力发送环形缓冲剩余数据。 */
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
+{
+    if (huart->Instance == USART1) {
+        serial_tx_done();
+    }
+}
+
+/* UART 错误回调（中断上下文）：ORE/NE/FE 时 HAL 只结束接收传输并清 RXNEIE，
+   既不会自己清 ORE 标志，也不会产生 TxCpltCallback。不在这里收尾，
+   TX 会停在 txBusy=1、RX 会停在不再重挂，表现为"串口彻底没反应"。 */
+void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
+{
+    uint32_t primask;
+
+    if ((huart == NULL) || (huart->Instance != USART1)) {
+        return;
+    }
+
+    __HAL_UART_CLEAR_OREFLAG(huart);      /* F1：先读 SR 再读 DR 清 ORE */
+    huart->ErrorCode = HAL_UART_ERROR_NONE;
+
+    primask = serial_enter_critical();
+    txBusy = 0;
+    txBlocked = 0U;
+    serial_start_transmit();
+    serial_exit_critical(primask);
+
+    /* 错误路径已经把 RxState 置回 READY，这里重新装填单字节接收。 */
+    (void)HAL_UART_Receive_IT(huart, &serialRxByte, 1);
+}
+
+/* 批量写入数据到 TX 环形缓冲（非阻塞）。返回实际写入字节数 0~len，空间不足时返回已写入数。 */
+int serial_write(const uint8_t *data, uint16_t len)
+{
+    uint16_t written = 0;
+    uint32_t primask = serial_enter_critical();
+
+    for (uint16_t i = 0; i < len; i++) {
+        if (ringbuf_put_nb(&tx_ring, data[i]) < 0) break;
+        written++;
+    }
+    serial_start_transmit();
+    serial_exit_critical(primask);
+    return written;
+}
+
+/* 发送单字节（非阻塞，写环形缓冲）。缓冲满时静默丢弃。 */
+void serial_send_byte(uint8_t Byte)
+{
+    bytestream_send_byte(&serialByteStream, Byte);
+}
+
+/* 发送字节数组（非阻塞）。 */
+void serial_send_array(uint8_t *Array, uint16_t Length)
+{
+    bytestream_send_array(&serialByteStream, Array, Length);
+}
+
+/* 发送字符串（非阻塞）。环形缓冲满时在当前位置停止，剩余字符不发送。 */
+void serial_send_string(char *String)
+{
+    bytestream_send_string(&serialByteStream, String);
+}
+
+/* 发送无符号整数（固定位数）。 */
+void serial_send_number(uint32_t Number, uint8_t Length)
+{
+    bytestream_send_number(&serialByteStream, Number, Length);
+}
+
+/* 格式化串口打印（经 ByteStream 用 128 字节有界缓冲）。 */
+void serial_printf(char *format, ...)
+{
+    va_list arg;
+
+    va_start(arg, format);
+    bytestream_vprintf(&serialByteStream, format, arg);
+    va_end(arg);
+}
+
+/* printf 重定向 -> 非阻塞 serial_write。 */
+int fputc(int ch, FILE *f)
+{
+    (void)f;
+    serial_send_byte((uint8_t)ch);
+    return ch;
+}
+
+/* TX 完成回调：清 busy 并检查环形缓冲有无待发数据，有则接力启动下一批（中断上下文）。 */
+void serial_tx_done(void)
+{
+    uint32_t primask = serial_enter_critical();
+
+    txBusy = 0;
+    serial_start_transmit();
+    serial_exit_critical(primask);
+}

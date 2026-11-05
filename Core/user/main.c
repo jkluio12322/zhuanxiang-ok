@@ -6,6 +6,7 @@
 #include "i2c.h"
 #include "tim.h"
 #include "usart.h"
+#include "spi.h"
 
 /* USER CODE BEGIN Includes */
 #include "cmd.h"
@@ -24,7 +25,6 @@
 #include "irtrack.h"
 #include "key.h"
 #include "motor.h"
-#include "mpu6050.h"
 #include "oled.h"
 #include "console.h"
 #include "serial.h"
@@ -47,7 +47,7 @@ int main(void)
   SystemClock_Config();
 
   MX_GPIO_Init();
-  MX_I2C1_Init();
+  MX_SPI2_Init();
   MX_TIM1_Init();
   MX_TIM2_Init();
   MX_TIM3_Init();
@@ -59,8 +59,16 @@ int main(void)
   MX_USART1_UART_Init();
 
   /* USER CODE BEGIN 2 */
-  oled_init();
-  HAL_Delay(OLED_BOOT_DELAY_MS);
+  /* OLED 初始化是非阻塞状态机：这里只是等它走完（约 150 ms），全程没有 HAL_Delay。
+     蜂鸣器跟着初始化一起响，初始化结束就关。 */
+  buzzer_init();
+  buzzer_on();
+  oled_init_begin();
+  while (oled_init_poll() == 0U)
+  {
+    oled_recover_poll();
+  }
+  buzzer_off();
 
   motor_init();
   ir_init();
@@ -76,7 +84,6 @@ int main(void)
   serial_init(&huart1);
   telemetry_boot_header();
   console_init();
-  buzzer_init();
 
   state_init();
   cmd_init();
@@ -85,13 +92,19 @@ int main(void)
   /* 所有模块都初始化完了才放行中断任务，避免中断改到未初始化的对象。 */
   sched_init();
 
-  display_show_boot();
-  buzzer_on();
-  HAL_Delay(BOOT_BEEP_MS);
-  buzzer_off();
+  /* 开机菜单非阻塞：主循环照常推进，遥测从第一帧起就是 20 Hz。 */
+  display_boot_begin();
+  while (display_boot_poll() == 0U)
+  {
+    deferred_run();       /* 菜单期间照常做 IMU 采样与遥测发送 */
+    serial_process();
+    console_process();
+    console_flush();
+    console_diag_task();
+    oled_flush();
+    oled_recover_poll();
+  }
 
-  /* 等待指定按键启动，避免上电后立即进入控制状态。 */
-  display_boot_config();
   oled_clear();
   oled_show_string(2, 1, " Calibrating... ");
   oled_flush();
@@ -101,12 +114,15 @@ int main(void)
   while (1)
   {
     /* USER CODE BEGIN 3 */
-    deferred_run();       /* 遥测发送和 OLED 刷新（由调度器置标志） */
+    deferred_run();       /* 姿态采样、遥测发送、OLED 刷新（由调度器置标志） */
+    serial_process();
 
     console_process();    /* 串口命令行解析与响应 */
     console_flush();
+    console_diag_task();
 
     oled_flush();            /* OLED 缓冲写入 */
+    oled_recover_poll();     /* I2C 总线恢复状态机（没触发时立即返回） */
     /* USER CODE END 3 */
   }
 }

@@ -1,6 +1,7 @@
 /* 八路数字循迹传感器采样、权重和位置计算 */
 
 #include "irtrack.h"
+#include "config.h"
 #include <string.h>
 
 IRTrack_Data_t ir_data = {0};
@@ -90,4 +91,20 @@ void ir_compute(void)   /* 计算黑线图案、通道数、加权位置与权�
     }
 
     ir_data.position = (float)positionTimes100 / 100.0f;
+
+    if (count > 0U) {
+        float denominator =
+            (float)IR_WEIGHT_CH8
+            * ((float)count + TRACK_ERROR_DENOM_BIAS);
+        ir_data.normalized_position =
+            (float)sum * (1.0f + TRACK_ERROR_DENOM_BIAS) / denominator;
+        if (ir_data.normalized_position > 1.0f) {
+            ir_data.normalized_position = 1.0f;
+        }
+        if (ir_data.normalized_position < -1.0f) {
+            ir_data.normalized_position = -1.0f;
+        }
+    } else {
+        ir_data.normalized_position = 0.0f;
+    }
 }

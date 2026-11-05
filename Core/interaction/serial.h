@@ -28,5 +28,6 @@ void serial_printf(char *format, ...);
 
 /* 处理 UART 发送完成事件并启动下一批数据（由 UART 发送完成中断调用）。 */
 void serial_tx_done(void);
+void serial_process(void);
 
 #endif

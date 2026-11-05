@@ -14,7 +14,6 @@ typedef struct {
 void ringbuf_init(RingBuf *rb, uint8_t *buf, uint16_t capacity);            /* 初始化 */
 uint16_t ringbuf_available(RingBuf *rb);                                    /* 可读字节数 */
 uint16_t ringbuf_free(RingBuf *rb);                                         /* 剩余可写空间 */
-int ringbuf_put(RingBuf *rb, uint8_t byte);                                 /* 阻塞写一个字节；禁止在中断上下文调用 */
 int ringbuf_put_nb(RingBuf *rb, uint8_t byte);                               /* 非阻塞写，满时返回 -1 */
 int ringbuf_get(RingBuf *rb, uint8_t *byte);                                /* 非阻塞读，空时返回 -1 */
 int ringbuf_peek(const RingBuf *rb, uint16_t offset, uint8_t *byte);        /* 读偏移处字节，不移动读索引 */

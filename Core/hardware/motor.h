@@ -5,7 +5,7 @@
 #include "main.h"
 
 void motor_init(void);               /* 启动 TIM1_CH1/CH2 PWM */
-void motor_a_set(int16_t Speed); /* A 轮：正转/负反转/0 停 */
-void motor_b_set(int16_t Speed); /* B 轮：正转/负反转/0 停 */
+void motor_a_set(float speed_percent); /* A 轮：小数百分比，正转/负反转/0 停 */
+void motor_b_set(float speed_percent); /* B 轮：小数百分比，正转/负反转/0 停 */
 
 #endif

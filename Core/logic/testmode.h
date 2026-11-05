@@ -1,4 +1,4 @@
-/* 两种开环测试模式的记账：PWM 速度测试与 PWM 循迹测试。本模块只管状态，设目标/复位/遥测由 50 ms 任务决定。 */
+/* 两种开环测试模式的记账。本模块只管状态，电机目标和遥测由 5 ms 控制任务决定。 */
 #ifndef __TESTMODE_H
 #define __TESTMODE_H
 
@@ -22,6 +22,24 @@ uint8_t testmode_tick_pwm_speed(void);
 /* 当前相位方向符号：+1 正转，-1 反转。 */
 int8_t testmode_get_pwm_speed_sign(void);
 
+/* PWM-SPEED 手动开环：方向与占空比（KEY3 正转 / KEY4 反转，再按同向即停） */
+
+/* 取手动开环方向：0 = 停，+1 = 正转，-1 = 反转。0 时控制任务回落到目标转速 PID 路径。 */
+int8_t testmode_get_pwm_speed_dir(void);
+
+/* 设置手动开环方向，非 0 归一化成 ±1；写 0 即停。 */
+void testmode_set_pwm_speed_dir(int8_t dir);
+
+/* 取手动开环占空比，单位百分比 0~PWM_TEST_MAX_PERCENT。 */
+float testmode_get_pwm_speed_duty(void);
+
+/* 调整手动开环占空比，step 正加负减，结果夹到 0~PWM_TEST_MAX_PERCENT。 */
+void testmode_step_pwm_speed_duty(float step);
+
+/* 诊断/标定：1 = PWM-SPEED 原始同占空比，0 = 使用左右补偿。 */
+uint8_t testmode_get_pwm_speed_raw(void);
+void testmode_set_pwm_speed_raw(uint8_t raw);
+
 /* PWM 循迹测试：开环差速 + 模拟图案 */
 
 /* 模拟图案位数（= 八路通道数）。testmode_get_pattern() 返回值按 bit0..bit(n-1) 对应
@@ -31,7 +49,7 @@ int8_t testmode_get_pwm_speed_sign(void);
 /* 复位 PWM 循迹测试：相位回左偏、计时清零。 */
 void testmode_reset_pwm_track(void);
 
-/* 推进 PWM 循迹测试，20 ms 一次。 */
+/* 推进 PWM 循迹测试，5 ms 一次。 */
 void testmode_task(void);
 
 /* 设置模拟图案，不在允许表内的值被忽略。当前无调用者，保留为「直接指定图案」的入口。 */

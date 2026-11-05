@@ -3,5 +3,13 @@
     "project": "MDK-ARM/bluecar.uvprojx",
     "target": "bluecar",
     "log_dir": "MDK-ARM/codex-logs"
+  },
+  "serial": {
+    "port": "COM19",
+    "baudrate": 115200,
+    "bytesize": 8,
+    "parity": "none",
+    "stopbits": 1,
+    "encoding": "utf-8"
   }
 }

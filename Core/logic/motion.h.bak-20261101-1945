@@ -1,0 +1,32 @@
+/* 底盘运动：编码器测速、中值滤波、电机输出。A=物理右轮 / B=物理左轮 交叉映射只在本模块出现。 */
+#ifndef __MOTION_H
+#define __MOTION_H
+
+#include <stdint.h>
+
+/* 只读运动视图，字段直接读，不另配 getter。 */
+typedef struct {
+    float   left_rpm;        /* 左轮速度，中值滤波后，单位 RPM。 */
+    float   right_rpm;       /* 右轮速度，中值滤波后，单位 RPM。 */
+    float   left_rpm_raw;    /* 左轮速度，原始值，供遥测对比。 */
+    float   right_rpm_raw;   /* 右轮速度，原始值，供遥测对比。 */
+    int16_t left_pwm;        /* 上一次实际输出的左轮 PWM。 */
+    int16_t right_pwm;       /* 上一次实际输出的右轮 PWM。 */
+} MotionView_t;
+
+/* 取只读运动视图。 */
+const MotionView_t *motion_view(void);
+
+/* 初始化编码器对象。 */
+void motion_init(void);
+
+/* 读编码器并做中值滤波。50 ms 控制任务里调；滤波只此一处。 */
+void motion_update(void);
+
+/* 限幅后输出到电机。内部完成 ±MOTOR_OUTPUT 限幅和 A/B 交叉映射。 */
+void motion_apply(int16_t left_pwm, int16_t right_pwm);
+
+/* 立即停车。 */
+void motion_stop(void);
+
+#endif /* __MOTION_H */

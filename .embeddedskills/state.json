@@ -20,5 +20,19 @@
     "output_dir": "MDK-ARM/bluecar",
     "log_file": "MDK-ARM/codex-logs/bluecar-bluecar-build.log",
     "timestamp": "2026-09-25T17:25:04+08:00"
+  },
+  "last_observe": {
+    "type": "serial_monitor",
+    "port": "COM19",
+    "baudrate": 115200,
+    "lines": 62,
+    "duration_sec": 5.0,
+    "timestamp": "2026-11-02T21:19:40+08:00"
+  },
+  "last_serial_send": {
+    "port": "COM19",
+    "baudrate": 115200,
+    "bytes_sent": 8,
+    "timestamp": "2026-11-02T22:44:48+08:00"
   }
 }

@@ -1,0 +1,470 @@
+/* IMU963RA（LSM6DSR）驱动：SPI 寄存器连读 + 上电零偏标定 + yaw 积分。
+
+   硬件：J3 IMU963RA，SPI2 Mode0 / 9 MHz（72 MHz APB1 / 4），
+         SPC=PB13 SDI=PB15 SDO=PB14，CS=PB12 软件片选（低有效），INT=PE15（不用中断，轮询）。
+
+   寄存器：CTRL3_C=0x44（BDU=1 读期间寄存器不更新，IF_INC=1 支持连读）
+           CTRL1_XL=0x48（ODR 104 Hz，±4g，0.122 mg/LSB）
+           CTRL2_G =0x48（ODR 104 Hz，±1000 dps，35 mdps/LSB）
+           连读起点 0x22，一次 12 字节 = 陀螺 xyz + 加速度 xyz
+
+   ★ 执行上下文：imu_task() 由 TIM6 每 10 ms 置 DEFERRED_IMU、在主循环里执行
+     （见 sched.c），不在中断里，不会拖长中断关闭窗口。
+     一次采样 12 字节 @9 MHz 约 11 us，仍是忙等；要彻底非阻塞只能上 DMA
+     （SPI2_RX=DMA1_Ch4、SPI2_TX=DMA1_Ch5 + 双缓冲），本工程 10 ms 周期下收益约 0.1%，
+     故不引入。
+     软复位后的寄存器配置拆到下一拍完成，零偏标定拆成每拍采一帧、
+     累计 IMU_BIAS_SAMPLES 帧（100 帧约 1 s）。
+
+   失败处理：SPI 传输超时（裸寄存器忙等，有固定循环上限，永不挂死）或 |a| 不在 [0.5, 1.5] g -> 丢帧 + err++；
+             ok 清零后每 IMU_REPROBE_MS 用 WHO_AM_I 限频重探，避免 IMU 未接时
+             每个 tick 都在中断里空转 SPI。 */
+
+#include <math.h>
+#include "imu.h"
+#include "board.h"
+#include "config.h"
+#include "timer.h"
+
+/* ---------------- LSM6DSR 寄存器 ---------------- */
+#define IMU_REG_WHO_AM_I    0x0Fu
+#define IMU_REG_CTRL1_XL    0x10u
+#define IMU_REG_CTRL2_G     0x11u
+#define IMU_REG_CTRL3_C     0x12u
+#define IMU_REG_OUTX_L_G    0x22u
+
+#define IMU_WHOAMI_VAL      0x6Bu
+#define IMU_SPI_READ        0x80u
+#define IMU_SPI_AUTOINC     0x40u
+
+#define IMU_CTRL3_RESET     0x01u   /* SW_RESET = 1 */
+#define IMU_CTRL3_CFG       0x44u   /* BDU = 1，IF_INC = 1 */
+#define IMU_CTRL1_XL_104HZ  0x48u   /* ODR 104 Hz + FS ±4g */
+#define IMU_CTRL2_G_104HZ   0x48u   /* ODR 104 Hz + FS ±1000 dps */
+
+/* 驱动内部状态：OFF 等模块 -> RESET 已发软复位 -> SETTLE 沉降 -> CAL 采零偏 -> RUN 输出 */
+enum
+{
+    IMU_ST_OFF = 0,
+    IMU_ST_RESET,
+    IMU_ST_SETTLE,
+    IMU_ST_CAL,
+    IMU_ST_RUN
+};
+
+static imu_data_t s_data;
+static uint8_t    s_st;
+static uint32_t   s_last_ms;      /* 上一次采样的毫秒时间戳 */
+static uint32_t   s_last_probe;   /* 上一次 WHO_AM_I 重探的时间戳 */
+static uint8_t    s_cal_n;
+static uint16_t   s_still_n;   /* 判定"静止"的连续帧数：静止时慢速跟踪零偏 */
+static uint8_t    s_cal_fail;   /* 标定期间连续坏帧计数：偶尔一颗坏帧不中断标定 */
+static float      s_cal_sum[3];
+static uint32_t   s_err_cnt;
+
+/* 毫秒时间戳：timer.c 的 TIM5 累加变量。TIM6 优先级更高，读 64 位不会被撕裂。 */
+static uint32_t imu_ms(void)
+{
+    return (uint32_t)milliseconds;
+}
+
+/* ------------ 底层：片选（低 = 选中） ------------ */
+static void cs_low(void)
+{
+    /* 本仓库这份 STM32F1 HAL 的 HAL_SPI_Init() 只写 CR1、不置 SPE 位（SPE 是在
+       HAL_SPI_Transmit / TransmitReceive 内部才置的），而本驱动是裸寄存器收发，
+       所以每次发起传输前必须自己确保 SPI2 已使能，否则 SR 一直为 0、必然超时。 */
+    if ((SPI2->CR1 & SPI_CR1_SPE) == 0U)
+    {
+        SET_BIT(SPI2->CR1, SPI_CR1_SPE);
+    }
+    HAL_GPIO_WritePin(IMU_CS_GPIO_Port, IMU_CS_Pin, GPIO_PIN_RESET);
+}
+static void cs_high(void) { HAL_GPIO_WritePin(IMU_CS_GPIO_Port, IMU_CS_Pin, GPIO_PIN_SET); }
+
+/* ------------ 底层：SPI2 裸寄存器收发 ------------
+ * 不用 HAL_SPI_TransmitReceive：它的超时靠 HAL_GetTick 递增，一旦被更高优先级
+ * 中断或关中断（调度器、DMA）挡住就会死等；这里直接读写 SPI2->SR/DR，
+ * 超时用固定循环次数，任何硬件状态下都保证返回。 */
+#define IMU_SPI_GUARD   20000u
+
+static uint8_t s_spi_bad;   /* 最近一次 spi_xfer 是否超时 */
+
+static uint8_t spi_xfer(uint8_t out)
+{
+    uint32_t g;
+
+    g = IMU_SPI_GUARD;
+    while ((SPI2->SR & SPI_SR_TXE) == 0u)
+    {
+        if (--g == 0u) { s_spi_bad = 1u; return 0xFFu; }
+    }
+    *(volatile uint8_t *)&SPI2->DR = out;
+
+    g = IMU_SPI_GUARD;
+    while ((SPI2->SR & SPI_SR_RXNE) == 0u)
+    {
+        if (--g == 0u) { s_spi_bad = 1u; return 0xFFu; }
+    }
+    return *(volatile uint8_t *)&SPI2->DR;
+}
+
+/* 返回 1 = 成功；0 = SPI 出错（已计入 err_cnt） */
+static uint8_t imu_read_reg(uint8_t reg, uint8_t *val)
+{
+    uint8_t v;
+
+    cs_low();
+    s_spi_bad = 0u;
+    (void)spi_xfer((uint8_t)(reg | IMU_SPI_READ));
+    v = spi_xfer(0xFFu);
+    cs_high();
+
+    if (s_spi_bad != 0u) { s_err_cnt++; return 0u; }
+    *val = v;
+    return 1u;
+}
+
+static uint8_t imu_write_reg(uint8_t reg, uint8_t val)
+{
+    cs_low();
+    s_spi_bad = 0u;
+    (void)spi_xfer((uint8_t)(reg & 0x7Fu));
+    (void)spi_xfer(val);
+    cs_high();
+
+    if (s_spi_bad != 0u) { s_err_cnt++; return 0u; }
+    return 1u;
+}
+
+/* 连读 len 字节（自动地址递增）；返回 1 = 成功 */
+static uint8_t imu_read_burst(uint8_t reg, uint8_t *buf, uint16_t len)
+{
+    uint16_t i;
+
+    cs_low();
+    s_spi_bad = 0u;
+    (void)spi_xfer((uint8_t)(reg | IMU_SPI_READ | IMU_SPI_AUTOINC));
+    for (i = 0u; i < len; i++)
+    {
+        buf[i] = spi_xfer(0xFFu);
+    }
+    cs_high();
+
+    if (s_spi_bad != 0u) { s_err_cnt++; return 0u; }
+    return 1u;
+}
+
+static int16_t le16(const uint8_t *p)
+{
+    return (int16_t)((int16_t)(((uint16_t)p[1] << 8) | (uint16_t)p[0]));
+}
+
+uint8_t imu_whoami(void)
+{
+    uint8_t v = 0u;
+
+    (void)imu_read_reg(IMU_REG_WHO_AM_I, &v);
+    return v;
+}
+
+uint8_t imu_dbg_reg(uint8_t reg, uint8_t *val)
+{
+    return imu_read_reg(reg, val);
+}
+
+uint8_t imu_dbg_burst(uint8_t reg, uint8_t *buf, uint16_t len)
+{
+    return imu_read_burst(reg, buf, len);
+}
+
+uint8_t imu_dbg_snapshot(uint8_t ctrl[3], uint8_t raw[12])
+{
+    uint8_t ok = 1u;
+
+    ok = (uint8_t)(ok & imu_read_reg(IMU_REG_CTRL1_XL, &ctrl[0]));
+    ok = (uint8_t)(ok & imu_read_reg(IMU_REG_CTRL2_G,  &ctrl[1]));
+    ok = (uint8_t)(ok & imu_read_reg(IMU_REG_CTRL3_C,  &ctrl[2]));
+    ok = (uint8_t)(ok & imu_read_burst(IMU_REG_OUTX_L_G, raw, 12u));
+    return ok;
+}
+
+uint32_t imu_err_count(void)
+{
+    return s_err_cnt;
+}
+
+void imu_recalibrate(void)
+{
+    uint8_t i;
+
+    for (i = 0u; i < 3u; i++)
+    {
+        s_cal_sum[i] = 0.0f;
+    }
+    s_cal_n     = 0u;
+    s_cal_fail  = 0u;
+    s_still_n   = 0u;
+    s_data.ok   = 0u;
+    s_data.yaw  = 0.0f;
+    s_st        = IMU_ST_CAL;
+    s_last_ms   = imu_ms();
+}
+
+void imu_yaw_reset(void)
+{
+    s_data.yaw = 0.0f;
+}
+
+const imu_data_t *imu_get(void)
+{
+    return &s_data;
+}
+
+/* 读一帧并做量程合理性检查；成功返回 1，坏帧返回 0（已计 err） */
+static uint8_t imu_read_frame(uint8_t *buf)
+{
+    float a[3];
+    float mod2;
+    uint8_t i;
+
+    /* 逐字节读：本模块（逐飞 IMU963RA，带电平转换缓冲）在 9 MHz 下做 12 字节
+       自动递增连读时只有头一两个字节有效、其余全是 0x00，实测不可用；
+       单字节读完全正常（静止时 |a|≈1.00 g），12 次单读约 25 µs，10 ms 一帧足够。 */
+    for (i = 0u; i < 12u; i++)
+    {
+        if (imu_read_reg((uint8_t)(IMU_REG_OUTX_L_G + i), &buf[i]) == 0u)
+        {
+            return 0u;
+        }
+    }
+
+    for (i = 0u; i < 3u; i++)
+    {
+        a[i] = (float)le16(&buf[6u + 2u * i]) * IMU_ACC_LSB_G;
+    }
+
+    /* 静止/匀速时 |a| 必须≈1g；越界说明 SPI 错位或模块异常 */
+    mod2 = a[0] * a[0] + a[1] * a[1] + a[2] * a[2];
+    if ((mod2 < (IMU_ACC_MOD_MIN_G * IMU_ACC_MOD_MIN_G)) ||
+        (mod2 > (IMU_ACC_MOD_MAX_G * IMU_ACC_MOD_MAX_G)))
+    {
+        s_err_cnt++;
+        return 0u;
+    }
+    return 1u;
+}
+
+/* 主上下文调用（MX_SPI2_Init 之后、sched_init 之前）：探测 + 软复位。
+   零偏标定不在这里做，交给 imu_task() 的 CAL 状态逐帧完成。 */
+void imu_init(void)
+{
+    uint8_t i;
+    uint8_t v = 0u;
+
+    s_data.ok      = 0u;
+    s_data.yaw     = 0.0f;
+    s_last_ms      = 0u;
+    s_last_probe   = 0u;
+    s_cal_n        = 0u;
+    s_cal_fail     = 0u;
+    s_still_n      = 0u;
+    for (i = 0u; i < 3u; i++)
+    {
+        s_data.acc_g[i]     = 0.0f;
+        s_data.gyro_dps[i]  = 0.0f;
+        s_data.gyro_bias[i] = 0.0f;
+        s_cal_sum[i]        = 0.0f;
+    }
+
+    cs_high();                         /* 先放开片选，模块未接时也不会选中 */
+    s_st = IMU_ST_OFF;
+
+    HAL_Delay(20);                     /* 等模块上电稳定（主上下文，可以延时） */
+
+    if ((imu_read_reg(IMU_REG_WHO_AM_I, &v) == 0u) || (v != IMU_WHOAMI_VAL))
+    {
+        return;                        /* 未接/接线错：保持 OFF，imu_task 限频重探 */
+    }
+
+    (void)imu_write_reg(IMU_REG_CTRL3_C, IMU_CTRL3_RESET);
+    s_st      = IMU_ST_RESET;          /* 下一次 tick 写配置（间隔 10 ms） */
+    s_last_ms = imu_ms();
+}
+
+void imu_task(void)
+{
+    uint32_t now = imu_ms();
+    uint32_t dt_ms;
+    uint8_t  buf[12];
+    uint8_t  i;
+    float    g[3];
+
+    switch (s_st)
+    {
+    case IMU_ST_OFF:
+        /* 模块缺席：每 IMU_REPROBE_MS 才探一次，避免在中断里空转 SPI */
+        if ((now - s_last_probe) < IMU_REPROBE_MS)
+        {
+            return;
+        }
+        s_last_probe = now;
+        if (imu_whoami() == IMU_WHOAMI_VAL)
+        {
+            (void)imu_write_reg(IMU_REG_CTRL3_C, IMU_CTRL3_RESET);
+            s_st      = IMU_ST_RESET;
+            s_last_ms = now;
+        }
+        return;
+
+    case IMU_ST_RESET:
+        /* 软复位已过至少 10 ms：写工作配置，进入零偏标定 */
+        (void)imu_write_reg(IMU_REG_CTRL3_C, IMU_CTRL3_CFG);
+        (void)imu_write_reg(IMU_REG_CTRL1_XL, IMU_CTRL1_XL_104HZ);
+        (void)imu_write_reg(IMU_REG_CTRL2_G,  IMU_CTRL2_G_104HZ);
+        s_cal_n    = 0u;
+        s_cal_fail = 0u;
+        s_still_n  = 0u;
+        for (i = 0u; i < 3u; i++)
+        {
+            s_cal_sum[i] = 0.0f;
+        }
+        /* 先"沉降"再标定：LSM6DSR 上电后零偏要 1~2 s 才稳定，立刻标定会留下 ~1.8 dps 残差。 */
+        s_last_ms = now;
+        s_st      = IMU_ST_SETTLE;
+        return;
+
+    case IMU_ST_SETTLE:
+        /* 上电后先等 IMU_SETTLE_MS 让陀螺零偏沉降，再开始采样标定 */
+        if ((now - s_last_ms) < IMU_SETTLE_MS)
+        {
+            return;
+        }
+        s_cal_n    = 0u;
+        s_cal_fail = 0u;
+        for (i = 0u; i < 3u; i++)
+        {
+            s_cal_sum[i] = 0.0f;
+        }
+        s_last_ms = now;
+        s_st      = IMU_ST_CAL;
+        return;
+
+    case IMU_ST_CAL:
+        if ((now - s_last_ms) < IMU_SAMPLE_MS)
+        {
+            return;
+        }
+        s_last_ms = now;
+
+        if (imu_read_frame(buf) == 0u)
+        {
+            /* 标定期间允许零星坏帧（挪动板子会让 |a| 越界），连续坏才判定总线异常 */
+            if (++s_cal_fail >= 10u)
+            {
+                s_st      = IMU_ST_OFF;
+                s_data.ok = 0u;
+            }
+            return;
+        }
+        s_cal_fail = 0u;
+
+        for (i = 0u; i < 3u; i++)
+        {
+            s_cal_sum[i] += (float)le16(&buf[2u * i]) * IMU_GYRO_LSB_DPS;
+        }
+        s_cal_n++;
+
+        if (s_cal_n >= IMU_BIAS_SAMPLES)
+        {
+            for (i = 0u; i < 3u; i++)
+            {
+                s_data.gyro_bias[i] = s_cal_sum[i] / (float)s_cal_n;
+            }
+            s_data.ok  = 1u;
+            s_st       = IMU_ST_RUN;
+            s_last_ms  = now;
+        }
+        return;
+
+    case IMU_ST_RUN:
+    default:
+        break;
+    }
+
+    /* ---- RUN：正常采样 + yaw 积分 ---- */
+    if ((now - s_last_ms) < IMU_SAMPLE_MS)
+    {
+        return;
+    }
+    dt_ms     = now - s_last_ms;
+    s_last_ms = now;
+
+    if (imu_read_frame(buf) == 0u)
+    {
+        s_data.ok = 0u;
+        s_st      = IMU_ST_OFF;
+        return;
+    }
+
+    for (i = 0u; i < 3u; i++)
+    {
+        g[i]               = (float)le16(&buf[2u * i]) * IMU_GYRO_LSB_DPS;
+        s_data.gyro_dps[i] = g[i] - s_data.gyro_bias[i];
+        s_data.acc_g[i]    = (float)le16(&buf[6u + 2u * i]) * IMU_ACC_LSB_G;
+    }
+
+    /* 静止慢跟踪：LSM6DSR 上电后零偏要几秒到几十秒才沉降（实测开机标定后仍残差 ~1.8 dps，
+       会造成 ~2 °/s 的航向漂移）。三个轴都在 ±3 dps 以内持续 3 s 就认为车没动，
+       用一阶低通（τ≈2.5 s）把零偏慢慢拉到当前值，航向积分随之收敛。 */
+    if ((s_data.gyro_dps[0] > -3.0f) && (s_data.gyro_dps[0] < 3.0f) &&
+        (s_data.gyro_dps[1] > -3.0f) && (s_data.gyro_dps[1] < 3.0f) &&
+        (s_data.gyro_dps[2] > -3.0f) && (s_data.gyro_dps[2] < 3.0f))
+    {
+        if (s_still_n < 1000u)
+        {
+            s_still_n++;
+        }
+    }
+    else
+    {
+        s_still_n = 0u;
+    }
+
+    if (s_still_n > 100u)
+    {
+        for (i = 0u; i < 3u; i++)
+        {
+            s_data.gyro_bias[i] += (g[i] - s_data.gyro_bias[i]) * 0.008f;
+            s_data.gyro_dps[i]   = g[i] - s_data.gyro_bias[i];
+        }
+    }
+
+    /* 横滚/俯仰：只用加速度计的重力方向算（静止/匀速时准，加减速会有偏差）。
+       本车模块 Y 轴朝下：静止 ay≈-1 g、az≈0 -> roll=atan2(-1,0)=-90°，
+       所以下面按「z 轴朝上」的常规式写，实际零位以平放读数为准，用 IMU_ROLL_OFFSET/IMU_PITCH_OFFSET 归零。 */
+    {
+        float flat = sqrtf((s_data.acc_g[1] * s_data.acc_g[1])
+                           + (s_data.acc_g[2] * s_data.acc_g[2]));
+        float rollRaw  = atan2f(s_data.acc_g[1], s_data.acc_g[2]) * 57.29578f;
+        float pitchRaw = atan2f(-s_data.acc_g[0], flat) * 57.29578f;
+
+        s_data.roll_deg  = rollRaw  - IMU_ROLL_OFFSET;
+        s_data.pitch_deg = pitchRaw - IMU_PITCH_OFFSET;
+    }
+
+    /* 航向角积分：yaw += gyro_z * dt，dt 用实测毫秒数 */
+    {
+        float dt;
+
+        if (dt_ms > 100u)              /* 长时间没进来：按标称周期算，避免一次跳几百度 */
+        {
+            dt_ms = IMU_SAMPLE_MS;
+        }
+        dt = (float)dt_ms * 0.001f;
+
+        s_data.yaw += s_data.gyro_dps[2] * dt;
+        while (s_data.yaw > 180.0f)  { s_data.yaw -= 360.0f; }
+        while (s_data.yaw < -180.0f) { s_data.yaw += 360.0f; }
+    }
+}

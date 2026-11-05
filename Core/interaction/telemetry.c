@@ -1,5 +1,5 @@
-/* VOFA CSV 遥测：50 ms 中断 telemetry_publish() 纯赋值填字段置 fresh，主循环
-   telemetry_send() 临界区拷副本+清 fresh 再 snprintf 发送（格式化 16 个浮点要
+/* VOFA FireWater CSV telemetry: the 5 ms control ISR publishes a snapshot; the main loop
+   telemetry_send() 临界区拷副本+清 fresh 再 snprintf 发送（格式化 8 个字段要
    100~300 µs，放进中断会压住串口丢字节）。一致性靠临界区整体拷贝，fresh 只回答"有无
    新数据"。读 motion_view()/imu_get() 只读视图是只读跨层，避免填遥测传 10 个参数。 */
 
@@ -9,54 +9,56 @@
 #include "motion.h"
 #include "serial.h"
 #include "state.h"
+#include "loop_test.h"
 
-#include <math.h>
 #include <stdio.h>
 #include <string.h>
 
 /* 遥测快照本体。写它的只有本文件的 Publish()，读它的有 Send() 和显示模块。 */
 telemetryData_t telemetry_data;
 
-static const char *telemetryStopReasonName(StopReason reason);
-
-/* 把遥测快照格式化为 VOFA CSV 并发送（主循环，deferred_run 调用）。发送优先级：
-   VOFA 关不发；有停车事件发 [STOP]（绕过零转速抑制，只有整行写进发送缓冲才清事件）；
-   无新快照不发；停车且左右转速接近 0 不发。读 17 个字段的整体拷贝+清标志在临界区做。 */
+/* Format the latest snapshot as one numeric CSV row for the FireWater parser. */
 void telemetry_send(void)
 {
-    StopReason stopReason;
     telemetryData_t snapshot;
 
     if (!state_view()->vofa) return;
 
-    /* 停车事件优先于普通 CSV，并且绕过停车后零转速抑制。
-       只有完整写入发送缓冲区后才清除事件；否则下个周期重试。 */
-    if (state_take_stop_event(&stopReason)) {
-        char stopBuffer[TELEMETRY_BUFFER_SIZE];
-        int stopLength = snprintf(stopBuffer,
-                                  sizeof(stopBuffer),
-                                  "[STOP] reason=%s code=%d\r\n",
-                                  telemetryStopReasonName(stopReason),
-                                  (int)stopReason);
-
-        if ((stopLength > 0) && (stopLength < (int)sizeof(stopBuffer))) {
-            int written = serial_write((const uint8_t *)stopBuffer,
-                                       (uint16_t)stopLength);
-
-            if (written == stopLength) {
-                state_clear_stop_event();
-            }
-        }
-
-        return;
-    }
-
-    /* 无新数据或停车且转速接近 0 时不发送普通遥测。
-       这两次读只是"值不值得发"的判断，读到新旧混合无所谓，所以不保护。 */
     if (!telemetry_data.fresh) return;
-    if (!state_view()->running
-        && fabsf(telemetry_data.actualRightRpm) < TELEMETRY_STOP_RPM_EPSILON
-        && fabsf(telemetry_data.actualLeftRpm) < TELEMETRY_STOP_RPM_EPSILON) {
+
+    if (state_view()->mode == modeLoopTest) {
+        LoopTestView_t test;
+        char test_buffer[TELEMETRY_BUFFER_SIZE];
+        int test_length;
+        uint32_t primask = __get_PRIMASK();
+
+        __disable_irq();
+        test = *loop_test_view();
+        telemetry_data.fresh = 0;
+        __set_PRIMASK(primask);
+
+        /* LOOP-TEST columns:
+           angleTargetL,angleL,angleTargetR,angleR,tgtRpmL,rpmL,tgtRpmR,rpmR,
+           pwmL,pwmR,posErrL,posErrR. */
+        test_length = snprintf(
+            test_buffer, sizeof(test_buffer),
+            "%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,"
+            "%.2f,%.2f,%.2f,%.2f\r\n",
+            (double)test.target_angle_deg[0],
+            (double)test.actual_angle_deg[0],
+            (double)test.target_angle_deg[1],
+            (double)test.actual_angle_deg[1],
+            (double)test.target_rpm[0],
+            (double)test.actual_rpm[0],
+            (double)test.target_rpm[1],
+            (double)test.actual_rpm[1],
+            (double)test.pwm[0],
+            (double)test.pwm[1],
+            (double)test.position_error_deg[0],
+            (double)test.position_error_deg[1]);
+        if ((test_length > 0) && (test_length < (int)sizeof(test_buffer))) {
+            serial_write((const uint8_t *)test_buffer, (uint16_t)test_length);
+        }
         return;
     }
 
@@ -74,54 +76,25 @@ void telemetry_send(void)
     char buffer[TELEMETRY_BUFFER_SIZE];
     int length;
 
-    /* CSV 顺序与单位：tgtRpmL,rpmFL,voltL,tgtRpmR,rpmFR,voltR,steerRpm,diffRpm,
-       yawDeg,trackError,mode,run,gear,turnPhase,rpmL,rpmR。 */
+    /* 8-channel CSV: target left/right, filtered left/right, steering,
+       raw speed difference, yaw, track phase. */
     length = snprintf(buffer, sizeof(buffer),
-        "%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,"
-        "%d,%d,%d,%d,%.1f,%.1f\r\n",
+        "%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,%d\r\n",
         snapshot.targetLeftRpm,
         snapshot.filteredLeftRpm,
-        snapshot.commandVoltageLeft,
         snapshot.targetRightRpm,
         snapshot.filteredRightRpm,
-        snapshot.commandVoltageRight,
         snapshot.steerRpm,
         snapshot.actualDiffRpm,
         snapshot.yawAngleDeg,
-        snapshot.trackError,
-        (int)snapshot.mode,
-        (int)snapshot.runFlag,
-        (int)snapshot.gear,
-        (int)snapshot.turnPhase,
-        snapshot.actualLeftRpm,
-        snapshot.actualRightRpm);
+        (int)snapshot.turnPhase);
 
     if (length > 0 && length < (int)sizeof(buffer)) {
         serial_write((const uint8_t *)buffer, (uint16_t)length);
     }
 }
 
-/* 获取停车原因对应的 ASCII 名称。未知值返回 UNKNOWN。 */
-static const char *telemetryStopReasonName(StopReason reason)
-{
-    switch (reason) {
-    case stopReasonUser:
-        return "USER";
-    case stopReasonTargetLaps:
-        return "TARGET_LAPS";
-    case stopReasonAllWhite:
-        return "ALL_WHITE";
-    case stopReasonCornerTimeout:
-        return "CORNER_TIMEOUT";
-    case stopReasonModeSwitch:
-        return "MODE_SWITCH";
-    case stopReasonNone:
-    default:
-        return "UNKNOWN";
-    }
-}
-
-/* 用本周期控制结果填充遥测快照（中断上下文，50 ms 控制任务调用，只赋值不格式化）。
+/* 用本周期控制结果填充遥测快照（中断上下文，5 ms 控制任务调用，只赋值不格式化）。
    参数单位 RPM/百分比；速度与姿态字段直接读只读视图，其余由调用方传入。最后置 fresh=1
    是通知主循环"有新快照可发"的唯一入口。commandVoltage 是 PWM 百分比按标称电压换算的
    近似值，仅供观察趋势（本工程无母线电压采样）。 */
@@ -151,15 +124,10 @@ void telemetry_publish(float targetLeft, float targetRight,
     telemetry_data.fresh = 1;
 }
 
-/* 发送开机横幅和 VOFA CSV 表头。字段顺序必须与 telemetry_send() 格式串一致，
-   这里是表头唯一来源，不要在别处硬编码。 */
+/* Keep the startup line numeric so it is also a valid FireWater frame. */
 void telemetry_boot_header(void)
 {
-    /* 字段顺序与 Send 里的 snprintf 格式串一致，共 16 项。 */
-    serial_printf("BOOT OK\r\n");
-    serial_printf("#tgtRpmL,rpmFL,voltL,tgtRpmR,rpmFR,voltR,"
-                  "steerRpm,diffRpm,yawDeg,trackError,"
-                  "mode,run,gear,turnPhase,rpmL,rpmR\r\n");
+    serial_printf("0,0,0,0,0,0,0,0\r\n");
 }
 
 /* 初始化遥测快照：全部字段清零，保证首次发送前数据有效。 */

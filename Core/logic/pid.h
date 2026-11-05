@@ -10,7 +10,7 @@ typedef enum {
     PID_MODE_POSITIONAL         /* 位置式：输出绝对值，用于循迹转角环 */
 } PidMode_t;
 
-/* 增益字段选取器，供 show 命令打印。本工程无在线整定：增益只在 config.h 改。 */
+/* 增益字段选取器，供状态显示和停车整定命令使用。 */
 typedef enum {
     PID_FIELD_KP = 0,
     PID_FIELD_KI,
@@ -54,11 +54,18 @@ void pid_reset(Pid_t *p);
 /* 读一个增益；越界返回 0。 */
 float pid_get_gain(const Pid_t *p, PidField_t field);
 
+/* 修改一个非负增益；字段非法或数值非有限非负值时返回 0。 */
+uint8_t pid_set_gain(Pid_t *p, PidField_t field, float value);
+
 /* 改输出限幅，用于按模式放开或禁止反转。 */
 void pid_set_limits(Pid_t *p, float out_min, float out_max);
 
 /* 按 目标/实测 更新一次 PID（速度环用），返回本次输出。中断上下文。 */
 float pid_update(Pid_t *p, float target, float actual);
+
+/* 增量式速度环更新；integral_scale 按参考周期缩放 Ki 累积量。 */
+float pid_update_scaled(Pid_t *p, float target, float actual,
+                        float integral_scale);
 
 /* 位置式便捷入口，直接喂误差（循迹环用）。内部把 target 设为 error、actual 设为 0。 */
 float pid_update_position(Pid_t *p, float error);

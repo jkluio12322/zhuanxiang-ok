@@ -55,7 +55,7 @@ void state_set_mode(Mode mode)
     state.mode = mode;
 }
 
-/* TRACK -> PWM-SPEED -> PWM-TRACK -> TRACK。
+/* TRACK -> PWM-SPEED -> PWM-TRACK -> LOOP-TEST -> TRACK。
    返回的是**模式**不是命令：按键路径还要经 app_cmd.c 转成切换命令才能触发复位流程。 */
 Mode state_next_mode(void)
 {
@@ -64,6 +64,12 @@ Mode state_next_mode(void)
     }
     if (state.mode == modePwmSpeed) {
         return modePwmTrack;
+    }
+    if (state.mode == modePwmTrack) {
+        return modeLoopTest;
+    }
+    if (state.mode == modeLoopTest) {
+        return modeEight;
     }
     return modeTrack;
 }
@@ -76,6 +82,12 @@ const char *mode_name(Mode mode)
     }
     if (mode == modePwmTrack) {
         return "PWM-TRACK";
+    }
+    if (mode == modeLoopTest) {
+        return "LOOP-TEST";
+    }
+    if (mode == modeEight) {
+        return "EIGHT";
     }
     return "TRACK";
 }
@@ -137,6 +149,16 @@ void state_cycle_lap_target(void)
     state.lap_target = next;
 }
 
+uint8_t state_set_lap_target(uint8_t target)
+{
+    if ((target < 1U) || (target > TRACK_LAP_TARGET_MAX)) {
+        return 0U;
+    }
+    state.lap_target = target;
+    state.laps_done = 0U;
+    return 1U;
+}
+
 /* 完成圈数加一，上限是 lap_target。真正触发停车由停车事件（stopReasonTargetLaps）负责。 */
 void state_increment_lap(void)
 {
@@ -160,7 +182,7 @@ void state_set_wheel_targets(float left_rpm, float right_rpm)
 
 /* 上报一次停车事件；stopReasonNone 被忽略。
    同时置两个标志，它们服务于不同的消费者、互不干扰：
-   stopEventPending 给遥测打印 [STOP] 行，stopRequested 给 50 ms 控制任务真正执行停车。
+stopEventPending 给遥测打印 [STOP] 行，stopRequested 给 5 ms 控制任务真正执行停车。
    分成两个是因为「报告」和「执行」在不同模块，共用一个标志会让先取走的一方让另一方看不到。 */
 void state_report_stop(StopReason reason)
 {
@@ -173,7 +195,7 @@ void state_report_stop(StopReason reason)
     stopRequested = 1U;
 }
 
-/* 取走并清除「请求停车」标志；由 app_speedloop.c 的 50 ms 任务消费后执行停车。 */
+/* 取走并清除「请求停车」标志；由 speed_loop.c 的 5 ms 任务消费后执行停车。 */
 uint8_t state_take_stop_request(void)
 {
     if (stopRequested == 0U) {

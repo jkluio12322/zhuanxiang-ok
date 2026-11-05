@@ -17,5 +17,7 @@ void console_process(void);
 
 /* 把已准备好的命令响应交给发送缓冲（主循环调用）。 */
 void console_flush(void);
+/* 低频发送独立 IMU 诊断 CSV；只能在 VOFA 暂停、车辆停车时启用。 */
+void console_diag_task(void);
 
 #endif

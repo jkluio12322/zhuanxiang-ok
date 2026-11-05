@@ -5,6 +5,66 @@
 > 权重和作为 PID 误差、前馈 `kf`、`skf/skfl/skfr` 命令等），
 > 那些实现和命令现在都不存在了。重写后的说明以 `README.md` 为准。
 
+## 2026-11-04: 第 8 章对齐的 5 ms 位置串速度重构
+
+### 改动
+
+- TRACK 改为稳定分母归一化误差 `[-1,+1]`，转向 PD 叠加陀螺仪阻尼，差速限幅改为
+  `±0.65` 比例；内轮按 `1-|u|` 降速，外轮仅按 `1+0.2|u|` 提速。
+- 新增左右轮连续位置环：期望轮速积分成轮端位置参考，位置 PD 后交给原有速度 PI。
+  TRACK 和 EIGHT 的全部闭环运动阶段共用同一链路。
+- 编码器更新、路线规划、位置 PD、速度 PI 和 PWM 统一为 5 ms；速度反馈使用
+  50 ms 滑动计数窗，速度 PI 的 Ki 按 50 ms 参考周期缩放。
+- TRACK 删除起步延迟、强制搜索差速、半边强制转向和恢复多帧确认；保留 ±180°
+  丢线停车、全白/全黑/非连续图案判定和有效线时 IMU 降级纯红外。
+- EIGHT 删除堵转二次判断、多层端点确认、额外 settle 超时和航向步长上限，仅保留
+  总超时、IMU 失效和持续丢线停车。
+- `trackdiag` 扩展为 50 Hz，记录归一化误差、转向比例、yaw rate、左右位置参考/实际/
+  误差和最终 RPM；正式 FireWater 保持 8 列。
+
+### 验证
+
+- ARMCC 5.06 增量构建通过，0 error 0 warning。
+- `simulate_tracking.py`、`simulate_control_loops.py`、`simulate_pwm_tests.py`
+  全部通过。
+- CMSIS-DAP 探测和固件烧录校验通过。左右速度环在 `±30/±80/±140 RPM` 各做 30 秒
+  单轮长测，12 组稳态 MAE 为 `0.186–0.280 RPM`，全部小于 0.5 RPM。
+- LOOP-TEST FAKE-POS 在 45° 阶跃窗口的位置误差 P95 为 `0.58°`，速度误差 P95 为 0；
+  左/右定点位置参数分别收敛到 `0.12/0.20` 与 `0.08/0.20`，死区 `0.8/2.0°`。
+- 当前实车 IR 图案为 `0xF6`（非连续），且 IMU963RA 的 SPI 与 bit-bang WHO_AM_I
+  都返回 `0x00`。因此完整 TRACK 启动按设计立即进入 LOST 停车，陀螺仪阻尼、G1-G3
+  地面和 EIGHT 验收必须等传感输入恢复后继续。
+
+## 2026-10-31: 引脚迁移到拓展板（MPU6050 → IMU963RA / EXTI 按键 → 轮询）
+
+### 背景
+
+拓展板 PCB（`E:\32\32\STM32HAL\f103zet6\pcb`）把姿态传感器换成逐飞 IMU963RA（LSM6DSR + QMC5883L），
+走 SPI2；四个按键从 PC6/PC7/PC8/PC9 改到 PG2/PG3/PD14/PD15（PC8-PC12 属 SDIO 被核心板占用）；
+八路循迹的 IR1 从 PD2 改到 PG11。本次把 `bluecar.ioc` 与全部源码对齐到新 PCB。
+
+### 改动
+
+- `bluecar.ioc`：以 `pcb/hcar.ioc` 为底稿生成，保留本工程 1 ms 时基（TIM5/TIM6 Period=1000-1）与 NVIC 原值；
+  删 I2C1/TIM7/全部 EXTI 键；新增 SPI2（PB13/PB14/PB15，9 MHz 主机）、PB12=IMU_CS、PE15=IMU963RA_INT（输入下拉）。
+- 新建 `Core/Src/spi.c`、`Core/Inc/spi.h`（`MX_SPI2_Init` + MspInit）；`Core/Src/i2c.c` 只留 I2C2。
+- `Core/Inc/stm32f1xx_hal_conf.h`：打开 `HAL_SPI_MODULE_ENABLED`。
+- `Core/hardware/imu.c/.h` 重写为 IMU963RA SPI2 驱动：`WHO_AM_I=0x6B`、`CTRL1_XL=0x48`、`CTRL2_G=0x48`、
+  `CTRL3_C=0x44`，`OUTX_L_G` 起连读 12 字节；"软复位→写配置→100 帧零偏标定→运行" 四态状态机。
+  **中断内禁止 HAL_Delay**：`imu_task()` 跑在 TIM6（抢占 0），标定按 tick 逐帧累加，不在 ISR 里等待。
+- `Core/interaction/key.c/.h`：删 `HAL_GPIO_EXTI_Callback` 与 `mpu_int_ready`，改 20 ms 轮询 + 2 拍稳定消抖；
+  `KEY_TIME_LONG` 1000→50（原值配 20 ms 节拍等于 20 s，长按永远不触发）。
+- `Core/user/main.h` 引脚宏、`Core/Src/gpio.c`、`Core/user/isr.c/.h`、`Core/user/main.c`（MX_I2C1→MX_SPI2）、
+  `Core/system/config.h`（IMU 参数、删两个 EXTI 优先级）同步。
+- 删除 `Core/hardware/mpu6050.c/.h`；`.eide/eide.yml` 与 `bluecar.uvprojx` 同步（加 spi.c / hal_spi.c）。
+
+### 验证
+
+- `bash /d/dsworkspace/tmp_bluecar_build.sh`：0 error 0 warning，92 个 .o，
+  `Total RO 47080 (45.98kB)`、`RW 6952`、`ROM 47248 (46.14kB)`（迁移前 51616 / 50.41kB）。
+- 台架待验：`imu_whoami()==0x6B`、静止 60 s `yaw` 漂移 < 2°、四键短按/长按/连发、
+  挡最右 OUT1 时 `trackError` 仍为正（车向右修）。
+
 ## 2026-10-11: 代码文风简洁化（阶段一：压注释）
 
 ### 背景
@@ -311,3 +371,18 @@ is pending. Restore feedforward online with:
 skfl 0.69
 skfr 0.65
 ```
+
+## 2026-11-01: IMU963RA 读不到数据的三层根因（已全部修复）
+
+1. **SPI2 外设根本没使能**。本仓库这份 STM32F1 HAL 的 `HAL_SPI_Init()`（Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_spi.c:335-455）只写 CR1/CR2，
+   `__HAL_SPI_ENABLE()` 只在 `HAL_SPI_Transmit/TransmitReceive` 内部才调用。而 `Core/hardware/imu.c` 是裸寄存器收发，从不走 HAL →
+   `SPI2->CR1` 停在没有 SPE 位的 `0x030C`（SWD 实测），`SPI2->SR` 恒为 0，每次传输都等 TXE/RXNE 超时 → WHO_AM_I 恒 0x00。
+   修复：`cs_low()` 里先 `if ((SPI2->CR1 & SPI_CR1_SPE) == 0U) SET_BIT(SPI2->CR1, SPI_CR1_SPE);`。
+2. **12 字节自动递增连读在本模块（逐飞 IMU963RA，带电平转换缓冲）上不可用**：实测 `r22` 连读返回 `00 25 xx FF 00 00 ...` 变成垃圾，
+   而 12 次单字节读完全正常（静止 |a|≈1.00 g，acc 三轴合理）。修复：`imu_read_frame()` 改逐字节读 `OUTX_L_G + i`，约 25 µs/帧。
+3. **陀螺零偏上电后要几十秒才沉降**：开机 100 帧标定后仍残差约 1.8 dps → 航向 ~2 °/s 漂移。修复：
+   ①`imu_recalibrate()` + 串口命令 `imucal`（车静止时重标定）；②RUN 态"静止慢跟踪"——三轴都在 ±3 dps 内持续 2 s 就用 τ≈2.5 s 的
+   一阶低通把零偏拉向当前值。实测收敛后 gz≈±0.01 dps、yaw 16 s 内不变。
+
+调试命令：`imutest`（硬件 SPI 与软件位翻转各读一次 WHO_AM_I，区分外设/接线）、
+`imudump`（12 次单读 vs 12 字节连读对比）、`imucal`（重标定）、`show` 的 IMU 行现在带 `gz/ax/ay/az/bz`。

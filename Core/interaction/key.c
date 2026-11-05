@@ -1,22 +1,41 @@
-/* 非阻塞按键状态机：EXTI 捕获按下/抬起，key_tick() 20ms 生成短按/长按/双击/连发。
-   引脚 KEY1=PC8, KEY2=PC7, KEY3=PC6, KEY4=PC9，MPU6050 INT=PA12(上升沿=就绪)，按下=低电平。 */
+/* 非阻塞按键状态机：20 ms 轮询采样（两级稳定确认）生成按下/抬起沿，
+   再合成短按/长按/双击/连发。
+   引脚：K1=PG2、K2=PG3、K3=PD14、K4=PD15，全部输入上拉，按下=低电平。
+   为什么改轮询：拓展板按键经排母引出，不再接 EXTI；轮询同时消除了原 EXTI 回调里
+   HAL_GPIO_ReadPin(GPIOC, ...) 硬编码端口的隐患。 */
 
 #include "key.h"
 
 /* 双击窗口拍数：0 = 双击不可达（有意禁用，全工程无 KEY_DOUBLE 消费者） */
 #define KEY_TIME_DOUBLE  0
 
-/* 长按判定时间（扫描计数） */
-#define KEY_TIME_LONG    1000
+/* 长按判定时间，单位拍（key_tick 20 ms 一次，50 拍 = 1 s） */
+#define KEY_TIME_LONG    50
 
-/* 长按连发周期（扫描计数） */
-#define KEY_TIME_REPEAT  100
+/* 长按连发周期，单位拍（5 拍 = 100 ms） */
+#define KEY_TIME_REPEAT  5
 
-/* 跨上下文访问须 volatile：EXTI 中断与 20ms key_tick() 写，主循环 key_check() 读 */
+/* 连续多少拍电平一致才认定为稳定状态（2 拍 = 40 ms 消抖） */
+#define KEY_STABLE_CNT   2
+
+typedef struct
+{
+    GPIO_TypeDef *port;
+    uint16_t      pin;
+} key_hw_t;
+
+static const key_hw_t k_hw[KEY_COUNT] =
+{
+    { K1_GPIO_Port, K1_Pin },
+    { K2_GPIO_Port, K2_Pin },
+    { K3_GPIO_Port, K3_Pin },
+    { K4_GPIO_Port, K4_Pin },
+};
+
+/* 跨上下文访问须 volatile：20 ms 任务写，主循环 key_check() 读 */
 volatile uint8_t key_flag[KEY_COUNT];
-volatile uint8_t mpu_int_ready = 0;   /* MPU6050 INT 数据就绪标志 */
 
-void key_init(void) {}   /* 无需初始化，GPIO/EXTI 由 CubeMX 配置 */
+void key_init(void) {}   /* 无需初始化，GPIO 由 MX_GPIO_Init 配置 */
 
 uint8_t key_check(uint8_t n, uint8_t Flag)   /* 查询事件；除 KEY_HOLD 外读后自动清除 */
 {
@@ -52,11 +71,41 @@ void key_clear(void)   /* 清除所有事件标志 */
         key_flag[i] = 0;
 }
 
-/* 计时状态机，20ms 调用一次（不读 GPIO，仅计时） */
+/* 采样四路按键并做两级稳定确认，等价于原来的 EXTI 回调：
+   稳定按下 -> 置 DOWN + HOLD；稳定抬起 -> 清 HOLD + 置 UP。 */
+static void key_poll(void)
+{
+    static uint8_t level[KEY_COUNT];   /* 已确认电平：1 = 按下（低） */
+    static uint8_t cnt[KEY_COUNT];     /* 与已确认电平相反时的连续采样计数 */
+
+    for (uint8_t i = 0; i < KEY_COUNT; i++) {
+        uint8_t raw = (HAL_GPIO_ReadPin(k_hw[i].port, k_hw[i].pin) == GPIO_PIN_RESET) ? 1U : 0U;
+
+        if (raw == level[i]) {
+            cnt[i] = 0U;
+            continue;
+        }
+        if (++cnt[i] >= KEY_STABLE_CNT) {
+            cnt[i]   = 0U;
+            level[i] = raw;
+            if (raw) {
+                key_flag[i] |= KEY_DOWN;
+                key_flag[i] |= KEY_HOLD;
+            } else {
+                key_flag[i] &= (uint8_t)~KEY_HOLD;
+                key_flag[i] |= KEY_UP;
+            }
+        }
+    }
+}
+
+/* 采样 + 计时状态机，20 ms 调用一次 */
 void key_tick(void)
 {
     static uint8_t  S[KEY_COUNT];
     static uint16_t Time[KEY_COUNT];
+
+    key_poll();
 
     for (uint8_t i = 0; i < KEY_COUNT; i++) {
         if (Time[i] > 0) Time[i]--;
@@ -97,49 +146,15 @@ void key_tick(void)
     }
 }
 
-/* 阻塞读按键（延时消抖 + 等松手），仅开机页用 */
+/* 即时读取当前被按住的按键编号（1~4），没有按键返回 0。
+   只读一次电平，不延时也不等松手 —— 原来的阻塞版本在按键卡住时会把主循环永久挂死，
+   而它只服务于命令行 `keys` 诊断。去抖与事件合成由 key_tick() 的 20 ms 状态机负责。 */
 uint8_t key_get_num(void)
 {
-    if (HAL_GPIO_ReadPin(key1_GPIO_Port, key1_Pin) == GPIO_PIN_RESET) {
-        HAL_Delay(20); while (HAL_GPIO_ReadPin(key1_GPIO_Port, key1_Pin) == GPIO_PIN_RESET); HAL_Delay(20);
-        return 1;
-    }
-    if (HAL_GPIO_ReadPin(key2_GPIO_Port, key2_Pin) == GPIO_PIN_RESET) {
-        HAL_Delay(20); while (HAL_GPIO_ReadPin(key2_GPIO_Port, key2_Pin) == GPIO_PIN_RESET); HAL_Delay(20);
-        return 2;
-    }
-    if (HAL_GPIO_ReadPin(key3_GPIO_Port, key3_Pin) == GPIO_PIN_RESET) {
-        HAL_Delay(20); while (HAL_GPIO_ReadPin(key3_GPIO_Port, key3_Pin) == GPIO_PIN_RESET); HAL_Delay(20);
-        return 3;
-    }
-    if (HAL_GPIO_ReadPin(key4_GPIO_Port, key4_Pin) == GPIO_PIN_RESET) {
-        HAL_Delay(20); while (HAL_GPIO_ReadPin(key4_GPIO_Port, key4_Pin) == GPIO_PIN_RESET); HAL_Delay(20);
-        return 4;
+    for (uint8_t i = 0; i < KEY_COUNT; i++) {
+        if (HAL_GPIO_ReadPin(k_hw[i].port, k_hw[i].pin) == GPIO_PIN_RESET) {
+            return (uint8_t)(i + 1U);
+        }
     }
     return 0;
-}
-
-/* EXTI 回调：MPU6050 就绪置标志，按键捕获按下/抬起边沿 */
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
-{
-    /* MPU6050 INT: PA12 上升沿 = 数据就绪 */
-    if (GPIO_Pin == MPU6050_INT_Pin) {
-        mpu_int_ready = 1;
-        return;
-    }
-
-    uint8_t n;
-    if      (GPIO_Pin == key1_Pin) n = KEY_1;
-    else if (GPIO_Pin == key2_Pin) n = KEY_2;
-    else if (GPIO_Pin == key3_Pin) n = KEY_3;
-    else if (GPIO_Pin == key4_Pin) n = KEY_4;
-    else return;
-
-    if (HAL_GPIO_ReadPin(GPIOC, GPIO_Pin) == GPIO_PIN_RESET) {
-        key_flag[n] |= KEY_DOWN;
-        key_flag[n] |= KEY_HOLD;
-    } else {
-        key_flag[n] &= ~KEY_HOLD;
-        key_flag[n] |= KEY_UP;
-    }
 }

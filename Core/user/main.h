@@ -28,23 +28,20 @@ void Error_Handler(void);
 #define buzzer_Pin GPIO_PIN_6
 #define buzzer_GPIO_Port GPIOG
 
-/* 按键输入：KEY3=PC6、KEY2=PC7、KEY1=PC8、KEY4=PC9。 */
-#define key3_Pin GPIO_PIN_6
-#define key3_GPIO_Port GPIOC
-#define key3_EXTI_IRQn EXTI9_5_IRQn
-#define key2_Pin GPIO_PIN_7
-#define key2_GPIO_Port GPIOC
-#define key2_EXTI_IRQn EXTI9_5_IRQn
-#define key1_Pin GPIO_PIN_8
-#define key1_GPIO_Port GPIOC
-#define key1_EXTI_IRQn EXTI9_5_IRQn
-#define key4_Pin GPIO_PIN_9
-#define key4_GPIO_Port GPIOC
-#define key4_EXTI_IRQn EXTI9_5_IRQn
+/* 拓展板四键：K1=PG2、K2=PG3、K3=PD14、K4=PD15，输入上拉，按下=低电平。
+   全部由 key.c 每 20 ms 轮询采样，不配置 EXTI，因此不再有 keyN_EXTI_IRQn。 */
+#define K1_Pin GPIO_PIN_2
+#define K1_GPIO_Port GPIOG
+#define K2_Pin GPIO_PIN_3
+#define K2_GPIO_Port GPIOG
+#define K3_Pin GPIO_PIN_14
+#define K3_GPIO_Port GPIOD
+#define K4_Pin GPIO_PIN_15
+#define K4_GPIO_Port GPIOD
 
-/* 八路循迹输入：IR1-IR6 位于 GPIOD，IR7-IR8 位于 GPIOG。 */
-#define IR1_Pin GPIO_PIN_2
-#define IR1_GPIO_Port GPIOD
+/* 八路循迹输入：IR1 在 GPIOG，IR2-IR6 在 GPIOD，IR7-IR8 在 GPIOG。 */
+#define IR1_Pin GPIO_PIN_11
+#define IR1_GPIO_Port GPIOG
 #define IR2_Pin GPIO_PIN_3
 #define IR2_GPIO_Port GPIOD
 #define IR3_Pin GPIO_PIN_4
@@ -60,10 +57,13 @@ void Error_Handler(void);
 #define IR8_Pin GPIO_PIN_10
 #define IR8_GPIO_Port GPIOG
 
-/* MPU6050 数据就绪中断输入。 */
-#define MPU6050_INT_Pin GPIO_PIN_12
-#define MPU6050_INT_GPIO_Port GPIOA
-#define MPU6050_INT_EXTI_IRQn EXTI15_10_IRQn
+/* IMU963RA（LSM6DSR）SPI2 软件片选，低电平选中。 */
+#define IMU_CS_Pin GPIO_PIN_12
+#define IMU_CS_GPIO_Port GPIOB
+
+/* IMU963RA INT 输出：PE15 输入下拉。本工程按周期轮询采样，不启用外部中断。 */
+#define IMU963RA_INT_Pin GPIO_PIN_15
+#define IMU963RA_INT_GPIO_Port GPIOE
 
 #ifdef __cplusplus
 }

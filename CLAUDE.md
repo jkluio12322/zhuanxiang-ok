@@ -1,13 +1,13 @@
 # BlueCar — STM32F103ZET6 循迹小车
 
-STM32F103ZET6 + STM32 HAL 裸机工程（无 RTOS）：八路数字循迹、级联双环速度闭环、
+STM32F103ZET6 + STM32 HAL 裸机工程（无 RTOS）：八路数字循迹、轮端位置串速度闭环、
 SSD1306 OLED 状态显示、VOFA+ 遥测。
 
 ## 文档索引与权威顺序
 
 | 文件 | 内容 |
 | --- | --- |
-| `功能概览.md` | **落脚页**：能干什么、时序模型、三个模式与输出路径、算法要点、接口一览（参数细节指向 README） |
+| `功能概览.md` | **落脚页**：能干什么、时序模型、五个模式与输出路径、算法要点、接口一览（参数细节指向 README） |
 | `README.md` | 硬件、引脚、参数、控制架构、串口命令、调参流程 |
 | `代码阅读指南.md` | 阅读顺序、嵌入式概念扫盲、调试技巧、术语表 |
 | `DEBUG_LOG.md` | 构建与调试历史 |
@@ -89,8 +89,8 @@ user  →  interaction  →  logic  →  system  →  hardware
 | `Core/user/` | `main.c`（入口与初始化编排）、`isr.c`（中断向量处理函数） |
 | `Core/system/` | `config.h`（全部可调参数）、`types.h`、`board.h`（引脚别名）、`sched`（中断分发、延后任务）、`state`（唯一可变状态）、`timer`、`filter`、`ringbuf`、`bytestream` |
 | `Core/interaction/` | `console`、`cmd`、`serial`、`telemetry`、`display`、`key` |
-| `Core/logic/` | `pid`、`track`（循迹环）、`testmode`（开环测试）、`speed_loop`（50 ms 控制）、`motion`（编码器、滤波、电机输出） |
-| `Core/hardware/` | `motor`、`encoder`、`irtrack`、`mpu6050`、`imu`、`oled`（+字模）、`buzzer` |
+| `Core/logic/` | `pid`、`track`（归一化转向）、`position_loop`（位置级联）、`speed_loop`（5 ms 速度 PI）、`eight`、`testmode`、`motion` |
+| `Core/hardware/` | `motor`、`encoder`、`irtrack`、`imu`（IMU963RA）、`oled`（+字模）、`buzzer` |
 | `Core/Src` + `Core/Inc` | CubeMX 生成的外设初始化，保持原样不动 |
 
 只有两处例外，都在 `system/` 里，而且是有意的：`sched` 反过来拉起各层任务
@@ -124,17 +124,18 @@ TIM5 提供 1 ms 时间戳；TIM6 以 1 kHz 触发，由 `sched.c` 分频。
 
 | 周期 | 任务 | 位置 |
 | --- | --- | --- |
-| 10 ms | MPU6050 采样与姿态解算 | **TIM6 中断内** |
+| 10 ms | IMU963RA 采样（SPI2） | 主循环（TIM6 置 DEFERRED_IMU） |
 | 20 ms | 按键状态机 + 按键转命令 | **TIM6 中断内** |
-| 20 ms | 循迹（或 PWM 循迹测试） | **TIM6 中断内** |
-| 50 ms | 编码器测速、速度环、命令执行、遥测快照 | **TIM6 中断内** |
+| 5 ms | 编码器、路线规划、位置 PD、速度 PI、PWM、命令执行 | **TIM6 中断内** |
+| 5 ms | 循迹（或 PWM 循迹测试） | **TIM6 中断内** |
+| 50 ms | LOOP-TEST 慢状态、遥测快照 | **TIM6 中断内** |
 | 50 ms | 遥测格式化与发送 | 主循环（延后） |
 | 100 ms | OLED 状态页刷新 | 主循环（延后） |
 | — | 串口命令行解析、OLED 缓冲写入 | 主循环 |
 
-**为什么这样分**：USART1 一个字节只要 86.8 µs，而遥测 `snprintf` 16 个浮点要 100–300 µs、
-OLED 刷屏可能上 ms —— 放进最高优先级中断会压住串口接收导致丢字节。而速度环/循迹环按
-**固定周期常数**（50 ms、`dt = 0.02`）计算，挪到主循环产生抖动就会算错。
+**为什么这样分**：USART1 一个字节只要 86.8 µs，而遥测 `snprintf` 多个字段要 100–300 µs、
+OLED 刷屏可能上 ms —— 放进最高优先级中断会压住串口接收导致丢字节。而位置环/循迹环/
+速度环按固定 **5 ms** 周期计算，挪到主循环产生抖动就会算错。
 
 **规则：中断里绝不能放 `snprintf` 或 I2C I/O。** 主循环只有 `deferred_run()` +
 串口命令行 + `oled_flush()`。
@@ -143,13 +144,13 @@ OLED 刷屏可能上 ms —— 放进最高优先级中断会压住串口接收�
 
 ## 命令队列
 
-按键产生的启停/模式/换档命令写入 8 项环形队列，由 50 ms 控制任务集中执行，队列满时
+按键产生的启停/模式/换档命令写入 8 项环形队列，由 5 ms 控制任务集中执行，队列满时
 **丢弃新命令**而非覆盖未执行的动作。
 
 USART1 命令行走**同一个队列**（`l`/`r`/`t`/`stop`/`quiet`/`log`），`show` 只读。
 不要在命令行解析处直接改轮速目标——那是与中断里速度环的竞争点。
 
-**在线改 PID 的路径已删除**：参数只在 `config.h` 定义处改，改完重新编译烧录。
+停车时可以通过串口临时整定；最终参数仍必须写回 `config.h` 并重新编译烧录。
 
 ## 提交信息约定
 
@@ -166,9 +167,8 @@ USART1 命令行走**同一个队列**（`l`/`r`/`t`/`stop`/`quiet`/`log`），`
 
 早期文档描述过但**当前代码没有实现**：
 
-- **直行航向闭环（陀螺仪）**：MPU6050 只采样并送遥测的 `yawDeg` 字段，不参与控制
-- **速度环死区、单周期限速率、前馈 `kf`**：未实现
-- **电机堵转保护**：`config.h` 保留 `MOTOR_STALL_*` 宏，但无任何代码使用
+- 普通 TRACK 没有自动终点识别；计圈只做诊断。
+- 普通 TRACK 没有全局堵转判定；`MOTOR_STALL_*` 仅由 LOOP-TEST 使用。
 
 ## Claude Code 相关
 

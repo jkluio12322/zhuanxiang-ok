@@ -32,4 +32,8 @@
 /* 电机 B 反转方向控制 GPIO 引脚。 */
 #define MOTOR_B_REVERSE_PIN           pwm2_0_Pin
 
+/* IMU963RA 的软件片选，PB12 低有效。 */
+#define IMU_CS_GPIO_Port              GPIOB
+#define IMU_CS_Pin                    GPIO_PIN_12
+
 #endif /* __BOARD_H */

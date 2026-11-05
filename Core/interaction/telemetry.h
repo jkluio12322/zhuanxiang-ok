@@ -14,7 +14,7 @@ typedef struct {
     float filteredRightRpm;       /* 右轮滤波后速度，单位 RPM。 */
     float steerRpm;               /* 航向或循迹差速量，单位 RPM。 */
     float actualDiffRpm;          /* 左轮减右轮的实际速度差，单位 RPM。 */
-    float yawAngleDeg;            /* MPU6050 航向角，单位度。 */
+    float yawAngleDeg;            /* IMU963RA 航向角，单位度。 */
     float trackError;             /* 循迹加权误差，负值偏左，正值偏右。 */
     int16_t mode;                 /* 当前 Mode 值。 */
     int16_t runFlag;              /* 1 表示运行，0 表示停车。 */
@@ -22,7 +22,7 @@ typedef struct {
     int16_t turnPhase;            /* TrackTurnPhase_t 整数。 */
     float commandVoltageLeft;     /* 左轮最终命令电压，单位 V。 */
     float commandVoltageRight;    /* 右轮最终命令电压，单位 V。 */
-    volatile int16_t fresh;       /* 1 表示有尚未发送的新数据。跨上下文：50 ms 中断置 1，
+volatile int16_t fresh;       /* 1 表示有尚未发送的新数据。跨上下文：5 ms 中断置 1，
                                      主循环读并清零，故必须 volatile。 */
 } telemetryData_t;
 
@@ -35,7 +35,7 @@ void telemetry_init(void);
    这里是表头唯一来源，不要在别处硬编码。 */
 void telemetry_boot_header(void);
 
-/* 用本周期控制结果填充遥测快照（中断上下文，50 ms 控制任务调用，只赋值不格式化）。
+/* 用本周期控制结果填充遥测快照（中断上下文，5 ms 控制任务调用，只赋值不格式化）。
    参数单位 RPM/百分比。速度与姿态字段直接读只读视图，其余由调用方传入。最后置
    fresh=1 是通知主循环"有新快照"的唯一入口。 */
 void telemetry_publish(float targetLeft, float targetRight,

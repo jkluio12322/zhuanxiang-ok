@@ -21,14 +21,8 @@ uint16_t ringbuf_free(RingBuf *rb)   /* 剩余可写空间 */
     return rb->capacity - 1 - ringbuf_available(rb);
 }
 
-int ringbuf_put(RingBuf *rb, uint8_t byte)   /* 阻塞写一个字节；满时忙等，禁止在中断或同生产者/消费者调用链中使用 */
-{
-    uint16_t next = (rb->head + 1) % rb->capacity;
-    while (next == rb->tail);   /* 忙等 */
-    rb->buf[rb->head] = byte;
-    rb->head = next;
-    return 0;
-}
+/* 阻塞式写入已移除：满时忙等会在中断或主循环里直接挂死，
+   全工程统一只用 ringbuf_put_nb()（放不下就返回 -1，由调用方决定丢帧）。 */
 
 int ringbuf_put_nb(RingBuf *rb, uint8_t byte)   /* 非阻塞写，满时返回 -1 */
 {

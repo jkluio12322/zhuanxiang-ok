@@ -33,18 +33,29 @@ static const Motor_ChannelConfig_t motorChannelB = {
     TIM_CHANNEL_1
 };
 
-static inline uint32_t motor_ccr(int16_t abs_speed)   /* PWM 百分比 → CCR，上限 MOTOR_PWM_CCR_MAX */
+static inline uint32_t motor_ccr(float abs_speed)   /* 小数百分比 → CCR，保留 TIM1 的细分辨率 */
 {
-    uint32_t ccr = (uint32_t)abs_speed * MOTOR_PWM_CCR_PER_PERCENT;
+    uint32_t ccr = (uint32_t)(abs_speed * (float)MOTOR_PWM_CCR_PER_PERCENT + 0.5f);
     if (ccr > MOTOR_PWM_CCR_MAX) ccr = MOTOR_PWM_CCR_MAX;
     return ccr;
 }
 
 /* 按通道输出方向与 PWM；speed 正转负反转，0 停止 */
 static void motorWriteChannel(const Motor_ChannelConfig_t *channel,
-                              int16_t speed)
+                              float speed)
 {
-    if (speed >= 0) {
+    if (speed == 0.0f) {
+        /* 停：两根方向线都拉低、占空比清零（coast）。旧写法停时也把反向线拉高，
+           一旦方向脚接错或驱动板极性不符，PWM 给 0 也会转，排查时极难定位。 */
+        HAL_GPIO_WritePin(channel->forwardPort,
+                          channel->forwardPin, GPIO_PIN_RESET);
+        HAL_GPIO_WritePin(channel->reversePort,
+                          channel->reversePin, GPIO_PIN_RESET);
+        __HAL_TIM_SET_COMPARE(&htim1, channel->timChannel, 0U);
+        return;
+    }
+
+    if (speed > 0) {
         HAL_GPIO_WritePin(channel->forwardPort,
                           channel->forwardPin, GPIO_PIN_RESET);
         HAL_GPIO_WritePin(channel->reversePort,
@@ -61,17 +72,22 @@ static void motorWriteChannel(const Motor_ChannelConfig_t *channel,
 
 void motor_init(void)   /* 启动 A/B 两轮 PWM 通道 */
 {
+    /* 先写 0 再把 PWM 通道拉起来：方向脚在上电时保持确定电平（coast），
+       避免 GPIO 初始化与 TIM 启动之间那一瞬的浮空/残留高电平。 */
+    motorWriteChannel(&motorChannelA, 0);
+    motorWriteChannel(&motorChannelB, 0);
+
     HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);  /* 电机B PWM */
     HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);  /* 电机A PWM */
 }
 
-void motor_a_set(int16_t Speed)   /* 设置 A 轮 PWM 与方向 */
+void motor_a_set(float speed_percent)   /* 设置 A 轮 PWM 与方向 */
 {
-    motorWriteChannel(&motorChannelA, Speed);
+    motorWriteChannel(&motorChannelA, speed_percent);
 }
 
-void motor_b_set(int16_t Speed)   /* 设置 B 轮 PWM 与方向 */
+void motor_b_set(float speed_percent)   /* 设置 B 轮 PWM 与方向 */
 {
     /* B 轮接线反了：PF3↔PF4 对调 */
-    motorWriteChannel(&motorChannelB, Speed);
+    motorWriteChannel(&motorChannelB, speed_percent);
 }

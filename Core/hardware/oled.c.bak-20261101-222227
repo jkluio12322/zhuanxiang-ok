@@ -1,0 +1,327 @@
+/* SSD1306 128×64 I2C 驱动：帧缓冲 + 分段阻塞写（全程不产生 I2C 中断，也不依赖 SysTick）。
+   I2C2: PB10=SCL, PB11=SDA, 地址 0x78；8×16 字模 4 行×16 列，128 列×8 页。
+
+   为什么不用 HAL_I2C_Master_Transmit_IT：I2C2_EV 中断优先级 3，远高于 SysTick(15)。
+   一旦 HAL 的 I2C 状态机被复位/异常打断（SB 置位却没人发地址、ABORT 后 State 留在 BUSY），
+   I2C2_EV 会连发不歇 -> SysTick 被饿死 -> uwTick 不涨 -> HAL_Delay 永久死等 ->
+   主循环（遥测/命令行/按键）整体停摆；而 TIM6(优先级 0) 里的控制环照跑，
+   现象就是"电机照转、VOFA 断流、OLED 冻帧、按键无响应"。
+   改成主循环分段阻塞：一次只发 1 段（258/251/251/275 字节，约 6 ms@400 kHz），
+   四段拼一帧 ~23 ms，不占中断、不阻塞到秒级，总线坏了就地恢复。 */
+
+#include "oled.h"
+#include "oled_font.h"
+#include "oled_font_small.h"
+#include "i2c.h"
+#include <string.h>
+
+extern I2C_HandleTypeDef hi2c2;
+
+/* OLED I2C 控制字节：0x00=命令 */
+#define OLED_CMD  0x00
+
+/* OLED I2C 控制字节：0x40=数据 */
+#define OLED_DATA 0x40
+
+/* 帧缓冲: 128 列 × 8 页 = 1024 字节 */
+static uint8_t oled_fb[1024];
+static uint8_t oled_dirty = 0;   /* 待刷新标志 */
+
+static uint8_t oled_ready = 0;   /* 1 = 屏幕已应答且初始化完成 */
+
+/* 每帧的发送快照：开帧时整块拷贝，边发边改帧缓冲也不会撕裂 */
+static uint8_t oled_snap[1024];
+
+/* 第 1 段带 8 字节事务头（0x00 命令流 + 设置窗口 + 0x40 数据流），后 3 段只带 0x40 */
+#define OLED_HDR_LEN   8
+#define OLED_SEG_DATA  250U                       /* 前 3 段各 250 字节，第 4 段 274 字节 */
+#define OLED_TX_MAX    (OLED_HDR_LEN + OLED_SEG_DATA)
+static uint8_t oled_tx_buf[OLED_TX_MAX];
+
+/* 0=空闲；1..4=本帧待发第 N 段 */
+static uint8_t oled_stage = 0;
+
+/* 初始化失败后的退避重试节拍：屏幕一次不应答就永久黑屏不可接受 */
+static uint32_t oled_retry_tick = 0;
+
+/* 不依赖 SysTick 的忙等（约 us*12 次空转，72 MHz 下 1 次约 5 周期）。
+   总线恢复路径绝不能调用 HAL_Delay：SysTick 一旦停摆就会死在这里。 */
+static void oled_delay_us(uint32_t us)
+{
+    volatile uint32_t n = us * 12U;
+    while (n-- > 0U) {
+        __NOP();
+    }
+}
+
+/* 本驱动只用阻塞传输，把 I2C2 的中断关掉：留着只会在 HAL 状态机异常时打成中断风暴 */
+static void oled_irq_off(void)
+{
+    HAL_NVIC_DisableIRQ(I2C2_EV_IRQn);
+    HAL_NVIC_DisableIRQ(I2C2_ER_IRQn);
+}
+
+/* 从机把 SDA 拉死时用 9 个时钟脉冲放总线。先 DeInit：
+   关时钟 + 引脚交还 GPIO + State→RESET，否则残留 State 和外设会一起抢引脚。 */
+static void oled_bus_recover(void)
+{
+    GPIO_InitTypeDef gpio = {0};
+
+    HAL_I2C_DeInit(&hi2c2);
+
+    gpio.Pin   = GPIO_PIN_10 | GPIO_PIN_11;
+    gpio.Mode  = GPIO_MODE_OUTPUT_OD;
+    gpio.Speed = GPIO_SPEED_FREQ_LOW;
+    HAL_GPIO_Init(GPIOB, &gpio);
+
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_11, GPIO_PIN_SET);
+    for (uint8_t i = 0; i < 9U; i++) {
+        HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_RESET);
+        oled_delay_us(5U);
+        HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_SET);
+        oled_delay_us(5U);
+    }
+
+    /* 手工补一个 STOP：SDA 在 SCL 高电平期间由低变高 */
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_11, GPIO_PIN_RESET);
+    oled_delay_us(5U);
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_SET);
+    oled_delay_us(5U);
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_11, GPIO_PIN_SET);
+    oled_delay_us(5U);
+
+    gpio.Mode = GPIO_MODE_AF_OD;
+    HAL_GPIO_Init(GPIOB, &gpio);
+
+    MX_I2C2_Init();       /* State 回到 READY */
+    oled_irq_off();       /* MspInit 会把两层中断重新打开，这里再关掉 */
+}
+
+/* 统一出口：任何一次传输失败就地恢复总线并转入未就绪退避，绝不把错误状态带回主循环 */
+static HAL_StatusTypeDef oled_send(const uint8_t *buf, uint16_t len, uint32_t timeout)
+{
+    HAL_StatusTypeDef status = HAL_I2C_Master_Transmit(&hi2c2, OLED_ADDR,
+                                                       (uint8_t *)buf, len, timeout);
+    if (status != HAL_OK) {
+        oled_bus_recover();
+        oled_ready      = 0;
+        oled_stage      = 0;
+        oled_retry_tick = HAL_GetTick();
+    }
+    return status;
+}
+
+/* 阻塞 I2C 写命令，仅初始化用，不可进中断；2 字节 @400 kHz 只要 45 us，超时给 5 ms */
+static HAL_StatusTypeDef oled_write_command(uint8_t Command)
+{
+    uint8_t buf[2] = {OLED_CMD, Command};
+    return oled_send(buf, 2U, 5U);
+}
+
+/* 按指定进制显示定长无符号整数 (Base 支持 2/10/16) */
+static void oled_show_uint_base(uint8_t Line, uint8_t Column,
+                              uint32_t Number, uint8_t Length,
+                              uint32_t Base)
+{
+    uint32_t divisor = 1U;
+
+    if ((Length == 0U) || (Base < 2U) || (Base > 16U)) return;
+
+    for (uint8_t i = 1U; i < Length; i++) {
+        divisor *= Base;
+    }
+
+    for (uint8_t i = 0; i < Length; i++) {
+        uint8_t digit = (uint8_t)(Number / divisor % Base);
+
+        oled_show_char(Line, Column + i,
+                      digit < 10U ? (char)(digit + '0')
+                                  : (char)(digit - 10U + 'A'));
+        divisor /= Base;
+    }
+}
+
+/* 初始化 SSD1306 并清帧缓冲；阻塞，仅启动时调用一次。失败不报错，
+   由 oled_flush() 每 1 s 退避重试，屏幕能自愈。 */
+void oled_init(void)
+{
+    static uint8_t powered = 0;   /* 只有上电后第一次需要等 SSD1306 自己复位 */
+    static const uint8_t seq[] = {
+        0xAE,                          /* 关闭显示 */
+        0xD5, 0x80,                    /* 时钟分频 */
+        0xA8, 0x3F,                    /* 复用率 1/64 */
+        0xD3, 0x00,                    /* 显示偏移 0 */
+        0x40,                          /* 起始行 0 */
+        0xA1,                          /* 左右翻转 */
+        0xC8,                          /* 上下翻转 */
+        0xDA, 0x12,                    /* COM 引脚配置 */
+        0x81, 0xCF,                    /* 对比度 */
+        0xD9, 0xF1,                    /* 预充电周期 */
+        0xDB, 0x30,                    /* VCOMH */
+        0xA4,                          /* 显示跟随 RAM */
+        0xA6,                          /* 正常显示 */
+        0x8D, 0x14,                    /* 打开电荷泵 */
+        0x20, 0x00,                    /* 水平寻址模式 */
+        0xAF                           /* 开启显示 */
+    };
+
+    if (powered == 0U) { oled_delay_us(100000U); powered = 1U; }
+
+    oled_irq_off();
+    oled_stage = 0;
+
+    if (HAL_I2C_IsDeviceReady(&hi2c2, OLED_ADDR, 1U, 15U) != HAL_OK) {
+        /* 从机不应答：复位时若 I2C 正传到一半，从机会把 SDA 拉死，先救一次总线 */
+        oled_bus_recover();
+        oled_ready      = 0;
+        oled_retry_tick = HAL_GetTick();
+        return;
+    }
+
+    for (uint32_t i = 0U; i < sizeof(seq); i++) {
+        if (oled_write_command(seq[i]) != HAL_OK) {
+            return;                        /* oled_send 已置未就绪并记下重试节拍 */
+        }
+    }
+
+    memset(oled_fb, 0, sizeof(oled_fb));            /* 清帧缓冲 */
+    memset(oled_snap, 0, sizeof(oled_snap));
+    oled_dirty = 1;                                 /* 让首帧把黑屏推上去 */
+    oled_stage = 0;
+    oled_ready = 1;
+}
+
+void oled_clear(void)   /* 清帧缓冲并标记待刷新 */
+{
+    memset(oled_fb, 0, sizeof(oled_fb));
+    oled_dirty = 1;
+}
+
+void oled_show_char(uint8_t Line, uint8_t Column, char Char)   /* 写 8×16 字符到帧缓冲 (只改 RAM，不碰 I2C) */
+{
+    uint8_t page = (Line - 1) * 2;               /* 每字符占 2 页 */
+    uint8_t col  = (Column - 1) * 8;             /* 每字符 8 像素宽 */
+
+    for (uint8_t i = 0; i < 8; i++) {
+        oled_fb[ page       * 128 + col + i] = OLED_F8x16[Char - ' '][i];
+        oled_fb[(page + 1)  * 128 + col + i] = OLED_F8x16[Char - ' '][i + 8];
+    }
+    oled_dirty = 1;
+}
+
+void oled_show_string(uint8_t Line, uint8_t Column, char *String)   /* 写 8×16 字符串 */
+{
+    for (uint8_t i = 0; String[i] != '\0'; i++)
+        oled_show_char(Line, Column + i, String[i]);
+}
+
+void oled_show_char_small(uint8_t Line, uint8_t Column, char Char)   /* 写 6×8 小字符，范围外显示空格 */
+{
+    uint8_t index;
+    uint8_t page;
+    uint8_t col;
+
+    if ((Line < 1U) || (Line > 8U) || (Column < 1U)) return;
+
+    page = (uint8_t)(Line - 1U);
+    col  = (uint8_t)((Column - 1U) * 6U);
+    if ((uint16_t)col + 5U >= 128U) return;
+
+    if ((Char < ' ') || (Char > '~')) Char = ' ';
+    index = (uint8_t)(Char - ' ');
+
+    for (uint8_t i = 0; i < 6U; i++) {
+        oled_fb[(uint16_t)page * 128U + col + i] = OLED_F6x8[index][i];
+    }
+
+    oled_dirty = 1;
+}
+
+void oled_show_string_small(uint8_t Line, uint8_t Column, char *String)   /* 写 6×8 小字符串 */
+{
+    for (uint8_t i = 0; String[i] != '\0'; i++) {
+        oled_show_char_small(Line, (uint8_t)(Column + i), String[i]);
+    }
+}
+
+void oled_show_num(uint8_t Line, uint8_t Column, uint32_t Number, uint8_t Length)   /* 定长无符号十进制 */
+{
+    oled_show_uint_base(Line, Column, Number, Length, 10U);
+}
+
+void oled_show_signed(uint8_t Line, uint8_t Column, int32_t Number, uint8_t Length)   /* 带符号十进制 */
+{
+    uint32_t Number1;
+    if (Number >= 0) { oled_show_char(Line, Column, '+'); Number1 = (uint32_t)Number; }
+    else             { oled_show_char(Line, Column, '-'); Number1 = 0U - (uint32_t)Number; }
+    oled_show_uint_base(Line, (uint8_t)(Column + 1U), Number1, Length, 10U);
+}
+
+void oled_show_hex(uint8_t Line, uint8_t Column, uint32_t Number, uint8_t Length)   /* 定长十六进制 */
+{
+    oled_show_uint_base(Line, Column, Number, Length, 16U);
+}
+
+void oled_show_bin(uint8_t Line, uint8_t Column, uint32_t Number, uint8_t Length)   /* 定长二进制 */
+{
+    oled_show_uint_base(Line, Column, Number, Length, 2U);
+}
+
+/* 帧缓冲 → SSD1306：每次只发 1 段，四段凑一帧（共 1024 字节 ≈ 23 ms @400 kHz）。
+   主循环每轮最多被占用约 6 ms，且全程无 I2C 中断，不会再把 SysTick 饿死。
+   SSD1306 的 GDDRAM 指针跨事务保持，分段写与一次性写等价。 */
+void oled_flush(void)
+{
+    uint16_t off;
+    uint16_t n;
+    uint16_t len;
+
+    if (oled_ready == 0U) {
+        if ((HAL_GetTick() - oled_retry_tick) >= 1000U) {   /* 退避重试，屏幕能自愈 */
+            oled_retry_tick = HAL_GetTick();
+            oled_init();
+        }
+        return;
+    }
+
+    if (oled_stage == 0U) {
+        if (!oled_dirty) return;
+        memcpy(oled_snap, oled_fb, sizeof(oled_snap));     /* 开帧快照，之后随便改 */
+        oled_dirty = 0;
+        oled_stage = 1U;
+    }
+
+    off = (uint16_t)((oled_stage - 1U) * OLED_SEG_DATA);
+    n   = ((off + OLED_SEG_DATA) <= 1024U) ? OLED_SEG_DATA : (uint16_t)(1024U - off);
+
+    if (oled_stage == 1U) {
+        /* 第 1 段：0x00 + 设置窗口(列 0~127 / 页 0~7) + 0x40 + 250 字节数据 = 258 字节 */
+        oled_tx_buf[0] = OLED_CMD;
+        oled_tx_buf[1] = 0x21U; oled_tx_buf[2] = 0x00U; oled_tx_buf[3] = 0x7FU;
+        oled_tx_buf[4] = 0x22U; oled_tx_buf[5] = 0x00U; oled_tx_buf[6] = 0x07U;
+        oled_tx_buf[7] = OLED_DATA;
+        memcpy(oled_tx_buf + OLED_HDR_LEN, oled_snap, n);
+        len = (uint16_t)(OLED_HDR_LEN + n);
+    } else {
+        /* 后 3 段：0x40 + 数据 */
+        oled_tx_buf[0] = OLED_DATA;
+        memcpy(oled_tx_buf + 1U, oled_snap + off, n);
+        len = (uint16_t)(1U + n);
+    }
+
+    if (oled_send(oled_tx_buf, len, 15U) != HAL_OK) {
+        return;                       /* oled_send 已恢复总线并置未就绪，下轮重试 */
+    }
+
+    if (oled_stage >= 4U) {
+        oled_stage = 0U;              /* 一帧发完 */
+    } else {
+        oled_stage++;
+    }
+}
+
+/* 兼容 HAL 回调名，本驱动不用中断传输，留空实现避免链接缺失 */
+void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c)
+{
+    (void)hi2c;
+}
