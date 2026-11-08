@@ -1,7 +1,8 @@
 # clangd 配置 —— 必须放在仓库根目录。
 #
 # clangd 从「源文件所在目录」逐级向上查找 .clangd 和 compile_commands.json。
-# 33 个 .c 文件全在 Core/ 下，而 MDK-ARM/ 是 Core/ 的兄弟目录而非祖先，
+# 22 个 .c 分布在 Core/ 的 7 个子目录（app/periph/sensor/comm/algorithm/task/ui），
+# 而 MDK-ARM/ 是 Core/ 的兄弟目录而非祖先，
 # 所以放在 MDK-ARM/.clangd 的那份对真实源码永远不会命中。
 #
 # 本文件是 Core/ 下文件唯一会命中的配置，CompileFlags 的 ARMCC flag

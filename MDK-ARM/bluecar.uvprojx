@@ -336,7 +336,7 @@
               <MiscControls/>
               <Define>USE_HAL_DRIVER,STM32F103xE</Define>
               <Undefine/>
-              <IncludePath>../Core/Inc;../Core/user;../Core/system;../Core/interaction;../Core/logic;../Core/hardware;../Drivers/STM32F1xx_HAL_Driver/Inc;../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy;../Drivers/CMSIS/Device/ST/STM32F1xx/Include;../Drivers/CMSIS/Include</IncludePath>
+              <IncludePath>../Core/Inc;../Core/app;../Core/periph;../Core/sensor;../Core/comm;../Core/algorithm;../Core/task;../Core/tactic;../Core/selftest;../Core/ui;../Drivers/STM32F1xx_HAL_Driver/Inc;../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy;../Drivers/CMSIS/Device/ST/STM32F1xx/Include;../Drivers/CMSIS/Include</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -378,192 +378,332 @@
       </TargetOption>
       <Groups>
         <Group>
-          <GroupName>User</GroupName>
+          <GroupName>App</GroupName>
           <Files>
             <File>
               <FileName>main.c</FileName>
               <FileType>1</FileType>
-              <FilePath>../Core/user/main.c</FilePath>
-            </File>
-            <File>
-              <FileName>isr.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>../Core/user/isr.c</FilePath>
-            </File>
-          </Files>
-        </Group>
-        <Group>
-          <GroupName>System</GroupName>
-          <Files>
-            <File>
-              <FileName>sched.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>../Core/system/sched.c</FilePath>
-            </File>
-            <File>
-              <FileName>state.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>../Core/system/state.c</FilePath>
-            </File>
-            <File>
-              <FileName>timer.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>../Core/system/timer.c</FilePath>
-            </File>
-            <File>
-              <FileName>filter.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>../Core/system/filter.c</FilePath>
-            </File>
-            <File>
-              <FileName>ringbuf.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>../Core/system/ringbuf.c</FilePath>
-            </File>
-            <File>
-              <FileName>bytestream.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>../Core/system/bytestream.c</FilePath>
+              <FilePath>../Core/app/main.c</FilePath>
             </File>
             <File>
               <FileName>config.h</FileName>
               <FileType>5</FileType>
-              <FilePath>../Core/system/config.h</FilePath>
+              <FilePath>../Core/app/config.h</FilePath>
             </File>
             <File>
               <FileName>types.h</FileName>
               <FileType>5</FileType>
-              <FilePath>../Core/system/types.h</FilePath>
-            </File>
-            <File>
-              <FileName>board.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>../Core/system/board.h</FilePath>
+              <FilePath>../Core/app/types.h</FilePath>
             </File>
           </Files>
         </Group>
         <Group>
-          <GroupName>Interaction</GroupName>
+          <GroupName>Periph</GroupName>
           <Files>
             <File>
-              <FileName>console.c</FileName>
+              <FileName>buzzer.c</FileName>
               <FileType>1</FileType>
-              <FilePath>../Core/interaction/console.c</FilePath>
+              <FilePath>../Core/periph/buzzer.c</FilePath>
             </File>
             <File>
-              <FileName>cmd.c</FileName>
+              <FileName>isr.c</FileName>
               <FileType>1</FileType>
-              <FilePath>../Core/interaction/cmd.c</FilePath>
-            </File>
-            <File>
-              <FileName>serial.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>../Core/interaction/serial.c</FilePath>
-            </File>
-            <File>
-              <FileName>telemetry.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>../Core/interaction/telemetry.c</FilePath>
-            </File>
-            <File>
-              <FileName>display.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>../Core/interaction/display.c</FilePath>
+              <FilePath>../Core/periph/isr.c</FilePath>
             </File>
             <File>
               <FileName>key.c</FileName>
               <FileType>1</FileType>
-              <FilePath>../Core/interaction/key.c</FilePath>
+              <FilePath>../Core/periph/key.c</FilePath>
             </File>
-          </Files>
-        </Group>
-        <Group>
-          <GroupName>Logic</GroupName>
-          <Files>
-            <File>
-              <FileName>track.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>../Core/logic/track.c</FilePath>
-            </File>
-            <File>
-              <FileName>pid.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>../Core/logic/pid.c</FilePath>
-            </File>
-            <File>
-              <FileName>testmode.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>../Core/logic/testmode.c</FilePath>
-            </File>
-            <File>
-              <FileName>motion.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>../Core/logic/motion.c</FilePath>
-            </File>
-            <File>
-              <FileName>speed_loop.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>../Core/logic/speed_loop.c</FilePath>
-            </File>
-            <File>
-              <FileName>eight.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>../Core/logic/eight.c</FilePath>
-            </File>
-          </Files>
-        </Group>
-        <Group>
-          <GroupName>Hardware</GroupName>
-          <Files>
             <File>
               <FileName>motor.c</FileName>
               <FileType>1</FileType>
-              <FilePath>../Core/hardware/motor.c</FilePath>
+              <FilePath>../Core/periph/motor.c</FilePath>
             </File>
+            <File>
+              <FileName>timer.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>../Core/periph/timer.c</FilePath>
+            </File>
+            <File>
+              <FileName>board.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>../Core/periph/board.h</FilePath>
+            </File>
+            <File>
+              <FileName>buzzer.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>../Core/periph/buzzer.h</FilePath>
+            </File>
+            <File>
+              <FileName>isr.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>../Core/periph/isr.h</FilePath>
+            </File>
+            <File>
+              <FileName>key.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>../Core/periph/key.h</FilePath>
+            </File>
+            <File>
+              <FileName>motor.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>../Core/periph/motor.h</FilePath>
+            </File>
+            <File>
+              <FileName>timer.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>../Core/periph/timer.h</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>Sensor</GroupName>
+          <Files>
             <File>
               <FileName>encoder.c</FileName>
               <FileType>1</FileType>
-              <FilePath>../Core/hardware/encoder.c</FilePath>
-            </File>
-            <File>
-              <FileName>irtrack.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>../Core/hardware/irtrack.c</FilePath>
-            </File>
-            <File>
-              <FileName>spi.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>../Core/Src/spi.c</FilePath>
+              <FilePath>../Core/sensor/encoder.c</FilePath>
             </File>
             <File>
               <FileName>imu.c</FileName>
               <FileType>1</FileType>
-              <FilePath>../Core/hardware/imu.c</FilePath>
+              <FilePath>../Core/sensor/imu.c</FilePath>
             </File>
             <File>
-              <FileName>oled.c</FileName>
+              <FileName>irtrack.c</FileName>
               <FileType>1</FileType>
-              <FilePath>../Core/hardware/oled.c</FilePath>
+              <FilePath>../Core/sensor/irtrack.c</FilePath>
             </File>
             <File>
-              <FileName>oled_font.h</FileName>
+              <FileName>encoder.h</FileName>
               <FileType>5</FileType>
-              <FilePath>../Core/hardware/oled_font.h</FilePath>
+              <FilePath>../Core/sensor/encoder.h</FilePath>
             </File>
             <File>
-              <FileName>oled_font_small.h</FileName>
+              <FileName>imu.h</FileName>
               <FileType>5</FileType>
-              <FilePath>../Core/hardware/oled_font_small.h</FilePath>
+              <FilePath>../Core/sensor/imu.h</FilePath>
             </File>
             <File>
-              <FileName>buzzer.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>../Core/hardware/buzzer.c</FilePath>
+              <FileName>irtrack.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>../Core/sensor/irtrack.h</FilePath>
             </File>
           </Files>
         </Group>
         <Group>
-          <GroupName>MDK-ARM</GroupName>
+          <GroupName>Comm</GroupName>
+          <Files>
+            <File>
+              <FileName>console.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>../Core/comm/console.c</FilePath>
+            </File>
+            <File>
+              <FileName>pidtrace.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>../Core/comm/pidtrace.c</FilePath>
+            </File>
+            <File>
+              <FileName>ringbuf.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>../Core/comm/ringbuf.c</FilePath>
+            </File>
+            <File>
+              <FileName>serial.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>../Core/comm/serial.c</FilePath>
+            </File>
+            <File>
+              <FileName>telemetry.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>../Core/comm/telemetry.c</FilePath>
+            </File>
+            <File>
+              <FileName>console.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>../Core/comm/console.h</FilePath>
+            </File>
+            <File>
+              <FileName>pidtrace.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>../Core/comm/pidtrace.h</FilePath>
+            </File>
+            <File>
+              <FileName>ringbuf.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>../Core/comm/ringbuf.h</FilePath>
+            </File>
+            <File>
+              <FileName>serial.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>../Core/comm/serial.h</FilePath>
+            </File>
+            <File>
+              <FileName>telemetry.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>../Core/comm/telemetry.h</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>Algorithm</GroupName>
+          <Files>
+            <File>
+              <FileName>laps.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>../Core/algorithm/laps.c</FilePath>
+            </File>
+            <File>
+              <FileName>motion.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>../Core/algorithm/motion.c</FilePath>
+            </File>
+            <File>
+              <FileName>pid.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>../Core/algorithm/pid.c</FilePath>
+            </File>
+            <File>
+              <FileName>track.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>../Core/algorithm/track.c</FilePath>
+            </File>
+            <File>
+              <FileName>laps.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>../Core/algorithm/laps.h</FilePath>
+            </File>
+            <File>
+              <FileName>motion.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>../Core/algorithm/motion.h</FilePath>
+            </File>
+            <File>
+              <FileName>pid.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>../Core/algorithm/pid.h</FilePath>
+            </File>
+            <File>
+              <FileName>track.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>../Core/algorithm/track.h</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>Task</GroupName>
+          <Files>
+            <File>
+              <FileName>control.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>../Core/task/control.c</FilePath>
+            </File>
+            <File>
+              <FileName>mission.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>../Core/task/mission.c</FilePath>
+            </File>
+            <File>
+              <FileName>sched.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>../Core/task/sched.c</FilePath>
+            </File>
+            <File>
+              <FileName>state.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>../Core/task/state.c</FilePath>
+            </File>
+            <File>
+              <FileName>control.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>../Core/task/control.h</FilePath>
+            </File>
+            <File>
+              <FileName>mission.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>../Core/task/mission.h</FilePath>
+            </File>
+            <File>
+              <FileName>sched.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>../Core/task/sched.h</FilePath>
+            </File>
+            <File>
+              <FileName>state.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>../Core/task/state.h</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>Tactic</GroupName>
+          <Files>
+            <File>
+              <FileName>tactic.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>../Core/tactic/tactic.c</FilePath>
+            </File>
+            <File>
+              <FileName>tactic.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>../Core/tactic/tactic.h</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>SelfTest</GroupName>
+          <Files>
+            <File>
+              <FileName>turntest.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>../Core/selftest/turntest.c</FilePath>
+            </File>
+            <File>
+              <FileName>turntest.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>../Core/selftest/turntest.h</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>Ui</GroupName>
+          <Files>
+            <File>
+              <FileName>display.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>../Core/ui/display.c</FilePath>
+            </File>
+            <File>
+              <FileName>oled.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>../Core/ui/oled.c</FilePath>
+            </File>
+            <File>
+              <FileName>display.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>../Core/ui/display.h</FilePath>
+            </File>
+            <File>
+              <FileName>oled.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>../Core/ui/oled.h</FilePath>
+            </File>
+            <File>
+              <FileName>oled_font.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>../Core/ui/oled_font.h</FilePath>
+            </File>
+            <File>
+              <FileName>oled_font_small.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>../Core/ui/oled_font_small.h</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>Startup</GroupName>
           <Files>
             <File>
               <FileName>startup_stm32f103xe.s</FileName>
@@ -601,16 +741,108 @@
               <FilePath>../Core/Src/usart.c</FilePath>
             </File>
             <File>
+              <FileName>spi.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>../Core/Src/spi.c</FilePath>
+            </File>
+            <File>
               <FileName>stm32f1xx_hal_msp.c</FileName>
               <FileType>1</FileType>
               <FilePath>../Core/Src/stm32f1xx_hal_msp.c</FilePath>
             </File>
+            <File>
+              <FileName>system_stm32f1xx.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>../Core/Src/system_stm32f1xx.c</FilePath>
+            </File>
           </Files>
         </Group>
-        <Group><GroupName>Drivers/STM32F1xx_HAL_Driver</GroupName><Files><File><FileName>stm32f1xx_hal_gpio_ex.c</FileName><FileType>1</FileType><FilePath>../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_gpio_ex.c</FilePath></File><File><FileName>stm32f1xx_hal_i2c.c</FileName><FileType>1</FileType><FilePath>../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_i2c.c</FilePath></File><File><FileName>stm32f1xx_hal.c</FileName><FileType>1</FileType><FilePath>../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal.c</FilePath></File><File><FileName>stm32f1xx_hal_rcc.c</FileName><FileType>1</FileType><FilePath>../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_rcc.c</FilePath></File><File><FileName>stm32f1xx_hal_rcc_ex.c</FileName><FileType>1</FileType><FilePath>../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_rcc_ex.c</FilePath></File><File><FileName>stm32f1xx_hal_gpio.c</FileName><FileType>1</FileType><FilePath>../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_gpio.c</FilePath></File><File><FileName>stm32f1xx_hal_dma.c</FileName><FileType>1</FileType><FilePath>../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_dma.c</FilePath></File><File><FileName>stm32f1xx_hal_cortex.c</FileName><FileType>1</FileType><FilePath>../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_cortex.c</FilePath></File><File><FileName>stm32f1xx_hal_pwr.c</FileName><FileType>1</FileType><FilePath>../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_pwr.c</FilePath></File><File><FileName>stm32f1xx_hal_flash.c</FileName><FileType>1</FileType><FilePath>../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_flash.c</FilePath></File><File><FileName>stm32f1xx_hal_flash_ex.c</FileName><FileType>1</FileType><FilePath>../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_flash_ex.c</FilePath></File><File><FileName>stm32f1xx_hal_exti.c</FileName><FileType>1</FileType><FilePath>../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_exti.c</FilePath></File><File><FileName>stm32f1xx_hal_spi.c</FileName><FileType>1</FileType><FilePath>../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_spi.c</FilePath></File><File><FileName>stm32f1xx_hal_tim.c</FileName><FileType>1</FileType><FilePath>../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_tim.c</FilePath></File><File><FileName>stm32f1xx_hal_tim_ex.c</FileName><FileType>1</FileType><FilePath>../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_tim_ex.c</FilePath></File><File><FileName>stm32f1xx_hal_uart.c</FileName><FileType>1</FileType><FilePath>../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_uart.c</FilePath></File></Files></Group>
-        <Group><GroupName>Drivers/CMSIS</GroupName><Files><File><FileName>system_stm32f1xx.c</FileName><FileType>1</FileType><FilePath>../Core/Src/system_stm32f1xx.c</FilePath></File></Files></Group>
-        
-      <Group><GroupName>Application/User/Core</GroupName><GroupOption><CommonProperty><UseCPPCompiler>0</UseCPPCompiler><RVCTCodeConst>0</RVCTCodeConst><RVCTZI>0</RVCTZI><RVCTOtherData>0</RVCTOtherData><ModuleSelection>0</ModuleSelection><IncludeInBuild>2</IncludeInBuild><AlwaysBuild>2</AlwaysBuild><GenerateAssemblyFile>2</GenerateAssemblyFile><AssembleAssemblyFile>2</AssembleAssemblyFile><PublicsOnly>2</PublicsOnly><StopOnExitCode>11</StopOnExitCode><ComprImg>1</ComprImg></CommonProperty><GroupArmAds><Cads><interw>2</interw><Optim>0</Optim><oTime>2</oTime><SplitLS>2</SplitLS><OneElfS>2</OneElfS><Strict>2</Strict><EnumInt>2</EnumInt><PlainCh>2</PlainCh><Ropi>2</Ropi><Rwpi>2</Rwpi><wLevel>4</wLevel><uThumb>2</uThumb><uSurpInc>2</uSurpInc><uC99>2</uC99><uGnu>2</uGnu><useXO>2</useXO><v6Lang>0</v6Lang><v6LangP>0</v6LangP><vShortEn>2</vShortEn><vShortWch>2</vShortWch><v6Lto>2</v6Lto><v6WtE>2</v6WtE><v6Rtti>2</v6Rtti></Cads><Aads><interw>2</interw><Ropi>2</Ropi><Rwpi>2</Rwpi><thumb>2</thumb><SplitLS>2</SplitLS><SwStkChk>2</SwStkChk><NoWarn>2</NoWarn><uSurpInc>2</uSurpInc><useXO>2</useXO><ClangAsOpt>1</ClangAsOpt></Aads></GroupArmAds></GroupOption><Files><File><FileOption><CommonProperty><UseCPPCompiler>2</UseCPPCompiler><RVCTCodeConst>0</RVCTCodeConst><RVCTZI>0</RVCTZI><RVCTOtherData>0</RVCTOtherData><ModuleSelection>0</ModuleSelection><IncludeInBuild>1</IncludeInBuild><AlwaysBuild>2</AlwaysBuild><GenerateAssemblyFile>2</GenerateAssemblyFile><AssembleAssemblyFile>2</AssembleAssemblyFile><PublicsOnly>2</PublicsOnly><StopOnExitCode>11</StopOnExitCode><ComprImg>1</ComprImg></CommonProperty><FileArmAds><Cads><interw>2</interw><Optim>0</Optim><oTime>2</oTime><SplitLS>2</SplitLS><OneElfS>2</OneElfS><Strict>2</Strict><EnumInt>2</EnumInt><PlainCh>2</PlainCh><Ropi>2</Ropi><Rwpi>2</Rwpi><wLevel>0</wLevel><uThumb>2</uThumb><uSurpInc>2</uSurpInc><uC99>2</uC99><uGnu>2</uGnu><useXO>2</useXO><v6Lang>0</v6Lang><v6LangP>0</v6LangP><vShortEn>2</vShortEn><vShortWch>2</vShortWch><v6Lto>2</v6Lto><v6WtE>2</v6WtE><v6Rtti>2</v6Rtti></Cads><Aads><interw>2</interw><Ropi>2</Ropi><Rwpi>2</Rwpi><thumb>2</thumb><SplitLS>2</SplitLS><SwStkChk>2</SwStkChk><NoWarn>2</NoWarn><uSurpInc>2</uSurpInc><useXO>2</useXO><ClangAsOpt>1</ClangAsOpt></Aads></FileArmAds></FileOption></File><File><FileName>main.c</FileName><FileType>1</FileType><FilePath>../Core/Src/main.c</FilePath><FileOption><CommonProperty><UseCPPCompiler>2</UseCPPCompiler><RVCTCodeConst>0</RVCTCodeConst><RVCTZI>0</RVCTZI><RVCTOtherData>0</RVCTOtherData><ModuleSelection>0</ModuleSelection><IncludeInBuild>1</IncludeInBuild><AlwaysBuild>2</AlwaysBuild><GenerateAssemblyFile>2</GenerateAssemblyFile><AssembleAssemblyFile>2</AssembleAssemblyFile><PublicsOnly>2</PublicsOnly><StopOnExitCode>11</StopOnExitCode><ComprImg>1</ComprImg></CommonProperty><FileArmAds><Cads><interw>2</interw><Optim>0</Optim><oTime>2</oTime><SplitLS>2</SplitLS><OneElfS>2</OneElfS><Strict>2</Strict><EnumInt>2</EnumInt><PlainCh>2</PlainCh><Ropi>2</Ropi><Rwpi>2</Rwpi><wLevel>0</wLevel><uThumb>2</uThumb><uSurpInc>2</uSurpInc><uC99>2</uC99><uGnu>2</uGnu><useXO>2</useXO><v6Lang>0</v6Lang><v6LangP>0</v6LangP><vShortEn>2</vShortEn><vShortWch>2</vShortWch><v6Lto>2</v6Lto><v6WtE>2</v6WtE><v6Rtti>2</v6Rtti></Cads><Aads><interw>2</interw><Ropi>2</Ropi><Rwpi>2</Rwpi><thumb>2</thumb><SplitLS>2</SplitLS><SwStkChk>2</SwStkChk><NoWarn>2</NoWarn><uSurpInc>2</uSurpInc><useXO>2</useXO><ClangAsOpt>1</ClangAsOpt></Aads></FileArmAds></FileOption></File><File><FileName>gpio.c</FileName><FileType>1</FileType><FilePath>../Core/Src/gpio.c</FilePath><FileOption><CommonProperty><UseCPPCompiler>2</UseCPPCompiler><RVCTCodeConst>0</RVCTCodeConst><RVCTZI>0</RVCTZI><RVCTOtherData>0</RVCTOtherData><ModuleSelection>0</ModuleSelection><IncludeInBuild>1</IncludeInBuild><AlwaysBuild>2</AlwaysBuild><GenerateAssemblyFile>2</GenerateAssemblyFile><AssembleAssemblyFile>2</AssembleAssemblyFile><PublicsOnly>2</PublicsOnly><StopOnExitCode>11</StopOnExitCode><ComprImg>1</ComprImg></CommonProperty><FileArmAds><Cads><interw>2</interw><Optim>0</Optim><oTime>2</oTime><SplitLS>2</SplitLS><OneElfS>2</OneElfS><Strict>2</Strict><EnumInt>2</EnumInt><PlainCh>2</PlainCh><Ropi>2</Ropi><Rwpi>2</Rwpi><wLevel>0</wLevel><uThumb>2</uThumb><uSurpInc>2</uSurpInc><uC99>2</uC99><uGnu>2</uGnu><useXO>2</useXO><v6Lang>0</v6Lang><v6LangP>0</v6LangP><vShortEn>2</vShortEn><vShortWch>2</vShortWch><v6Lto>2</v6Lto><v6WtE>2</v6WtE><v6Rtti>2</v6Rtti></Cads><Aads><interw>2</interw><Ropi>2</Ropi><Rwpi>2</Rwpi><thumb>2</thumb><SplitLS>2</SplitLS><SwStkChk>2</SwStkChk><NoWarn>2</NoWarn><uSurpInc>2</uSurpInc><useXO>2</useXO><ClangAsOpt>1</ClangAsOpt></Aads></FileArmAds></FileOption></File><File><FileName>dma.c</FileName><FileType>1</FileType><FilePath>../Core/Src/dma.c</FilePath><FileOption><CommonProperty><UseCPPCompiler>2</UseCPPCompiler><RVCTCodeConst>0</RVCTCodeConst><RVCTZI>0</RVCTZI><RVCTOtherData>0</RVCTOtherData><ModuleSelection>0</ModuleSelection><IncludeInBuild>1</IncludeInBuild><AlwaysBuild>2</AlwaysBuild><GenerateAssemblyFile>2</GenerateAssemblyFile><AssembleAssemblyFile>2</AssembleAssemblyFile><PublicsOnly>2</PublicsOnly><StopOnExitCode>11</StopOnExitCode><ComprImg>1</ComprImg></CommonProperty><FileArmAds><Cads><interw>2</interw><Optim>0</Optim><oTime>2</oTime><SplitLS>2</SplitLS><OneElfS>2</OneElfS><Strict>2</Strict><EnumInt>2</EnumInt><PlainCh>2</PlainCh><Ropi>2</Ropi><Rwpi>2</Rwpi><wLevel>0</wLevel><uThumb>2</uThumb><uSurpInc>2</uSurpInc><uC99>2</uC99><uGnu>2</uGnu><useXO>2</useXO><v6Lang>0</v6Lang><v6LangP>0</v6LangP><vShortEn>2</vShortEn><vShortWch>2</vShortWch><v6Lto>2</v6Lto><v6WtE>2</v6WtE><v6Rtti>2</v6Rtti></Cads><Aads><interw>2</interw><Ropi>2</Ropi><Rwpi>2</Rwpi><thumb>2</thumb><SplitLS>2</SplitLS><SwStkChk>2</SwStkChk><NoWarn>2</NoWarn><uSurpInc>2</uSurpInc><useXO>2</useXO><ClangAsOpt>1</ClangAsOpt></Aads></FileArmAds></FileOption></File><File><FileName>i2c.c</FileName><FileType>1</FileType><FilePath>../Core/Src/i2c.c</FilePath><FileOption><CommonProperty><UseCPPCompiler>2</UseCPPCompiler><RVCTCodeConst>0</RVCTCodeConst><RVCTZI>0</RVCTZI><RVCTOtherData>0</RVCTOtherData><ModuleSelection>0</ModuleSelection><IncludeInBuild>1</IncludeInBuild><AlwaysBuild>2</AlwaysBuild><GenerateAssemblyFile>2</GenerateAssemblyFile><AssembleAssemblyFile>2</AssembleAssemblyFile><PublicsOnly>2</PublicsOnly><StopOnExitCode>11</StopOnExitCode><ComprImg>1</ComprImg></CommonProperty><FileArmAds><Cads><interw>2</interw><Optim>0</Optim><oTime>2</oTime><SplitLS>2</SplitLS><OneElfS>2</OneElfS><Strict>2</Strict><EnumInt>2</EnumInt><PlainCh>2</PlainCh><Ropi>2</Ropi><Rwpi>2</Rwpi><wLevel>0</wLevel><uThumb>2</uThumb><uSurpInc>2</uSurpInc><uC99>2</uC99><uGnu>2</uGnu><useXO>2</useXO><v6Lang>0</v6Lang><v6LangP>0</v6LangP><vShortEn>2</vShortEn><vShortWch>2</vShortWch><v6Lto>2</v6Lto><v6WtE>2</v6WtE><v6Rtti>2</v6Rtti></Cads><Aads><interw>2</interw><Ropi>2</Ropi><Rwpi>2</Rwpi><thumb>2</thumb><SplitLS>2</SplitLS><SwStkChk>2</SwStkChk><NoWarn>2</NoWarn><uSurpInc>2</uSurpInc><useXO>2</useXO><ClangAsOpt>1</ClangAsOpt></Aads></FileArmAds></FileOption></File><File><FileName>spi.c</FileName><FileType>1</FileType><FilePath>../Core/Src/spi.c</FilePath><FileOption><CommonProperty><UseCPPCompiler>2</UseCPPCompiler><RVCTCodeConst>0</RVCTCodeConst><RVCTZI>0</RVCTZI><RVCTOtherData>0</RVCTOtherData><ModuleSelection>0</ModuleSelection><IncludeInBuild>1</IncludeInBuild><AlwaysBuild>2</AlwaysBuild><GenerateAssemblyFile>2</GenerateAssemblyFile><AssembleAssemblyFile>2</AssembleAssemblyFile><PublicsOnly>2</PublicsOnly><StopOnExitCode>11</StopOnExitCode><ComprImg>1</ComprImg></CommonProperty><FileArmAds><Cads><interw>2</interw><Optim>0</Optim><oTime>2</oTime><SplitLS>2</SplitLS><OneElfS>2</OneElfS><Strict>2</Strict><EnumInt>2</EnumInt><PlainCh>2</PlainCh><Ropi>2</Ropi><Rwpi>2</Rwpi><wLevel>0</wLevel><uThumb>2</uThumb><uSurpInc>2</uSurpInc><uC99>2</uC99><uGnu>2</uGnu><useXO>2</useXO><v6Lang>0</v6Lang><v6LangP>0</v6LangP><vShortEn>2</vShortEn><vShortWch>2</vShortWch><v6Lto>2</v6Lto><v6WtE>2</v6WtE><v6Rtti>2</v6Rtti></Cads><Aads><interw>2</interw><Ropi>2</Ropi><Rwpi>2</Rwpi><thumb>2</thumb><SplitLS>2</SplitLS><SwStkChk>2</SwStkChk><NoWarn>2</NoWarn><uSurpInc>2</uSurpInc><useXO>2</useXO><ClangAsOpt>1</ClangAsOpt></Aads></FileArmAds></FileOption></File><File><FileName>tim.c</FileName><FileType>1</FileType><FilePath>../Core/Src/tim.c</FilePath><FileOption><CommonProperty><UseCPPCompiler>2</UseCPPCompiler><RVCTCodeConst>0</RVCTCodeConst><RVCTZI>0</RVCTZI><RVCTOtherData>0</RVCTOtherData><ModuleSelection>0</ModuleSelection><IncludeInBuild>1</IncludeInBuild><AlwaysBuild>2</AlwaysBuild><GenerateAssemblyFile>2</GenerateAssemblyFile><AssembleAssemblyFile>2</AssembleAssemblyFile><PublicsOnly>2</PublicsOnly><StopOnExitCode>11</StopOnExitCode><ComprImg>1</ComprImg></CommonProperty><FileArmAds><Cads><interw>2</interw><Optim>0</Optim><oTime>2</oTime><SplitLS>2</SplitLS><OneElfS>2</OneElfS><Strict>2</Strict><EnumInt>2</EnumInt><PlainCh>2</PlainCh><Ropi>2</Ropi><Rwpi>2</Rwpi><wLevel>0</wLevel><uThumb>2</uThumb><uSurpInc>2</uSurpInc><uC99>2</uC99><uGnu>2</uGnu><useXO>2</useXO><v6Lang>0</v6Lang><v6LangP>0</v6LangP><vShortEn>2</vShortEn><vShortWch>2</vShortWch><v6Lto>2</v6Lto><v6WtE>2</v6WtE><v6Rtti>2</v6Rtti></Cads><Aads><interw>2</interw><Ropi>2</Ropi><Rwpi>2</Rwpi><thumb>2</thumb><SplitLS>2</SplitLS><SwStkChk>2</SwStkChk><NoWarn>2</NoWarn><uSurpInc>2</uSurpInc><useXO>2</useXO><ClangAsOpt>1</ClangAsOpt></Aads></FileArmAds></FileOption></File><File><FileName>usart.c</FileName><FileType>1</FileType><FilePath>../Core/Src/usart.c</FilePath><FileOption><CommonProperty><UseCPPCompiler>2</UseCPPCompiler><RVCTCodeConst>0</RVCTCodeConst><RVCTZI>0</RVCTZI><RVCTOtherData>0</RVCTOtherData><ModuleSelection>0</ModuleSelection><IncludeInBuild>1</IncludeInBuild><AlwaysBuild>2</AlwaysBuild><GenerateAssemblyFile>2</GenerateAssemblyFile><AssembleAssemblyFile>2</AssembleAssemblyFile><PublicsOnly>2</PublicsOnly><StopOnExitCode>11</StopOnExitCode><ComprImg>1</ComprImg></CommonProperty><FileArmAds><Cads><interw>2</interw><Optim>0</Optim><oTime>2</oTime><SplitLS>2</SplitLS><OneElfS>2</OneElfS><Strict>2</Strict><EnumInt>2</EnumInt><PlainCh>2</PlainCh><Ropi>2</Ropi><Rwpi>2</Rwpi><wLevel>0</wLevel><uThumb>2</uThumb><uSurpInc>2</uSurpInc><uC99>2</uC99><uGnu>2</uGnu><useXO>2</useXO><v6Lang>0</v6Lang><v6LangP>0</v6LangP><vShortEn>2</vShortEn><vShortWch>2</vShortWch><v6Lto>2</v6Lto><v6WtE>2</v6WtE><v6Rtti>2</v6Rtti></Cads><Aads><interw>2</interw><Ropi>2</Ropi><Rwpi>2</Rwpi><thumb>2</thumb><SplitLS>2</SplitLS><SwStkChk>2</SwStkChk><NoWarn>2</NoWarn><uSurpInc>2</uSurpInc><useXO>2</useXO><ClangAsOpt>1</ClangAsOpt></Aads></FileArmAds></FileOption></File><File><FileName>stm32f1xx_it.c</FileName><FileType>1</FileType><FilePath>../Core/Src/stm32f1xx_it.c</FilePath><FileOption><CommonProperty><UseCPPCompiler>2</UseCPPCompiler><RVCTCodeConst>0</RVCTCodeConst><RVCTZI>0</RVCTZI><RVCTOtherData>0</RVCTOtherData><ModuleSelection>0</ModuleSelection><IncludeInBuild>1</IncludeInBuild><AlwaysBuild>2</AlwaysBuild><GenerateAssemblyFile>2</GenerateAssemblyFile><AssembleAssemblyFile>2</AssembleAssemblyFile><PublicsOnly>2</PublicsOnly><StopOnExitCode>11</StopOnExitCode><ComprImg>1</ComprImg></CommonProperty><FileArmAds><Cads><interw>2</interw><Optim>0</Optim><oTime>2</oTime><SplitLS>2</SplitLS><OneElfS>2</OneElfS><Strict>2</Strict><EnumInt>2</EnumInt><PlainCh>2</PlainCh><Ropi>2</Ropi><Rwpi>2</Rwpi><wLevel>0</wLevel><uThumb>2</uThumb><uSurpInc>2</uSurpInc><uC99>2</uC99><uGnu>2</uGnu><useXO>2</useXO><v6Lang>0</v6Lang><v6LangP>0</v6LangP><vShortEn>2</vShortEn><vShortWch>2</vShortWch><v6Lto>2</v6Lto><v6WtE>2</v6WtE><v6Rtti>2</v6Rtti></Cads><Aads><interw>2</interw><Ropi>2</Ropi><Rwpi>2</Rwpi><thumb>2</thumb><SplitLS>2</SplitLS><SwStkChk>2</SwStkChk><NoWarn>2</NoWarn><uSurpInc>2</uSurpInc><useXO>2</useXO><ClangAsOpt>1</ClangAsOpt></Aads></FileArmAds></FileOption></File><File><FileName>stm32f1xx_hal_msp.c</FileName><FileType>1</FileType><FilePath>../Core/Src/stm32f1xx_hal_msp.c</FilePath><FileOption><CommonProperty><UseCPPCompiler>2</UseCPPCompiler><RVCTCodeConst>0</RVCTCodeConst><RVCTZI>0</RVCTZI><RVCTOtherData>0</RVCTOtherData><ModuleSelection>0</ModuleSelection><IncludeInBuild>1</IncludeInBuild><AlwaysBuild>2</AlwaysBuild><GenerateAssemblyFile>2</GenerateAssemblyFile><AssembleAssemblyFile>2</AssembleAssemblyFile><PublicsOnly>2</PublicsOnly><StopOnExitCode>11</StopOnExitCode><ComprImg>1</ComprImg></CommonProperty><FileArmAds><Cads><interw>2</interw><Optim>0</Optim><oTime>2</oTime><SplitLS>2</SplitLS><OneElfS>2</OneElfS><Strict>2</Strict><EnumInt>2</EnumInt><PlainCh>2</PlainCh><Ropi>2</Ropi><Rwpi>2</Rwpi><wLevel>0</wLevel><uThumb>2</uThumb><uSurpInc>2</uSurpInc><uC99>2</uC99><uGnu>2</uGnu><useXO>2</useXO><v6Lang>0</v6Lang><v6LangP>0</v6LangP><vShortEn>2</vShortEn><vShortWch>2</vShortWch><v6Lto>2</v6Lto><v6WtE>2</v6WtE><v6Rtti>2</v6Rtti></Cads><Aads><interw>2</interw><Ropi>2</Ropi><Rwpi>2</Rwpi><thumb>2</thumb><SplitLS>2</SplitLS><SwStkChk>2</SwStkChk><NoWarn>2</NoWarn><uSurpInc>2</uSurpInc><useXO>2</useXO><ClangAsOpt>1</ClangAsOpt></Aads></FileArmAds></FileOption></File></Files></Group></Groups>
+        <Group>
+          <GroupName>Drivers</GroupName>
+          <Files>
+            <File>
+              <FileName>stm32f1xx_hal_gpio_ex.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_gpio_ex.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f1xx_hal_i2c.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_i2c.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f1xx_hal.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f1xx_hal_rcc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_rcc.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f1xx_hal_rcc_ex.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_rcc_ex.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f1xx_hal_gpio.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_gpio.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f1xx_hal_dma.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_dma.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f1xx_hal_cortex.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_cortex.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f1xx_hal_pwr.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_pwr.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f1xx_hal_flash.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_flash.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f1xx_hal_flash_ex.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_flash_ex.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f1xx_hal_exti.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_exti.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f1xx_hal_spi.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_spi.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f1xx_hal_tim.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_tim.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f1xx_hal_tim_ex.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_tim_ex.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f1xx_hal_uart.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_uart.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+      </Groups>
     </Target>
   </Targets>
   <RTE>

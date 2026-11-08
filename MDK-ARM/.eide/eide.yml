@@ -1,104 +1,117 @@
 version: "4.1"
 name: bluecar
 type: ARM
-deviceName: null
+deviceName: STM32F103ZE
 packDir: null
 srcDirs: []
 virtualFolder:
   name: <virtual_root>
   files: []
   folders:
-    - name: User
+    - name: App
       files:
-        - path: ../Core/user/main.c
-        - path: ../Core/user/isr.c
+        - path: ../Core/app/main.c
+        - path: ../Core/app/config.h
+        - path: ../Core/app/types.h
       folders: []
-    - name: System
+    - name: Periph
       files:
-        - path: ../Core/system/sched.c
-        - path: ../Core/system/state.c
-        - path: ../Core/system/timer.c
-        - path: ../Core/system/filter.c
-        - path: ../Core/system/ringbuf.c
-        - path: ../Core/system/bytestream.c
-        - path: ../Core/system/config.h
-        - path: ../Core/system/types.h
-        - path: ../Core/system/board.h
+        - path: ../Core/periph/motor.c
+        - path: ../Core/periph/buzzer.c
+        - path: ../Core/periph/timer.c
+        - path: ../Core/periph/isr.c
+        - path: ../Core/periph/board.h
+        - path: ../Core/periph/motor.h
+        - path: ../Core/periph/buzzer.h
+        - path: ../Core/periph/timer.h
+        - path: ../Core/periph/isr.h
+        - path: ../Core/periph/key.c
+        - path: ../Core/periph/key.h
       folders: []
-    - name: Interaction
+    - name: Sensor
       files:
-        - path: ../Core/interaction/console.c
-        - path: ../Core/interaction/cmd.c
-        - path: ../Core/interaction/serial.c
-        - path: ../Core/interaction/telemetry.c
-        - path: ../Core/interaction/display.c
-        - path: ../Core/interaction/key.c
+        - path: ../Core/sensor/imu.c
+        - path: ../Core/sensor/irtrack.c
+        - path: ../Core/sensor/encoder.c
+        - path: ../Core/sensor/imu.h
+        - path: ../Core/sensor/irtrack.h
+        - path: ../Core/sensor/encoder.h
       folders: []
-    - name: Logic
+    - name: Comm
       files:
-        - path: ../Core/logic/track.c
-        - path: ../Core/logic/pid.c
-        - path: ../Core/logic/testmode.c
-        - path: ../Core/logic/motion.c
-        - path: ../Core/logic/speed_loop.c
-        - path: ../Core/logic/speed_calibration.c
-        - path: ../Core/logic/position_loop.c
-        - path: ../Core/logic/loop_test.c
-        - path: ../Core/logic/eight.c
+        - path: ../Core/comm/serial.c
+        - path: ../Core/comm/telemetry.c
+        - path: ../Core/comm/console.c
+        - path: ../Core/comm/ringbuf.c
+        - path: ../Core/comm/serial.h
+        - path: ../Core/comm/telemetry.h
+        - path: ../Core/comm/console.h
+        - path: ../Core/comm/ringbuf.h
       folders: []
-    - name: Hardware
+    - name: Algorithm
       files:
-        - path: ../Core/hardware/motor.c
-        - path: ../Core/hardware/encoder.c
-        - path: ../Core/hardware/irtrack.c
-        - path: ../Core/hardware/imu.c
-        - path: ../Core/hardware/oled.c
-        - path: ../Core/hardware/oled_font.h
-        - path: ../Core/hardware/oled_font_small.h
-        - path: ../Core/hardware/buzzer.c
+        - path: ../Core/algorithm/pid.c
+        - path: ../Core/algorithm/track.c
+        - path: ../Core/algorithm/laps.c
+        - path: ../Core/algorithm/motion.c
+        - path: ../Core/algorithm/pid.h
+        - path: ../Core/algorithm/track.h
+        - path: ../Core/algorithm/laps.h
+        - path: ../Core/algorithm/motion.h
       folders: []
-    - name: MDK-ARM
+    - name: Task
+      files:
+        - path: ../Core/task/sched.c
+        - path: ../Core/task/mission.c
+        - path: ../Core/task/control.c
+        - path: ../Core/task/state.c
+        - path: ../Core/task/sched.h
+        - path: ../Core/task/mission.h
+        - path: ../Core/task/control.h
+        - path: ../Core/task/state.h
+      folders: []
+    - name: Ui
+      files:
+        - path: ../Core/ui/display.c
+        - path: ../Core/ui/oled.c
+        - path: ../Core/ui/display.h
+        - path: ../Core/ui/oled.h
+        - path: ../Core/ui/oled_font.h
+        - path: ../Core/ui/oled_font_small.h
+      folders: []
+    - name: Startup
       files:
         - path: startup_stm32f103xe.s
       folders: []
     - name: CubeMX
       files:
         - path: ../Core/Src/gpio.c
-        - path: ../Core/Src/spi.c
         - path: ../Core/Src/dma.c
         - path: ../Core/Src/i2c.c
         - path: ../Core/Src/tim.c
         - path: ../Core/Src/usart.c
+        - path: ../Core/Src/spi.c
         - path: ../Core/Src/stm32f1xx_hal_msp.c
+        - path: ../Core/Src/system_stm32f1xx.c
       folders: []
     - name: Drivers
-      files: []
-      folders:
-        - name: STM32F1xx_HAL_Driver
-          files:
-            - path: ../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_gpio_ex.c
-            - path: ../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_i2c.c
-            - path: ../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal.c
-            - path: ../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_rcc.c
-            - path: ../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_rcc_ex.c
-            - path: ../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_gpio.c
-            - path: ../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_dma.c
-            - path: ../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_cortex.c
-            - path: ../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_pwr.c
-            - path: ../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_flash.c
-            - path: ../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_flash_ex.c
-            - path: ../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_exti.c
-            - path: ../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_tim.c
-            - path: ../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_tim_ex.c
-            - path: ../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_uart.c
-            - path: ../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_spi.c
-          folders: []
-        - name: CMSIS
-          files:
-            - path: ../Core/Src/system_stm32f1xx.c
-          folders: []
-    - name: ::CMSIS
-      files: []
+      files:
+        - path: ../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_gpio_ex.c
+        - path: ../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_i2c.c
+        - path: ../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal.c
+        - path: ../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_rcc.c
+        - path: ../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_rcc_ex.c
+        - path: ../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_gpio.c
+        - path: ../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_dma.c
+        - path: ../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_cortex.c
+        - path: ../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_pwr.c
+        - path: ../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_flash.c
+        - path: ../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_flash_ex.c
+        - path: ../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_exti.c
+        - path: ../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_spi.c
+        - path: ../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_tim.c
+        - path: ../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_tim_ex.c
+        - path: ../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_uart.c
       folders: []
 dependenceList: []
 outDir: build
@@ -111,12 +124,14 @@ targets:
         - USE_HAL_DRIVER
         - STM32F103xE
       incList:
-        - ../Core/user
         - ../Core/Inc
-        - ../Core/system
-        - ../Core/interaction
-        - ../Core/logic
-        - ../Core/hardware
+        - ../Core/app
+        - ../Core/periph
+        - ../Core/sensor
+        - ../Core/comm
+        - ../Core/algorithm
+        - ../Core/task
+        - ../Core/ui
         - ../Drivers/STM32F1xx_HAL_Driver/Inc
         - ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy
         - ../Drivers/CMSIS/Device/ST/STM32F1xx/Include

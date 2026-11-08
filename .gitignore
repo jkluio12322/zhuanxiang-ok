@@ -27,3 +27,10 @@ MDK-ARM/codex-logs/
 # EIDE 解压的 CMSIS 器件包缓存（含 Cortex-A 等本工程用不到的架构，
 # 需要时 EIDE 会自己从 ~/.eide 重新解压）
 MDK-ARM/.cmsis/
+
+# 工具在 Windows 上解析 %SystemDrive% 失败时会在工程目录就地生成这个垃圾目录
+%SystemDrive%/
+
+# 手工备份（*.bak-时间戳 / *.pre-时间戳）——不进版本库
+*.bak-*
+*.pre-*
